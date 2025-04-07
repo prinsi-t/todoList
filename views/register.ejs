@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-6">
+    <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
+    <form action="/register" method="POST" class="space-y-4">
+      <!-- Hidden dummy fields -->
+      <input type="text" name="dummy-email" style="display: none;" autocomplete="off">
+      <input type="password" name="dummy-password" style="display: none;" autocomplete="off">
+
+      <!-- Actual fields -->
+      <input 
+        type="email" 
+        name="email" 
+        placeholder="Email" 
+        class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg" 
+        autocomplete="off" 
+        required>
+      <input 
+        type="password" 
+        name="password" 
+        placeholder="Password" 
+        class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg" 
+        autocomplete="new-password" 
+        required>
+      <button 
+        type="submit" 
+        class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">
+        Register
+      </button>
+    </form>
+    <div class="mt-4 text-center">
+      <p>Already have an account? <a href="/login" class="text-blue-400 hover:underline">Login</a></p>
+    </div>
+  </div>
+</body>
+</html>
