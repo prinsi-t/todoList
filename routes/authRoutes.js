@@ -32,7 +32,7 @@ router.get('/register', (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -42,16 +42,25 @@ router.post('/register', async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Create new user
     const newUser = new User({
       email: email.toLowerCase(),
-      password: hashedPassword
+      password: hashedPassword,
     });
-    
+
     await newUser.save();
-    req.flash('success_msg', 'You are now registered and can log in');
-    res.redirect('/login');
+
+    // Automatically log in the user after registration
+    req.login(newUser, (err) => {
+      if (err) {
+        console.error(err);
+        req.flash('error_msg', 'Error logging in after registration');
+        return res.redirect('/login');
+      }
+      // Redirect to the Todo page
+      res.redirect('/');
+    });
   } catch (err) {
     console.error(err);
     req.flash('error_msg', 'Error during registration');
