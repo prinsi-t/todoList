@@ -3,17 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
+  <title>Todo App</title>
   <link rel="icon" type="image/png" href="/favicon.ico">
-
   <script src="https://cdn.tailwindcss.com"></script>
-
-  
-  
 </head>
+
+
 <body class="bg-gray-900 text-white min-h-screen pt-10">
   <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-6 mx-auto">
-    <h1 class="text-2xl font-bold mb-6 text-center">Todo App</h1>
+    <h1 class="text-3xl font-bold mb-6 text-center">Your Todos</h1>
 
     <!-- Add Todo Form -->
     <form action="/add" method="POST" class="flex items-center mb-6">
@@ -28,6 +26,8 @@
         Add
       </button>
     </form>
+
+   
 
     <!-- Todo List -->
     <ul class="space-y-4">
@@ -57,6 +57,19 @@
         </li>
       <% }) %>
     </ul>
+
+     <!-- Logout Button -->
+     <% if (isAuthenticated) { %>
+      <div class="text-center mt-6 mb-6">
+        <a 
+          href="/logout" 
+          class="inline-block bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600">
+          Logout
+        </a>
+      </div>
+    <% } %>
   </div>
+
+  
 </body>
 </html>

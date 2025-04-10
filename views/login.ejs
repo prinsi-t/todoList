@@ -9,16 +9,8 @@
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
   <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-6">
     <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
-    <% if (error_msg) { %>
-      <div class="bg-red-500 text-white p-4 rounded mb-4">
-        <%= error_msg %>
-      </div>
-    <% } %>
-    <% if (error) { %>
-      <div class="bg-red-500 text-white p-4 rounded mb-4">
-        <%= error %>
-      </div>
-    <% } %>
+
+    <!-- Login Form -->
     <form action="/login" method="POST" class="space-y-4">
       <input 
         type="email" 
@@ -40,6 +32,7 @@
         Login
       </button>
     </form>
+
     <div class="mt-4 text-center">
       <p>Don't have an account? <a href="/register" class="text-blue-400 hover:underline">Register</a></p>
     </div>

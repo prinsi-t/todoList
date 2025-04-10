@@ -35,15 +35,6 @@ mongoose
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Middleware: Static files
-app.use(express.static(path.resolve(__dirname, 'public')));
-
-// View Engine: EJS with layouts
-app.use(expressLayouts);
-app.set('view engine', 'ejs');
-app.set('layout', 'layouts/main');
-app.set('views', path.join(__dirname, 'views'));
-
 // Middleware: Session management
 app.use(
   session({
@@ -53,21 +44,30 @@ app.use(
   })
 );
 
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Middleware: Flash messages
 app.use(flash());
 
+
+// Middleware: Static files
+app.use(express.static(path.resolve(__dirname, 'public')));
+
+// View Engine: EJS with layouts
+app.use(expressLayouts);
+app.set('view engine', 'ejs');
+app.set('layout', 'layouts/main');
+app.set('views', path.join(__dirname, 'views'));
+
+
 // Middleware: Make flash messages available in views
 app.use((req, res, next) => {
-  res.locals.success_msg = req.flash('success_msg');
-  res.locals.error_msg = req.flash('error_msg');
-  res.locals.error = req.flash('error');
+  res.locals.isAuthenticated = req.isAuthenticated?.() || false; // Check if user is authenticated
   next();
 });
 
-// Initialize Passport
-initializePassport(passport);
-app.use(passport.initialize());
-app.use(passport.session());
 
 passport.use(
   new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {

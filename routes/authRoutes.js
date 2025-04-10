@@ -1,12 +1,16 @@
 import express from 'express';
 import passport from 'passport';
 import User from '../models/user.js';
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
 // Login Page
 router.get('/login', (req, res) => {
-  res.render('login', { title: 'Login' });
+  res.render('login', {
+    title: 'Login',
+    error: req.flash('error') // Pass the error message to the view
+  });
 });
 
 // Handle Login
@@ -24,69 +28,48 @@ router.get('/register', (req, res) => {
   res.render('register', { title: 'Register' });
 });
 
-
+// Register route
 router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send('Email and password are required');
-  }
-
   try {
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).send('User already exists');
+    const { email, password } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      req.flash('error_msg', 'Email is already registered');
+      return res.redirect('/register');
     }
 
-    const user = new User({ email, password }); // Password will be hashed in pre-save hook
-    await user.save();
-
-    // Optional: Auto-login after registration
-    req.login(user, (err) => {
-      if (err) throw err;
-      return res.redirect('/dashboard');
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create new user
+    const newUser = new User({
+      email: email.toLowerCase(),
+      password: hashedPassword
     });
-
+    
+    await newUser.save();
+    req.flash('success_msg', 'You are now registered and can log in');
+    res.redirect('/login');
   } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).send('Server error');
+    console.error(err);
+    req.flash('error_msg', 'Error during registration');
+    res.redirect('/register');
   }
 });
 
-// Handle Registration
-// router.post('/register', async (req, res) => {
-//   const { email, password } = req.body;
-//   try {
-//     if (!email || !password) {
-//       req.flash('error_msg', 'Please fill in all fields');
-//       return res.redirect('/register');
-//     }
-
-//     const userExists = await User.findOne({ email });
-//     if (userExists) {
-//       req.flash('error_msg', 'Email is already registered');
-//       return res.redirect('/register');
-//     }
-
-//     const user = new User({ email, password });
-//     await user.save();
-//     req.flash('success_msg', 'You are now registered and can log in');
-//     res.redirect('/login');
-//   } catch (err) {
-//     console.error(err);
-//     req.flash('error_msg', 'Something went wrong. Please try again.');
-//     res.redirect('/register');
-//   }
-// });
-
-// Logout
+// Logout route
 router.get('/logout', (req, res) => {
   req.logout((err) => {
     if (err) {
       console.error(err);
+      return res.redirect('/');
     }
+    req.flash('success_msg', 'You have successfully logged out');
     res.redirect('/login');
   });
 });
 
 export default router;
+

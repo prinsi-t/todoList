@@ -1,22 +1,25 @@
 import express from 'express';
 import Todo from '../models/todo.js';
+import  ensureAuthenticated  from '../routes/authRoutes.js'; // Adjust the path as needed
+
 
 const router = express.Router();
 
 // Middleware to ensure authentication
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect('/login');
-}
+// function ensureAuthenticated(req, res, next) {
+//   if (req.isAuthenticated()) {
+//     return next();
+//   }
+//   res.redirect('/login');
+// }
 
 // Get all todos
 router.get('/', ensureAuthenticated, async (req, res) => {
   try {
     const todos = await Todo.find();
     console.log('Current Todo List:', todos); // Log the current todo list
-    res.render('index', { title: 'Todo App', todos });
+    res.render('index', { title: 'Todo App', todos, isAuthenticated: true
+    });
   } catch (err) {
     console.error('Error fetching todos:', err);
     res.status(500).send('Server Error');
