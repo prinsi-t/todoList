@@ -1,15 +1,13 @@
 import express from 'express';
 import Todo from '../models/todo.js';
-import ensureAuthenticated  from './authRoutes.js'; // Adjust the path as needed
-
+import ensureAuthenticated from './authRoutes.js';
 
 const router = express.Router();
 
 // Root route (Todo page)
-// Root route (Todo page)
-router.get('/todos', ensureAuthenticated, async (req, res) => {
+router.get('/', ensureAuthenticated, async (req, res) => {
   try {
-    console.log('🔥 req.user:', req.user); // Add this line
+    console.log('🔥 req.user:', req.user);
 
     if (!req.user) {
       throw new Error('User not loaded in session');
@@ -17,8 +15,8 @@ router.get('/todos', ensureAuthenticated, async (req, res) => {
 
     const todos = await Todo.find({ user: req.user._id });
     res.render('index', { 
-      title: 'Dashboard', 
-      todos: req.user.todos || [] 
+      title: 'Your Todos', 
+      todos: todos || []
     });
   } catch (err) {
     console.error('Error fetching todos:', err);
@@ -26,10 +24,9 @@ router.get('/todos', ensureAuthenticated, async (req, res) => {
   }
 });
 
-
 // Handle adding a new todo
 router.post('/add', ensureAuthenticated, async (req, res) => {
-  console.log('Authenticated User:', req.user); // Debugging log
+  console.log('Authenticated User:', req.user);
 
   const { title } = req.body;
 
@@ -45,7 +42,7 @@ router.post('/add', ensureAuthenticated, async (req, res) => {
     });
 
     await newTodo.save();
-    res.redirect('/');
+    res.redirect('/todos');
   } catch (err) {
     console.error('Error adding todo:', err);
     res.status(500).send('Server error');
@@ -57,8 +54,8 @@ router.post('/complete/:id', ensureAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
     const updatedTodo = await Todo.findByIdAndUpdate(id, { completed: true }, { new: true });
-    console.log('Completed Todo:', updatedTodo); // Log the completed todo
-    res.redirect('/');
+    console.log('Completed Todo:', updatedTodo);
+    res.redirect('/todos');
   } catch (err) {
     console.error('Error completing todo:', err);
     res.status(500).send('Server Error');
@@ -70,8 +67,8 @@ router.post('/delete/:id', ensureAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
     const deletedTodo = await Todo.findByIdAndDelete(id);
-    console.log('Deleted Todo:', deletedTodo); // Log the deleted todo
-    res.redirect('/');
+    console.log('Deleted Todo:', deletedTodo);
+    res.redirect('/todos');
   } catch (err) {
     console.error('Error deleting todo:', err);
     res.status(500).send('Server Error');

@@ -102,7 +102,7 @@ passport.use(
 app.use(authRoutes);
 
 // Use the todo routes
-app.use('/', todoRoutes);
+app.use('/todos', todoRoutes);
 
 // Middleware to ensure the user is authenticated
 const ensureAuthenticated = (req, res, next) => {
@@ -116,8 +116,7 @@ const ensureAuthenticated = (req, res, next) => {
 // Redirect root `/` to `/todos` (or login if not authenticated)
 const router = express.Router();
 router.get('/', ensureAuthenticated, (req, res) => {
-  console.log('Authenticated User:', req.user); // Debugging log
-  res.render('index', { todos: req.user.todos || [] });
+  res.redirect('/todos');
 });
 
 app.use('/', router);

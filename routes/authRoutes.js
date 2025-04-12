@@ -53,27 +53,30 @@ router.post('/register', async (req, res) => {
       return res.redirect('/register');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('Plain password:', password);
-    console.log('Hashed password during registration:', hashedPassword);
-
     // Create new user
-    const newUser = new User({ email, password: hashedPassword });
-    await newUser.save();
+    const newUser = new User({ 
+      email: email.toLowerCase(),
+      password: password // The password will be hashed by the pre-save middleware
+    });
 
-    // Automatically log in the user after registration
+    // Save the user
+    await newUser.save();
+    console.log('New user created:', newUser);
+
+    // Log in the user using passport
     req.login(newUser, (err) => {
       if (err) {
-        console.error(err);
+        console.error('Error during auto-login after registration:', err);
         req.flash('error_msg', 'Error logging in after registration');
         return res.redirect('/login');
       }
-      res.redirect('/');
+      console.log('User successfully logged in after registration');
+      res.redirect('/todos');
     });
   } catch (err) {
     console.error('Error during registration:', err);
-    res.status(500).send('Registration failed.');
+    req.flash('error_msg', 'Registration failed. Please try again.');
+    res.redirect('/register');
   }
 });
 
@@ -97,6 +100,37 @@ router.get('/test-password', async (req, res) => {
   const user = await User.findOne({ email: 'tprincy56@gmail.com' });
   const isMatch = await bcrypt.compare('princy56', user.password);
   res.send(`Match: ${isMatch}`);
+});
+
+
+router.get('/test-bob-password', async (req, res) => {
+  try {
+    const user = await User.findOne({ email: 'bob@bob' });
+    if (!user) return res.send('❌ Bob user not found');
+
+    const isMatch = await bcrypt.compare('bobbob', user.password); // or whatever password you think is correct
+    console.log('Bob password match:', isMatch);
+
+    res.send(`🔍 Bob password match: ${isMatch}`);
+  } catch (err) {
+    console.error('Error testing Bob password:', err);
+    res.status(500).send('❌ Error checking password');
+  }
+});
+
+
+router.get('/reset-bob-password', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash('bobbob', 10);
+    await User.updateOne(
+      { email: 'bob@bob' },
+      { password: hashedPassword }
+    );
+    res.send('✅ Password reset for bob@bob to "bobbob"');
+  } catch (err) {
+    console.error('Error resetting Bob password:', err);
+    res.status(500).send('❌ Failed to reset Bob password');
+  }
 });
 
 
