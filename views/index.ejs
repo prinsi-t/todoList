@@ -14,7 +14,7 @@
     <h1 class="text-3xl font-bold mb-6 text-center">Your Todos</h1>
 
     <!-- Add Todo Form -->
-    <form action="/add" method="POST" class="flex items-center mb-6">
+    <form action="/todos/add" method="POST" class="flex items-center mb-6">
       <input 
         name="title" 
         placeholder="Add a task..." 
@@ -38,7 +38,7 @@
           </span>
           <div class="flex space-x-2">
             <% if (!todo.completed) { %>
-              <form action="/complete/<%= todo._id %>" method="POST">
+              <form action="/todos/complete/<%= todo._id %>" method="POST">
                 <button 
                   type="submit" 
                   class="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600">
@@ -46,7 +46,7 @@
                 </button>
               </form>
             <% } %>
-            <form action="/delete/<%= todo._id %>" method="POST">
+            <form action="/todos/delete/<%= todo._id %>" method="POST">
               <button 
                 type="submit" 
                 class="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600">

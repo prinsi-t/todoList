@@ -1,37 +1,30 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import bcrypt from 'bcrypt'; // Import bcrypt for password comparison
-import User from '../models/user.js'; // Adjust the path to your User model
+import User from '../models/user.js';
 
 passport.use(
   new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
-      const sanitizedEmail = email.trim().toLowerCase();
-      const sanitizedPassword = password.trim();
-
-      const user = await User.findOne({ email: sanitizedEmail });
+      console.log('Attempting login for email:', email);
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
+      
       if (!user) {
-        console.log('User not found');
+        console.log('User not found for email:', email);
         return done(null, false, { message: 'User not found' });
       }
-
-      console.log('User Found:', user); // Debugging log
-      console.log('Entered Password:', sanitizedPassword); // Debugging log
-      console.log('Stored Hashed Password:', user.password); // Debugging log
-
-      // Compare the entered password with the hashed password
-      const isMatch = await bcrypt.compare(sanitizedPassword, user.password);
-      console.log('Entered password:', password);
-      console.log('Stored hashed password:', user.password);
-      console.log('Passwords match:', isMatch);
-
+      
+      console.log('User found:', user.email);
+      console.log('Comparing password for user:', user.email);
+      
+      const isMatch = await user.matchPassword(password.trim());
+      console.log('Password match result:', isMatch);
+      
       if (!isMatch) {
-        console.log('Incorrect password');
+        console.log('Password mismatch for user:', user.email);
         return done(null, false, { message: 'Incorrect password' });
       }
-
-      console.log('✅ Logging in user:', user); 
-
+      
+      console.log('✅ Successful password match for user:', user.email);
       return done(null, user);
     } catch (err) {
       console.error('Error during authentication:', err);
@@ -41,30 +34,23 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
+  console.log('Serializing user:', user.email);
   done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
-  console.log('Deserializing user with id:', id);
   try {
+    console.log('Deserializing user with id:', id);
     const user = await User.findById(id);
-    console.log('User found during deserialize:', user);
+    if (!user) {
+      console.log('User not found during deserialize');
+      return done(new Error('User not found'));
+    }
+    console.log('User found during deserialize:', user.email);
     done(null, user);
   } catch (err) {
     console.error('Error in deserialize:', err);
     done(err);
-  }
-});
-
-// Example usage of bcrypt.compare for testing
-const plainPassword = 'bobbob'; // Replace with the password you are testing
-const hashedPassword = '$2b$10$GKQROKFoNzjMtrxkiAXiue.v0D5LZkRJ8X0bS3i1r5sTIRHqEGtEy'; // Replace with the hash from your database
-
-bcrypt.compare(plainPassword, hashedPassword, (err, isMatch) => {
-  if (err) {
-    console.error('Error comparing passwords:', err);
-  } else {
-    console.log('Password Match:', isMatch);
   }
 });
 

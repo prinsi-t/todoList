@@ -10,9 +10,8 @@ import todoRoutes from './routes/todoRoutes.js';
 import passport from 'passport';
 import authRoutes from './routes/authRoutes.js';
 import flash from 'connect-flash';
-import LocalStrategy from 'passport-local';
 import User from './models/user.js';
-import './config/passport.js';  
+import './config/passport.js';
 
 // Define __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -40,7 +39,7 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false, 
+    saveUninitialized: false,
   })
 );
 
@@ -51,7 +50,6 @@ app.use(passport.session());
 // Middleware: Flash messages
 app.use(flash());
 
-
 // Middleware: Static files
 app.use(express.static(path.resolve(__dirname, 'public')));
 
@@ -61,42 +59,11 @@ app.set('view engine', 'ejs');
 app.set('layout', 'layouts/main');
 app.set('views', path.join(__dirname, 'views'));
 
-
 // Middleware: Make flash messages available in views
 app.use((req, res, next) => {
-  res.locals.isAuthenticated = req.isAuthenticated?.() || false; // Check if user is authenticated
+  res.locals.isAuthenticated = req.isAuthenticated?.() || false;
   next();
 });
-
-
-passport.use(
-  new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
-    try {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return done(null, false, { message: 'User not found' });
-      }
-
-      console.log('User Found:', user); // Debugging log
-
-      if (!user.password) {
-        console.log('User does not have a local password'); // Debugging log
-        return done(null, false, { message: 'User does not have a local password' });
-      }
-
-      const isMatch = await user.matchPassword(password);
-      if (!isMatch) {
-        console.log('Incorrect password'); // Debugging log
-        return done(null, false, { message: 'Incorrect password' });
-      }
-
-      return done(null, user);
-    } catch (err) {
-      console.error('Error in passport strategy:', err);
-      return done(err);
-    }
-  })
-);
 
 // Middleware: Authentication Routes
 app.use(authRoutes);
@@ -106,10 +73,7 @@ app.use('/todos', todoRoutes);
 
 // Middleware to ensure the user is authenticated
 const ensureAuthenticated = (req, res, next) => {
-  console.log('User Authenticated:', req.isAuthenticated()); // Debugging log
-  if (req.isAuthenticated()) {
-    return next();
-  }
+  if (req.isAuthenticated()) return next();
   res.redirect('/login');
 };
 

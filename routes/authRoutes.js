@@ -27,14 +27,28 @@ router.get('/login', (req, res) => {
 });
 
 // Handle Login
-router.post(
-  '/login',
-  passport.authenticate('local', {
-    successRedirect: '/todos', // Redirect to the Todo page after successful login
-    failureRedirect: '/login', // Redirect back to the login page on failure
-    failureFlash: true, // Enable flash messages for login errors
-  })
-);
+router.post('/login', (req, res, next) => {
+  console.log('Login attempt for email:', req.body.email);
+  passport.authenticate('local', (err, user, info) => {
+    if (err) {
+      console.error('Error during authentication:', err);
+      return next(err);
+    }
+    if (!user) {
+      console.log('Login failed:', info.message);
+      req.flash('error', info.message);
+      return res.redirect('/login');
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error('Error during login:', err);
+        return next(err);
+      }
+      console.log('✅ Successful login for user:', user.email);
+      return res.redirect('/todos');
+    });
+  })(req, res, next);
+});
 
 // Register Page
 router.get('/register', (req, res) => {
@@ -56,25 +70,21 @@ router.post('/register', async (req, res) => {
     // Create new user
     const newUser = new User({ 
       email: email.toLowerCase(),
-      password: password // The password will be hashed by the pre-save middleware
+      password: password
     });
 
     // Save the user
     await newUser.save();
-    console.log('New user created:', newUser);
 
     // Log in the user using passport
     req.login(newUser, (err) => {
       if (err) {
-        console.error('Error during auto-login after registration:', err);
         req.flash('error_msg', 'Error logging in after registration');
         return res.redirect('/login');
       }
-      console.log('User successfully logged in after registration');
       res.redirect('/todos');
     });
   } catch (err) {
-    console.error('Error during registration:', err);
     req.flash('error_msg', 'Registration failed. Please try again.');
     res.redirect('/register');
   }
@@ -133,6 +143,49 @@ router.get('/reset-bob-password', async (req, res) => {
   }
 });
 
+// Reset bobisbob's password
+router.get('/reset-bobisbob', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash('bobisbob', 10);
+    await User.updateOne(
+      { email: 'bobisbob@bobisbob' },
+      { password: hashedPassword }
+    );
+    res.send('✅ Password reset for bobisbob@bobisbob to "bobisbob"');
+  } catch (err) {
+    res.status(500).send('❌ Failed to reset password');
+  }
+});
+
+// Reset boy@gmail.com's password
+router.get('/reset-boy', async (req, res) => {
+  try {
+    // First try to find the user
+    let user = await User.findOne({ email: 'boy@gmail.com' });
+    
+    if (!user) {
+      // If user doesn't exist, create it
+      console.log('Creating new user boy@gmail.com');
+      user = new User({
+        email: 'boy@gmail.com',
+        password: 'bobisbob'
+      });
+      await user.save();
+      console.log('New user created successfully');
+      res.send('✅ Created new user boy@gmail.com with password "bobisbob"');
+    } else {
+      // If user exists, update the password
+      console.log('Updating password for existing user');
+      user.password = 'bobisbob';
+      await user.save();
+      console.log('Password updated successfully');
+      res.send('✅ Password reset for boy@gmail.com to "bobisbob"');
+    }
+  } catch (err) {
+    console.error('Error in reset-boy:', err);
+    res.status(500).send('❌ Failed to reset password');
+  }
+});
 
 // Logout route
 router.get('/logout', (req, res) => {
