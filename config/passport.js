@@ -21,12 +21,16 @@ passport.use(
 
       // Compare the entered password with the hashed password
       const isMatch = await bcrypt.compare(sanitizedPassword, user.password);
-      console.log('Password Match:', isMatch); // Debugging log
+      console.log('Entered password:', password);
+      console.log('Stored hashed password:', user.password);
+      console.log('Passwords match:', isMatch);
 
       if (!isMatch) {
         console.log('Incorrect password');
         return done(null, false, { message: 'Incorrect password' });
       }
+
+      console.log('✅ Logging in user:', user); 
 
       return done(null, user);
     } catch (err) {

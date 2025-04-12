@@ -16,7 +16,10 @@ router.get('/todos', ensureAuthenticated, async (req, res) => {
     }
 
     const todos = await Todo.find({ user: req.user._id });
-    res.render('index', { todos });
+    res.render('index', { 
+      title: 'Dashboard', 
+      todos: req.user.todos || [] 
+    });
   } catch (err) {
     console.error('Error fetching todos:', err);
     res.status(500).send('Server error');

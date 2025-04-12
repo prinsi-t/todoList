@@ -55,13 +55,11 @@ router.post('/register', async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('Plain password:', password);
+    console.log('Hashed password during registration:', hashedPassword);
 
     // Create new user
-    const newUser = new User({
-      email: email.trim().toLowerCase(),
-      password: hashedPassword,
-    });
-
+    const newUser = new User({ email, password: hashedPassword });
     await newUser.save();
 
     // Automatically log in the user after registration
@@ -74,11 +72,33 @@ router.post('/register', async (req, res) => {
       res.redirect('/');
     });
   } catch (err) {
-    console.error(err);
-    req.flash('error_msg', 'Error during registration');
-    res.redirect('/register');
+    console.error('Error during registration:', err);
+    res.status(500).send('Registration failed.');
   }
 });
+
+// ⚠️ TEMPORARY: Reset password for testing
+// Visit: http://localhost:3000/reset-password (once only!)
+router.get('/reset-password', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash('princy56', 10); // replace 'yourNewPassword' with what you want
+    await User.updateOne(
+      { email: 'tprincy56@gmail.com' },
+      { password: hashedPassword }
+    );
+    res.send('✅ Password reset for tprincy56@gmail.com');
+  } catch (err) {
+    console.error('Error resetting password:', err);
+    res.status(500).send('❌ Failed to reset password');
+  }
+});
+
+router.get('/test-password', async (req, res) => {
+  const user = await User.findOne({ email: 'tprincy56@gmail.com' });
+  const isMatch = await bcrypt.compare('princy56', user.password);
+  res.send(`Match: ${isMatch}`);
+});
+
 
 // Logout route
 router.get('/logout', (req, res) => {
