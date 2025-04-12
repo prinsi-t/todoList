@@ -13,6 +13,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  todos: [
+    {
+      title: { type: String, required: true },
+      completed: { type: Boolean, default: false },
+    },
+  ],
 });
 
 // Hash the password before saving

@@ -5,11 +5,24 @@ import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
+// Middleware to ensure the user is authenticated
+const ensureAuthenticated = (req, res, next) => {
+  console.log('Auth check — isAuthenticated:', req.isAuthenticated?.());
+  console.log('req.user:', req.user);
+  
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect('/login');
+};
+
+
+
 // Login Page
 router.get('/login', (req, res) => {
   res.render('login', {
     title: 'Login',
-    error: req.flash('error') // Pass the error message to the view
+    error: req.flash('error'),
   });
 });
 
@@ -17,7 +30,7 @@ router.get('/login', (req, res) => {
 router.post(
   '/login',
   passport.authenticate('local', {
-    successRedirect: '/', // Redirect to the dashboard after successful login
+    successRedirect: '/todos', // Redirect to the Todo page after successful login
     failureRedirect: '/login', // Redirect back to the login page on failure
     failureFlash: true, // Enable flash messages for login errors
   })
@@ -45,7 +58,7 @@ router.post('/register', async (req, res) => {
 
     // Create new user
     const newUser = new User({
-      email: email.toLowerCase(),
+      email: email.trim().toLowerCase(),
       password: hashedPassword,
     });
 
@@ -58,7 +71,6 @@ router.post('/register', async (req, res) => {
         req.flash('error_msg', 'Error logging in after registration');
         return res.redirect('/login');
       }
-      // Redirect to the Todo page
       res.redirect('/');
     });
   } catch (err) {

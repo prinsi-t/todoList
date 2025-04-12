@@ -8,11 +8,11 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import todoRoutes from './routes/todoRoutes.js';
 import passport from 'passport';
-import initializePassport from './config/passport.js';
 import authRoutes from './routes/authRoutes.js';
 import flash from 'connect-flash';
 import LocalStrategy from 'passport-local';
-import User from './models/user.js';  // Assuming User model is defined in models/User.js
+import User from './models/user.js';
+import './config/passport.js';  
 
 // Define __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -40,7 +40,7 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: false, 
   })
 );
 
@@ -104,13 +104,23 @@ app.use(authRoutes);
 // Use the todo routes
 app.use('/', todoRoutes);
 
-// Redirect root `/` to `/todos` (or login if not authenticated)
-app.get('/', (req, res) => {
+// Middleware to ensure the user is authenticated
+const ensureAuthenticated = (req, res, next) => {
+  console.log('User Authenticated:', req.isAuthenticated()); // Debugging log
   if (req.isAuthenticated()) {
-    return res.redirect('/todos'); // Redirect to Todo list if logged in
+    return next();
   }
-  res.redirect('/login'); // Redirect to login if not authenticated
+  res.redirect('/login');
+};
+
+// Redirect root `/` to `/todos` (or login if not authenticated)
+const router = express.Router();
+router.get('/', ensureAuthenticated, (req, res) => {
+  console.log('Authenticated User:', req.user); // Debugging log
+  res.render('index', { todos: req.user.todos || [] });
 });
+
+app.use('/', router);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
