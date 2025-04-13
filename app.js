@@ -1,5 +1,5 @@
+import 'dotenv/config';
 import express from 'express';
-import dotenv from 'dotenv';
 import path from 'path';
 import expressLayouts from 'express-ejs-layouts';
 import session from 'express-session';
@@ -9,16 +9,12 @@ import { dirname } from 'path';
 import todoRoutes from './routes/todoRoutes.js';
 import passport from 'passport';
 import authRoutes from './routes/authRoutes.js';
-import flash from 'connect-flash';
 import User from './models/user.js';
 import './config/passport.js';
 
 // Define __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Load environment variables
-dotenv.config();
 
 // Initialize the Express app
 const app = express();
@@ -47,9 +43,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware: Flash messages
-app.use(flash());
-
 // Middleware: Static files
 app.use(express.static(path.resolve(__dirname, 'public')));
 
@@ -59,7 +52,7 @@ app.set('view engine', 'ejs');
 app.set('layout', 'layouts/main');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware: Make flash messages available in views
+// Middleware: Make authentication status available in views
 app.use((req, res, next) => {
   res.locals.isAuthenticated = req.isAuthenticated?.() || false;
   next();

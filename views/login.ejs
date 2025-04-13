@@ -7,34 +7,60 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-6">
-    <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
+  <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-8">
+    <h1 class="text-3xl font-bold mb-6 text-center">Login</h1>
 
-    <!-- Login Form -->
     <form action="/login" method="POST" class="space-y-4">
-      <input 
-        type="email" 
-        name="email" 
-        placeholder="Email" 
-        class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg" 
-        autocomplete="off" 
-        required>
-      <input 
-        type="password" 
-        name="password" 
-        placeholder="Password" 
-        class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg" 
-        autocomplete="new-password" 
-        required>
+      <div>
+        <label for="email" class="block text-sm font-medium mb-1">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          required 
+          class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium mb-1">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          required 
+          class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+      </div>
+
       <button 
         type="submit" 
-        class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">
+        class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+      >
         Login
       </button>
     </form>
 
     <div class="mt-4 text-center">
-      <p>Don't have an account? <a href="/register" class="text-blue-400 hover:underline">Register</a></p>
+      <p class="text-gray-400">Or login with</p>
+      <a 
+        href="/auth/google" 
+        class="inline-block mt-2 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
+      >
+        <div class="flex items-center justify-center">
+          <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+          </svg>
+          Continue with Google
+        </div>
+      </a>
+    </div>
+
+    <div class="mt-6 text-center">
+      <p class="text-gray-400">
+        Don't have an account? 
+        <a href="/register" class="text-blue-400 hover:text-blue-300">Register</a>
+      </p>
     </div>
   </div>
 </body>

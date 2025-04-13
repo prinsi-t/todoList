@@ -14,10 +14,7 @@ const ensureAuthenticated = (req, res, next) => {
 
 // Login Page
 router.get('/login', (req, res) => {
-  res.render('login', {
-    title: 'Login',
-    error: req.flash('error'),
-  });
+  res.render('login', { title: 'Login' });
 });
 
 // Handle Login
@@ -25,7 +22,6 @@ router.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) return next(err);
     if (!user) {
-      req.flash('error', info.message);
       return res.redirect('/login');
     }
     req.logIn(user, (err) => {
@@ -34,6 +30,22 @@ router.post('/login', (req, res, next) => {
     });
   })(req, res, next);
 });
+
+// Google OAuth Routes
+router.get(
+  '/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get(
+  '/auth/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/login'
+  }),
+  (req, res) => {
+    res.redirect('/todos');
+  }
+);
 
 // Register Page
 router.get('/register', (req, res) => {
@@ -48,8 +60,7 @@ router.post('/register', async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      req.flash('error_msg', 'Email is already registered');
-      return res.redirect('/register');
+      return res.redirect('/login');
     }
 
     // Create new user
@@ -64,13 +75,11 @@ router.post('/register', async (req, res) => {
     // Log in the user using passport
     req.login(newUser, (err) => {
       if (err) {
-        req.flash('error_msg', 'Error logging in after registration');
         return res.redirect('/login');
       }
       res.redirect('/todos');
     });
   } catch (err) {
-    req.flash('error_msg', 'Registration failed. Please try again.');
     res.redirect('/register');
   }
 });
@@ -79,7 +88,6 @@ router.post('/register', async (req, res) => {
 router.get('/logout', (req, res) => {
   req.logout((err) => {
     if (err) return res.redirect('/');
-    req.flash('success_msg', 'You have successfully logged out');
     res.redirect('/login');
   });
 });
