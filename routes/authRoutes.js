@@ -34,7 +34,10 @@ router.post('/login', (req, res, next) => {
 // Google OAuth Routes
 router.get(
   '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    prompt: 'select_account'  // This will always show the account selector
+  })
 );
 
 router.get(
