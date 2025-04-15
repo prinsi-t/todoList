@@ -4,11 +4,61 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            cursive: ['Pacifico', 'cursive'],
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .font-cursive {
+      font-weight: normal;
+      letter-spacing: 0.5px;
+      font-style: italic;
+    }
+    .hero-text {
+      font-style: italic;
+      line-height: 1.6;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .character {
+      width: 400px;
+      height: auto;
+      position: absolute;
+      bottom: 0;
+      pointer-events: none;
+    }
+    .character-left {
+      left: 5%;
+    }
+    .character-right {
+      right: 5%;
+    }
+    @media (max-width: 1280px) {
+      .character {
+        display: none;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-8">
-    <h1 class="text-3xl font-bold mb-6 text-center">Login</h1>
+<body class="bg-[#1B1E26] text-white min-h-screen flex items-center justify-center font-sans relative overflow-hidden">
+  <!-- Left Character -->
+  <img src="/images/boy.png" alt="Boy character" class="character character-left">
+
+  <!-- Right Character -->
+  <img src="/images/girl.png" alt="Girl character" class="character character-right">
+
+  <!-- Main Form Container -->
+  <div class="w-full max-w-md bg-[#22252D] rounded-lg shadow-lg p-6 relative z-10">
+    <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
 
     <!-- Hidden dummy fields to prevent auto-fill -->
     <input type="text" name="dummy-email" style="display: none;" autocomplete="off">
@@ -16,26 +66,24 @@
 
     <form action="/login" method="POST" class="space-y-4" autocomplete="off">
       <div>
-        <label for="email" class="block text-sm font-medium mb-1">Email</label>
         <input 
           type="email" 
           id="email" 
           name="email" 
           required 
+          placeholder="Enter your email"
           class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          autocomplete="new-email"
         >
       </div>
 
       <div>
-        <label for="password" class="block text-sm font-medium mb-1">Password</label>
         <input 
           type="password" 
           id="password" 
           name="password" 
           required 
+          placeholder="Enter your password"
           class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          autocomplete="new-password"
         >
       </div>
 
@@ -47,20 +95,22 @@
       </button>
     </form>
 
-    <div class="mt-4 text-center">
-      <p class="text-gray-400">Or login with</p>
-      <a 
-        href="/auth/google" 
-        class="inline-block mt-2 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
-      >
-        <div class="flex items-center justify-center">
-          <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
-          </svg>
-          Continue with Google
-        </div>
-      </a>
+    <div class="relative my-8">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-gray-600"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-2 bg-[#22252D] text-gray-400">Or continue with</span>
+      </div>
     </div>
+
+    <a 
+      href="/auth/google" 
+      class="w-full flex items-center justify-center gap-2 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-100 mb-4"
+    >
+      <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
+      <span>Continue with Google</span>
+    </a>
 
     <div class="mt-6 text-center">
       <p class="text-gray-400">

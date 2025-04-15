@@ -64,19 +64,21 @@ app.use(authRoutes);
 // Use the todo routes
 app.use('/todos', todoRoutes);
 
+// Landing page route
+app.get('/', (req, res) => {
+  res.render('landing', { title: 'Todo App - Organize Your Life' });
+});
+
 // Middleware to ensure the user is authenticated
 const ensureAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) return next();
   res.redirect('/login');
 };
 
-// Redirect root `/` to `/todos` (or login if not authenticated)
-const router = express.Router();
-router.get('/', ensureAuthenticated, (req, res) => {
+// Redirect authenticated users from root to todos
+app.get('/', ensureAuthenticated, (req, res) => {
   res.redirect('/todos');
 });
-
-app.use('/', router);
 
 // Start the server
 const PORT = process.env.PORT || 3000;

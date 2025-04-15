@@ -4,10 +4,60 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            cursive: ['Pacifico', 'cursive'],
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .font-cursive {
+      font-weight: normal;
+      letter-spacing: 0.5px;
+      font-style: italic;
+    }
+    .hero-text {
+      font-style: italic;
+      line-height: 1.6;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .character {
+      width: 400px;
+      height: auto;
+      position: absolute;
+      bottom: 0;
+      pointer-events: none;
+    }
+    .character-left {
+      left: 5%;
+    }
+    .character-right {
+      right: 5%;
+    }
+    @media (max-width: 1280px) {
+      .character {
+        display: none;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-6">
+<body class="bg-[#1B1E26] text-white min-h-screen flex items-center justify-center font-sans relative overflow-hidden">
+  <!-- Left Character -->
+  <img src="/images/boy.png" alt="Boy character" class="character character-left">
+
+  <!-- Right Character -->
+  <img src="/images/girl.png" alt="Girl character" class="character character-right">
+
+  <!-- Main Form Container -->
+  <div class="w-full max-w-md bg-[#22252D] rounded-lg shadow-lg p-6 relative z-10">
     <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
     
     <!-- Google Sign Up Button -->
@@ -21,7 +71,7 @@
         <div class="w-full border-t border-gray-600"></div>
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-2 bg-gray-800 text-gray-400">Or continue with email</span>
+        <span class="px-2 bg-[#22252D] text-gray-400">Or continue with email</span>
       </div>
     </div>
 
@@ -32,7 +82,6 @@
 
       <!-- Actual fields -->
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
         <input 
           type="email" 
           name="email" 
@@ -44,12 +93,11 @@
       </div>
       
       <div>
-        <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
         <input 
           type="password" 
           name="password" 
           id="password"
-          placeholder="Create a password" 
+          placeholder="Create password" 
           class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
           autocomplete="new-password" 
           required>
@@ -63,7 +111,7 @@
     </form>
 
     <div class="mt-4 text-center">
-      <p class="text-gray-400">Already have an account? 
+      <p class="text-gray-400 mt-10">Already have an account? 
         <a href="/login" class="text-blue-400 hover:underline">Login</a>
       </p>
     </div>
