@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Tasks</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              'bg': '#1B1E26',
+              'sidebar': '#22252D',
+              'hover': '#2A2E37',
+              'border': '#363B46'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body {
+      background-color: #1B1E26;
+      color: #fff;
+    }
+    .sidebar-item {
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin: 2px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sidebar-item:hover {
+      background-color: #2A2E37;
+    }
+    .sidebar-item.active {
+      background-color: #2A2E37;
+    }
+    .task-item {
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin: 2px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+    .task-item:hover {
+      background-color: #2A2E37;
+    }
+    .task-item:hover .delete-btn {
+      opacity: 1;
+    }
+    .delete-btn {
+      position: absolute;
+      right: 16px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      color: #6B7280;
+    }
+    .delete-btn:hover {
+      color: #EF4444;
+    }
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #363B46;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .checkbox.checked {
+      background-color: #3B82F6;
+      border-color: #3B82F6;
+    }
+    .task-details {
+      padding: 24px;
+      background-color: #22252D;
+      border-radius: 12px;
+    }
+    .subtask-add {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .subtask-add:hover {
+      background-color: #2A2E37;
+    }
+  </style>
+</head>
+<body class="h-screen flex">
+ <!-- Sidebar -->
+<div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
+  <!-- User Profile -->
+  <div class="flex items-center gap-3 mb-6 px-2">
+    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+      <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
+    </div>
+    <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="flex items-center gap-2 mb-6">
+    <button class="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+      My Tasks
+    </button>
+  </div>
+
+  <!-- Lists -->
+  <div class="space-y-1">
+    <div class="mt-4 mb-2">
+      <div class="text-sm text-gray-400 px-4 mb-2">My lists</div>
+      <div class="sidebar-item">
+        <i class="fas fa-user text-gray-400"></i>
+        <span>Personal</span>
+       
+      </div>
+      <div class="sidebar-item">
+        <i class="fas fa-briefcase text-gray-400"></i>
+        <span>Work</span>
+      </div>
+      <div class="sidebar-item">
+        <i class="fas fa-shopping-cart text-gray-400"></i>
+        <span>Grocery List</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex">
+    <!-- Tasks List -->
+    <div class="w-96 border-r border-dark-border p-4">
+      <h1 class="text-xl font-bold mb-4">All my tasks</h1>
+      
+      <!-- Add Task Button -->
+      <div class="mb-4">
+        <form id="addTaskForm" class="flex gap-2">
+          <input 
+            type="text" 
+            name="title" 
+            id="newTaskInput"
+            placeholder="Add a task..."
+            class="flex-1 bg-dark-hover text-white px-4 py-2 rounded-lg border border-dark-border focus:outline-none focus:border-blue-500"
+          >
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Add
+          </button>
+        </form>
+      </div>
+
+      <!-- Tasks -->
+     <!-- Tasks -->
+<div id="taskList" class="space-y-1">
+
+        <% tasks.forEach(task => { %>
+        <div class="task-item" data-task-id="<%= task._id %>">
+          <div class="checkbox <%= task.completed ? 'checked' : '' %>">
+            <% if (task.completed) { %>
+              <i class="fas fa-check text-white text-xs"></i>
+            <% } %>
+          </div>
+          <span class="<%= task.completed ? 'line-through text-gray-500' : '' %>"><%= task.title %></span>
+          <button class="delete-btn" onclick="deleteTask(event, '<%= task._id %>')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Task Details -->
+    <div class="flex-1 p-4">
+      <div class="task-details h-full">
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold mb-1">Selected Task</h2>
+            <div class="text-sm text-gray-400">Personal</div>
+          </div>
+          <button class="text-gray-400 hover:text-white">
+            <i class="fas fa-ellipsis-h"></i>
+          </button>
+        </div>
+
+        <!-- Notes -->
+        <div class="mb-6">
+          <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
+          <textarea 
+            placeholder="Insert your notes here"
+            class="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <!-- Subtasks -->
+        <div>
+          <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
+          <div class="space-y-2">
+            <div class="subtask-add">
+              <i class="fas fa-plus text-gray-400"></i>
+              <span class="text-gray-400">Add a new subtask</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="mt-6">
+          <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
+          <div class="border-2 border-dashed border-dark-border rounded-lg p-8 text-center">
+            <p class="text-gray-400">Click to add / drop your files here</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load all tasks
+    async function loadAllTasks() {
+      try {
+        const response = await fetch('/todos/all');
+        const tasks = await response.json();
+        
+        // Clear existing tasks
+        const tasksList = document.getElementById('taskList');
+
+        tasksList.innerHTML = '';
+        
+        // Add all tasks
+        tasks.forEach(task => {
+          const taskElement = createTaskElement(task);
+          tasksList.appendChild(taskElement);
+        });
+
+        // Update task count
+        document.getElementById('allTasksCount').textContent = tasks.length;
+        
+        // Update active state
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        document.querySelector('.sidebar-item').classList.add('active');
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+      }
+    }
+
+    // Delete task
+    function deleteTask(e, taskId) {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      fetch(`/todos/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+          if (taskElement) {
+            taskElement.remove();
+            // Update task count
+            const countElement = document.getElementById('allTasksCount');
+            const currentCount = parseInt(countElement.textContent);
+            countElement.textContent = currentCount - 1;
+          }
+        } else {
+          console.error('Failed to delete task:', data.msg);
+        }
+      })
+      .catch(error => {
+        console.error('Error deleting task:', error);
+      });
+    }
+
+    // Create task element function
+    function createTaskElement(task) {
+      const taskElement = document.createElement('div');
+      taskElement.className = 'task-item';
+      taskElement.dataset.taskId = task._id;
+      
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-btn';
+      deleteButton.innerHTML = '<i class="fas fa-times"></i>';
+      deleteButton.onclick = (e) => deleteTask(e, task._id);
+
+      taskElement.innerHTML = `
+        <div class="checkbox ${task.completed ? 'checked' : ''}">
+          ${task.completed ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+        </div>
+        <span class="${task.completed ? 'line-through text-gray-500' : ''}">${task.title}</span>
+      `;
+      
+      taskElement.appendChild(deleteButton);
+
+      // Add checkbox event listener
+      const checkbox = taskElement.querySelector('.checkbox');
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        checkbox.classList.toggle('checked');
+        const taskText = taskElement.querySelector('span');
+        taskText.classList.toggle('line-through');
+        taskText.classList.toggle('text-gray-500');
+        
+        fetch(`/todos/${task._id}/toggle`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      });
+
+      return taskElement;
+    }
+
+    // Load tasks on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllTasks();
+    });
+
+    // Add new task
+    document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('newTaskInput');
+      const title = input.value.trim();
+      
+      if (!title) return;
+
+      try {
+        const response = await fetch('/todos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ title })
+        });
+
+        const task = await response.json();
+        
+        // After adding a new task, reload all tasks to ensure consistency
+        loadAllTasks();
+        
+        // Clear input
+        input.value = '';
+      } catch (error) {
+        console.error('Error adding task:', error);
+      }
+    });
+  </script>
+</body>
+</html> 
