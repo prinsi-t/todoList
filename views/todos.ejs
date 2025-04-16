@@ -87,10 +87,14 @@
       border-color: #3B82F6;
     }
     .task-details {
-      padding: 24px;
+      padding: 32px;
       background-color: #22252D;
-      border-radius: 12px;
+      border-radius: 16px;
+      min-height: 600px; 
+      min-width: 500px;
+      font-size: 1.1rem;
     }
+    
     .subtask-add {
       display: flex;
       align-items: center;
@@ -102,6 +106,12 @@
     .subtask-add:hover {
       background-color: #2A2E37;
     }
+    .blurred-panel {
+      filter: blur(1px);
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    
   </style>
 </head>
 <body class="h-screen flex">
@@ -176,7 +186,7 @@
         </form>
       </div>
 
-      <!-- Tasks -->
+      
      <!-- Tasks -->
 <div id="taskList" class="space-y-1">
 
@@ -186,59 +196,74 @@
             <% if (task.completed) { %>
               <i class="fas fa-check text-white text-xs"></i>
             <% } %>
+            
           </div>
           <span class="<%= task.completed ? 'line-through text-gray-500' : '' %>"><%= task.title %></span>
           <button class="delete-btn" onclick="deleteTask(event, '<%= task._id %>')">
             <i class="fas fa-times"></i>
           </button>
+          
         </div>
         <% }) %>
+        
       </div>
     </div>
 
+    
+
     <!-- Task Details -->
+    <div id="right-panel" class="...your existing classes...">
+    
     <div class="flex-1 p-4">
-      <div class="task-details h-full">
-        <div class="flex items-start justify-between mb-6">
+      <div class="task-details h-full space-y-6">
+        <!-- This part remains unblurred -->
+        <div class="flex items-start justify-between">
           <div>
             <h2 class="text-2xl font-bold mb-1">Selected Task</h2>
             <div class="text-sm text-gray-400">Personal</div>
           </div>
-          <button class="text-gray-400 hover:text-white">
-            <i class="fas fa-ellipsis-h"></i>
+          <button 
+            class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded"
+            onclick="markSelectedTaskComplete()"
+          >
+            Mark as Complete
           </button>
         </div>
-
-        <!-- Notes -->
-        <div class="mb-6">
-          <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
-          <textarea 
-            placeholder="Insert your notes here"
-            class="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none"
-            rows="3"
-          ></textarea>
-        </div>
-
-        <!-- Subtasks -->
-        <div>
-          <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
-          <div class="space-y-2">
-            <div class="subtask-add">
-              <i class="fas fa-plus text-gray-400"></i>
-              <span class="text-gray-400">Add a new subtask</span>
+      
+        <!-- Blur this content when task is marked complete -->
+        <div id="task-blur-content" class="space-y-6">
+          <!-- Notes -->
+          <div>
+            <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
+            <textarea 
+              placeholder="Insert your notes here"
+              class="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none"
+              rows="3"
+            ></textarea>
+          </div>
+      
+          <!-- Subtasks -->
+          <div>
+            <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
+            <div class="space-y-2">
+              <div class="subtask-add">
+                <i class="fas fa-plus text-gray-400"></i>
+                <span class="text-gray-400">Add a new subtask</span>
+              </div>
+            </div>
+          </div>
+      
+          <!-- Attachments -->
+          <div>
+            <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
+            <div class="border-2 border-dashed border-dark-border rounded-lg p-8 text-center">
+              <p class="text-gray-400">Click to add / drop your files here</p>
             </div>
           </div>
         </div>
-
-        <!-- Attachments -->
-        <div class="mt-6">
-          <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-          <div class="border-2 border-dashed border-dark-border rounded-lg p-8 text-center">
-            <p class="text-gray-400">Click to add / drop your files here</p>
-          </div>
-        </div>
       </div>
-    </div>
+      
+   <!-- Selected Task content here -->
   </div>
 
   <script>
@@ -311,60 +336,79 @@
     // Create task element function
     function createTaskElement(task) {
       const taskElement = document.createElement('div');
-      taskElement.className = 'task-item';
+      taskElement.className = 'task-item group flex items-center p-2 bg-dark rounded mb-2'; // Flex container
       taskElement.dataset.taskId = task._id;
-      
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'delete-btn';
-      deleteButton.innerHTML = '<i class="fas fa-times"></i>';
-      deleteButton.onclick = (e) => deleteTask(e, task._id);
-
+    
       taskElement.innerHTML = `
-        <div class="checkbox ${task.completed ? 'checked' : ''}">
+        <!-- Checkbox -->
+        <div class="checkbox ${task.completed ? 'checked' : ''} w-5 h-5 flex items-center justify-center mr-3 cursor-pointer border border-gray-500 rounded">
           ${task.completed ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
         </div>
-        <span class="${task.completed ? 'line-through text-gray-500' : ''}">${task.title}</span>
+    
+        <!-- Task title -->
+        <span class="flex-grow ${task.completed ? 'line-through text-gray-500' : ''}">${task.title}</span>
+    
+        <!-- Action buttons -->
+        <div class="relative hidden group-hover:flex items-center gap-2 ml-3">
+          <!-- Three-dot menu -->
+          <div class="relative">
+            <button class="text-gray-400 hover:text-white" onclick="toggleMoveMenu(event, '${task._id}')">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div id="move-menu-${task._id}" class="absolute right-0 mt-2 w-32 bg-dark-hover rounded shadow-lg hidden z-50">
+              <div onclick="moveTask('${task._id}', 'personal')" class="px-4 py-2 hover:bg-dark-border cursor-pointer">Personal</div>
+              <div onclick="moveTask('${task._id}', 'work')" class="px-4 py-2 hover:bg-dark-border cursor-pointer">Work</div>
+              <div onclick="moveTask('${task._id}', 'grocery')" class="px-4 py-2 hover:bg-dark-border cursor-pointer">Grocery</div>
+            </div>
+          </div>
+    
+          <!-- Delete button -->
+          <button class="text-red-400 hover:text-red-600" onclick="deleteTask(event, '${task._id}')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       `;
-      
-      taskElement.appendChild(deleteButton); 
-
-      // Add checkbox event listener
+    
+      // Checkbox click listener
       const checkbox = taskElement.querySelector('.checkbox');
       checkbox.addEventListener('click', (e) => {
-  e.stopPropagation();
-  checkbox.classList.toggle('checked');
-  
-  const taskText = taskElement.querySelector('span');
-  taskText.classList.toggle('line-through');
-  taskText.classList.toggle('text-gray-500');
-
-  const existingIcon = checkbox.querySelector('.fa-check');
-  if (checkbox.classList.contains('checked')) {
-    // Add check icon if not already present
-    if (!existingIcon) {
-      const checkIcon = document.createElement('i');
-      checkIcon.className = 'fas fa-check text-white text-xs';
-      checkbox.appendChild(checkIcon);
-    }
-  } else {
-    // Remove check icon if exists
-    if (existingIcon) {
-      existingIcon.remove();
-    }
-  }
-
-  fetch(`/todos/${task._id}/toggle`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
-});
-
-
+        e.stopPropagation();
+        checkbox.classList.toggle('checked');
+      
+        const taskText = taskElement.querySelector('span');
+        taskText.classList.toggle('line-through');
+        taskText.classList.toggle('text-gray-500');
+      
+        const existingIcon = checkbox.querySelector('.fa-check');
+        if (checkbox.classList.contains('checked')) {
+          if (!existingIcon) {
+            const checkIcon = document.createElement('i');
+            checkIcon.className = 'fas fa-check text-white text-xs';
+            checkbox.appendChild(checkIcon);
+          }
+        } else {
+          if (existingIcon) existingIcon.remove();
+        }
+      
+        // 🔽 ADD THIS LOGIC HERE 🔽
+        const rightPanel = document.getElementById('right-panel');
+        if (checkbox.classList.contains('checked')) {
+          rightPanel.classList.add('blurred-panel');
+        } else {
+          rightPanel.classList.remove('blurred-panel');
+        }
+      
+        // Send update to server
+        fetch(`/todos/${task._id}/toggle`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      });
+      
+    
       return taskElement;
     }
-
+    
     // Load tasks on page load
     document.addEventListener('DOMContentLoaded', () => {
       loadAllTasks();
@@ -398,6 +442,50 @@
         console.error('Error adding task:', error);
       }
     });
+
+    function toggleMoveMenu(event, taskId) {
+      event.stopPropagation();
+      const menu = document.getElementById(`move-menu-${taskId}`);
+      const isVisible = !menu.classList.contains('hidden');
+      
+      // Close all other menus first
+      document.querySelectorAll('[id^="move-menu-"]').forEach(m => {
+        m.classList.add('hidden');
+      });
+    
+      if (!isVisible) {
+        menu.classList.remove('hidden');
+      }
+    }
+
+    
+    
+    // Optional: Hide the menu when clicking anywhere else
+    document.addEventListener('click', () => {
+      document.querySelectorAll('[id^="move-menu-"]').forEach(m => m.classList.add('hidden'));
+    });
+
+    function markSelectedTaskComplete() {
+      const selectedTaskId = window.currentTaskId; // or however you're tracking selected task ID
+      
+      if (!selectedTaskId) return;
+    
+      fetch(`/todos/${selectedTaskId}/toggle`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(() => {
+        loadAllTasks();
+        document.getElementById('task-blur-content').classList.add('blurred-panel');
+      })
+      .catch(err => console.error('Error marking task complete:', err));
+    }
+    
+    
+    
   </script>
+  
 </body>
 </html> 
