@@ -1,77 +1,123 @@
 import express from 'express';
 import Todo from '../models/todo.js';
-import ensureAuthenticated from './authRoutes.js';
 
 const router = express.Router();
 
-// Root route (Todo page)
+// Middleware to ensure user is authenticated
+const ensureAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) return next();
+  res.redirect('/login');
+};
+
+// Get all todos as JSON
+router.get('/all', ensureAuthenticated, async (req, res) => {
+  try {
+    const tasks = await Todo.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.json(tasks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get todos by list
+router.get('/list/:list', ensureAuthenticated, async (req, res) => {
+  try {
+    const tasks = await Todo.find({ 
+      user: req.user._id,
+      list: req.params.list 
+    }).sort({ createdAt: -1 });
+    
+    res.render('todos', { 
+      title: req.params.list,
+      user: req.user,
+      tasks,
+      activeList: req.params.list
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// Get all todos
 router.get('/', ensureAuthenticated, async (req, res) => {
   try {
-    console.log('🔥 req.user:', req.user);
-
-    if (!req.user) {
-      throw new Error('User not loaded in session');
-    }
-
-    const todos = await Todo.find({ user: req.user._id });
-    res.render('index', { 
-      title: 'Your Todos', 
-      todos: todos || []
+    const tasks = await Todo.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.render('todos', { 
+      title: 'My Tasks',
+      user: req.user,
+      tasks,
+      activeList: 'all'
     });
   } catch (err) {
-    console.error('Error fetching todos:', err);
+    console.error(err);
     res.status(500).send('Server error');
   }
 });
 
-// Handle adding a new todo
-router.post('/add', ensureAuthenticated, async (req, res) => {
-  console.log('Authenticated User:', req.user);
-
-  const { title } = req.body;
-
-  if (!title) {
-    return res.status(400).send('Title is required');
-  }
-
+// Create new todo
+router.post('/', ensureAuthenticated, async (req, res) => {
   try {
-    const newTodo = new Todo({
+    const { title, list = 'Personal' } = req.body;
+    const todo = new Todo({
       title,
-      completed: false,
-      user: req.user._id,
+      list,
+      user: req.user._id
     });
-
-    await newTodo.save();
-    res.redirect('/todos');
+    await todo.save();
+    res.json(todo);
   } catch (err) {
-    console.error('Error adding todo:', err);
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Toggle todo completion
+router.put('/:id/toggle', ensureAuthenticated, async (req, res) => {
+  try {
+    const todo = await Todo.findOne({ _id: req.params.id, user: req.user._id });
+    if (!todo) return res.status(404).json({ msg: 'Todo not found' });
+    
+    todo.completed = !todo.completed;
+    await todo.save();
+    res.json(todo);
+  } catch (err) {
+    console.error(err);
     res.status(500).send('Server error');
   }
 });
 
-// Mark a todo as completed
-router.post('/complete/:id', ensureAuthenticated, async (req, res) => {
+// Update todo
+router.put('/:id', ensureAuthenticated, async (req, res) => {
   try {
-    const { id } = req.params;
-    const updatedTodo = await Todo.findByIdAndUpdate(id, { completed: true }, { new: true });
-    console.log('Completed Todo:', updatedTodo);
-    res.redirect('/todos');
+    const { title, notes, list } = req.body;
+    const todo = await Todo.findOne({ _id: req.params.id, user: req.user._id });
+    if (!todo) return res.status(404).json({ msg: 'Todo not found' });
+    
+    if (title) todo.title = title;
+    if (notes) todo.notes = notes;
+    if (list) todo.list = list;
+    
+    await todo.save();
+    res.json(todo);
   } catch (err) {
-    console.error('Error completing todo:', err);
-    res.status(500).send('Server Error');
+    console.error(err);
+    res.status(500).send('Server error');
   }
 });
 
-// Delete a todo
-router.post('/delete/:id', ensureAuthenticated, async (req, res) => {
+// Delete todo
+router.delete('/:id', ensureAuthenticated, async (req, res) => {
   try {
-    const { id } = req.params;
-    const deletedTodo = await Todo.findByIdAndDelete(id);
-    console.log('Deleted Todo:', deletedTodo);
-    res.redirect('/todos');
+    const result = await Todo.deleteOne({ _id: req.params.id, user: req.user._id });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, msg: 'Todo not found' });
+    }
+    res.json({ success: true, msg: 'Todo removed' });
   } catch (err) {
-    console.error('Error deleting todo:', err);
-    res.status(500).send('Server Error');
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 
