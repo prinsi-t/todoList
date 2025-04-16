@@ -116,29 +116,40 @@
   </div>
 
   <!-- Quick Actions -->
-  <div class="flex items-center gap-2 mb-6">
-    <button class="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-      My Tasks
+  <div class="flex items-center gap-2 mb-6 px-3 text-lg">
+    <button class="flex items-center gap-2 w-full py-2 px-4 rounded-lg text-blue-500 transition-colors">
+      <i class="fas fa-bars text-blue-500"></i>
+      <span>My Tasks</span>
     </button>
   </div>
+  
 
   <!-- Lists -->
   <div class="space-y-1">
     <div class="mt-4 mb-2">
       <div class="text-sm text-gray-400 px-4 mb-2">My lists</div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" onclick="filterTasks('personal')">
         <i class="fas fa-user text-gray-400"></i>
-        <span>Personal</span>
-       
+        <span class="flex justify-between w-full">
+          Personal
+          <span class="ml-auto text-sm text-gray-400" id="count-personal"></span>
+        </span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" onclick="filterTasks('work')">
         <i class="fas fa-briefcase text-gray-400"></i>
-        <span>Work</span>
+        <span class="flex justify-between w-full">
+          Work
+          <span class="ml-auto text-sm text-gray-400" id="count-work"></span>
+        </span>
       </div>
-      <div class="sidebar-item">
+      <div class="sidebar-item" onclick="filterTasks('grocery')">
         <i class="fas fa-shopping-cart text-gray-400"></i>
-        <span>Grocery List</span>
+        <span class="flex justify-between w-full">
+          Grocery List
+          <span class="ml-auto text-sm text-gray-400" id="count-grocery"></span>
+        </span>
       </div>
+      
     </div>
   </div>
 </div>
@@ -315,24 +326,41 @@
         <span class="${task.completed ? 'line-through text-gray-500' : ''}">${task.title}</span>
       `;
       
-      taskElement.appendChild(deleteButton);
+      taskElement.appendChild(deleteButton); 
 
       // Add checkbox event listener
       const checkbox = taskElement.querySelector('.checkbox');
       checkbox.addEventListener('click', (e) => {
-        e.stopPropagation();
-        checkbox.classList.toggle('checked');
-        const taskText = taskElement.querySelector('span');
-        taskText.classList.toggle('line-through');
-        taskText.classList.toggle('text-gray-500');
-        
-        fetch(`/todos/${task._id}/toggle`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-      });
+  e.stopPropagation();
+  checkbox.classList.toggle('checked');
+  
+  const taskText = taskElement.querySelector('span');
+  taskText.classList.toggle('line-through');
+  taskText.classList.toggle('text-gray-500');
+
+  const existingIcon = checkbox.querySelector('.fa-check');
+  if (checkbox.classList.contains('checked')) {
+    // Add check icon if not already present
+    if (!existingIcon) {
+      const checkIcon = document.createElement('i');
+      checkIcon.className = 'fas fa-check text-white text-xs';
+      checkbox.appendChild(checkIcon);
+    }
+  } else {
+    // Remove check icon if exists
+    if (existingIcon) {
+      existingIcon.remove();
+    }
+  }
+
+  fetch(`/todos/${task._id}/toggle`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+});
+
 
       return taskElement;
     }
