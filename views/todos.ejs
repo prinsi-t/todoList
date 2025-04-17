@@ -109,8 +109,26 @@
     .blurred-panel {
       filter: blur(1px);
       pointer-events: none;
-      opacity: 0.5;
+      opacity: 0.4;
+      transition: all 0.3s ease;
     }
+    .blurred-panel #task-blur-content {
+      filter: blur(3px);
+      pointer-events: none;
+      opacity: 0.6;
+      transition: all 0.3s ease;
+    }
+    .completed-button {
+      background-color: #22c55e; /* Tailwind's green-500 */
+      cursor: default;
+      pointer-events: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .completed-button:hover {
+      background-color: #16a34a; /* green-600 */
+      transform: scale(1.02);
+    }
+    
     
   </style>
 </head>
@@ -212,61 +230,59 @@
     
 
     <!-- Task Details -->
-    <div id="right-panel" class="...your existing classes...">
-    
-    <div class="flex-1 p-4">
-      <div class="task-details h-full space-y-6">
-        <!-- This part remains unblurred -->
-        <div class="flex items-start justify-between">
-          <div>
-            <h2 class="text-2xl font-bold mb-1">Selected Task</h2>
-            <div class="text-sm text-gray-400">Personal</div>
-          </div>
-          <button 
-            class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded"
-            onclick="markSelectedTaskComplete()"
-          >
-            Mark as Complete
-          </button>
+    <div id="right-panel" class="bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto">
+      <!-- This stays visible -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold mb-1">Selected Task</h2>
+          <div class="text-sm text-gray-400">Personal</div>
         </div>
-      
-        <!-- Blur this content when task is marked complete -->
-        <div id="task-blur-content" class="space-y-6">
-          <!-- Notes -->
+        <button 
+           id="complete-btn"
+           class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
+          onclick="markSelectedTaskComplete()"
+        >
+          Mark as Complete
+        </button>
+      </div>
+    
+      <!-- 🔥 Blurred box-style container -->
+      <div id="task-blur-content" class="transition duration-300">
+        <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
+          <!-- NOTES -->
           <div>
             <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
             <textarea 
               placeholder="Insert your notes here"
-              class="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none"
+              class="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
               rows="3"
             ></textarea>
           </div>
-      
-          <!-- Subtasks -->
+    
+          <!-- SUBTASKS -->
           <div>
             <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
             <div class="space-y-2">
-              <div class="subtask-add">
-                <i class="fas fa-plus text-gray-400"></i>
-                <span class="text-gray-400">Add a new subtask</span>
+              <div class="subtask-add text-gray-400 cursor-pointer flex items-center gap-2">
+                <i class="fas fa-plus"></i>
+                <span>Add a new subtask</span>
               </div>
             </div>
           </div>
-      
-          <!-- Attachments -->
+    
+          <!-- ATTACHMENTS -->
           <div>
             <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-            <div class="border-2 border-dashed border-dark-border rounded-lg p-8 text-center">
-              <p class="text-gray-400">Click to add / drop your files here</p>
+            <div class="border-2 border-dashed border-dark-border rounded-lg p-8 text-center text-gray-400">
+              Click to add / drop your files here
             </div>
           </div>
         </div>
       </div>
-      
-   <!-- Selected Task content here -->
-  </div>
-
+    </div>
+    
   <script>
+
     // Load all tasks
     async function loadAllTasks() {
       try {
@@ -391,12 +407,13 @@
         }
       
         // 🔽 ADD THIS LOGIC HERE 🔽
-        const rightPanel = document.getElementById('right-panel');
+        const blurContent = document.getElementById('task-blur-content');
         if (checkbox.classList.contains('checked')) {
-          rightPanel.classList.add('blurred-panel');
+          blurContent.classList.add('blurred-panel');
         } else {
-          rightPanel.classList.remove('blurred-panel');
+          blurContent.classList.remove('blurred-panel');
         }
+        
       
         // Send update to server
         fetch(`/todos/${task._id}/toggle`, {
@@ -404,6 +421,15 @@
           headers: { 'Content-Type': 'application/json' }
         });
       });
+
+      taskElement.addEventListener('click', () => {
+        window.currentTaskId = task._id;
+      
+        // Optional: Unblur if previously blurred
+        const blurContent = document.getElementById('task-blur-content');
+        blurContent.classList.remove('blurred-panel');
+      });
+      
       
     
       return taskElement;
@@ -464,10 +490,20 @@
     document.addEventListener('click', () => {
       document.querySelectorAll('[id^="move-menu-"]').forEach(m => m.classList.add('hidden'));
     });
-
     function markSelectedTaskComplete() {
-      const selectedTaskId = window.currentTaskId; // or however you're tracking selected task ID
-      
+     
+      const rightPanel = document.getElementById('right-panel');
+      const button = document.getElementById('complete-btn');
+       // Blur the content
+  rightPanel.classList.add('blurred-panel');
+  
+    // Update the button text and style
+    button.textContent = '✓ Completed';
+    button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+    button.classList.add('completed');
+
+  const selectedTaskId = window.currentTaskId;
+    
       if (!selectedTaskId) return;
     
       fetch(`/todos/${selectedTaskId}/toggle`, {
@@ -478,10 +514,12 @@
       })
       .then(() => {
         loadAllTasks();
-        document.getElementById('task-blur-content').classList.add('blurred-panel');
+        const blurContent = document.getElementById('task-blur-content');
+        blurContent.classList.add('blurred-panel');
       })
       .catch(err => console.error('Error marking task complete:', err));
     }
+    
     
     
     
