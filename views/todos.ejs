@@ -263,267 +263,53 @@
           <div>
             <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
             <div class="space-y-2">
-              <div class="subtask-add text-gray-400 cursor-pointer flex items-center gap-2">
+              <div id="subtasksList" class="space-y-2">
+                <!-- Subtasks will be added here -->
+              </div>
+              <div class="subtask-add text-gray-400 cursor-pointer flex items-center gap-2 mt-3">
                 <i class="fas fa-plus"></i>
-                <span>Add a new subtask</span>
+                <input 
+                  type="text" 
+                  id="newSubtaskInput" 
+                  placeholder="Add a new subtask" 
+                  class="bg-transparent border-none focus:outline-none text-gray-300 placeholder-gray-500 w-full"
+                >
               </div>
             </div>
           </div>
     
           <!-- ATTACHMENTS -->
-          <div>
-            <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-            <div class="border-2 border-dashed border-dark-border rounded-lg p-8 text-center text-gray-400">
-              Click to add / drop your files here
+          <div class="w-full">
+            <h3 class="text-sm text-gray-400 mb-3">ATTACHMENTS</h3>
+            <div id="dropZone" class="border-2 border-dashed border-dark-border rounded-xl p-10 text-center text-gray-400 relative w-full max-w-4xl mx-auto hover:border-blue-500 transition-colors duration-300">
+              <input type="file" id="fileInput" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+              <div class="pointer-events-none space-y-4">
+                <i class="fas fa-cloud-upload-alt text-4xl mb-3 text-gray-500"></i>
+                <div class="space-y-2">
+                  <p class="text-xl font-medium">Click to add / drop your files here</p>
+                  <p class="text-sm text-gray-500">(Max 10 images)</p>
+                </div>
+              </div>
+            </div>
+            
+            <div id="imagePreviewContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 mt-6 max-w-4xl mx-auto">
+            </div>
+            
+            <div id="errorMessage" class="text-red-500 mt-3 text-center hidden max-w-4xl mx-auto">
             </div>
           </div>
         </div>
       </div>
     </div>
     
-  <script>
-
-    // Load all tasks
-    async function loadAllTasks() {
-      try {
-        const response = await fetch('/todos/all');
-        const tasks = await response.json();
-        
-        // Clear existing tasks
-        const tasksList = document.getElementById('taskList');
-
-        tasksList.innerHTML = '';
-        
-        // Add all tasks
-        tasks.forEach(task => {
-          const taskElement = createTaskElement(task);
-          tasksList.appendChild(taskElement);
-        });
-
-        // Update task count
-        document.getElementById('allTasksCount').textContent = tasks.length;
-        
-        // Update active state
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-          item.classList.remove('active');
-        });
-        document.querySelector('.sidebar-item').classList.add('active');
-      } catch (error) {
-        console.error('Error loading tasks:', error);
-      }
-    }
-
-    // Delete task
-    function deleteTask(e, taskId) {
-      e.stopPropagation();
-      e.preventDefault();
-      
-      fetch(`/todos/${taskId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data.success) {
-          const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-          if (taskElement) {
-            taskElement.remove();
-            // Update task count
-            const countElement = document.getElementById('allTasksCount');
-            const currentCount = parseInt(countElement.textContent);
-            countElement.textContent = currentCount - 1;
-          }
-        } else {
-          console.error('Failed to delete task:', data.msg);
-        }
-      })
-      .catch(error => {
-        console.error('Error deleting task:', error);
-      });
-    }
-
-    // Create task element function
-    function createTaskElement(task) {
-      const taskElement = document.createElement('div');
-      taskElement.className = 'task-item group flex items-center p-2 bg-dark rounded mb-2'; // Flex container
-      taskElement.dataset.taskId = task._id;
-    
-      taskElement.innerHTML = `
-        <!-- Checkbox -->
-        <div class="checkbox ${task.completed ? 'checked' : ''} w-5 h-5 flex items-center justify-center mr-3 cursor-pointer border border-gray-500 rounded">
-          ${task.completed ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
-        </div>
-    
-        <!-- Task title -->
-        <span class="flex-grow ${task.completed ? 'line-through text-gray-500' : ''}">${task.title}</span>
-    
-        <!-- Action buttons -->
-        <div class="relative hidden group-hover:flex items-center gap-2 ml-3">
-          <!-- Three-dot menu -->
-          <div class="relative">
-            <button class="text-gray-400 hover:text-white" onclick="toggleMoveMenu(event, '${task._id}')">
-              <i class="fas fa-ellipsis-v"></i>
-            </button>
-            <div id="move-menu-${task._id}" class="absolute right-0 mt-2 w-32 bg-dark-hover rounded shadow-lg hidden z-50">
-              <div onclick="moveTask('${task._id}', 'personal')" class="px-4 py-2 hover:bg-dark-border cursor-pointer">Personal</div>
-              <div onclick="moveTask('${task._id}', 'work')" class="px-4 py-2 hover:bg-dark-border cursor-pointer">Work</div>
-              <div onclick="moveTask('${task._id}', 'grocery')" class="px-4 py-2 hover:bg-dark-border cursor-pointer">Grocery</div>
-            </div>
-          </div>
-    
-          <!-- Delete button -->
-          <button class="text-red-400 hover:text-red-600" onclick="deleteTask(event, '${task._id}')">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      `;
-    
-      // Checkbox click listener
-      const checkbox = taskElement.querySelector('.checkbox');
-      checkbox.addEventListener('click', (e) => {
-        e.stopPropagation();
-        checkbox.classList.toggle('checked');
-      
-        const taskText = taskElement.querySelector('span');
-        taskText.classList.toggle('line-through');
-        taskText.classList.toggle('text-gray-500');
-      
-        const existingIcon = checkbox.querySelector('.fa-check');
-        if (checkbox.classList.contains('checked')) {
-          if (!existingIcon) {
-            const checkIcon = document.createElement('i');
-            checkIcon.className = 'fas fa-check text-white text-xs';
-            checkbox.appendChild(checkIcon);
-          }
-        } else {
-          if (existingIcon) existingIcon.remove();
-        }
-      
-        // 🔽 ADD THIS LOGIC HERE 🔽
-        const blurContent = document.getElementById('task-blur-content');
-        if (checkbox.classList.contains('checked')) {
-          blurContent.classList.add('blurred-panel');
-        } else {
-          blurContent.classList.remove('blurred-panel');
-        }
-        
-      
-        // Send update to server
-        fetch(`/todos/${task._id}/toggle`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' }
-        });
-      });
-
-      taskElement.addEventListener('click', () => {
-        window.currentTaskId = task._id;
-      
-        // Optional: Unblur if previously blurred
-        const blurContent = document.getElementById('task-blur-content');
-        blurContent.classList.remove('blurred-panel');
-      });
-      
-      
-    
-      return taskElement;
-    }
-    
-    // Load tasks on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAllTasks();
-    });
-
-    // Add new task
-    document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const input = document.getElementById('newTaskInput');
-      const title = input.value.trim();
-      
-      if (!title) return;
-
-      try {
-        const response = await fetch('/todos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ title })
-        });
-
-        const task = await response.json();
-        
-        // After adding a new task, reload all tasks to ensure consistency
-        loadAllTasks();
-        
-        // Clear input
-        input.value = '';
-      } catch (error) {
-        console.error('Error adding task:', error);
-      }
-    });
-
-    function toggleMoveMenu(event, taskId) {
-      event.stopPropagation();
-      const menu = document.getElementById(`move-menu-${taskId}`);
-      const isVisible = !menu.classList.contains('hidden');
-      
-      // Close all other menus first
-      document.querySelectorAll('[id^="move-menu-"]').forEach(m => {
-        m.classList.add('hidden');
-      });
-    
-      if (!isVisible) {
-        menu.classList.remove('hidden');
-      }
-    }
-
-    
-    
-    // Optional: Hide the menu when clicking anywhere else
-    document.addEventListener('click', () => {
-      document.querySelectorAll('[id^="move-menu-"]').forEach(m => m.classList.add('hidden'));
-    });
-    function markSelectedTaskComplete() {
-     
-      const rightPanel = document.getElementById('right-panel');
-      const button = document.getElementById('complete-btn');
-       // Blur the content
-  rightPanel.classList.add('blurred-panel');
   
-    // Update the button text and style
-    button.textContent = '✓ Completed';
-    button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-    button.classList.add('completed');
 
-  const selectedTaskId = window.currentTaskId;
     
-      if (!selectedTaskId) return;
+        
     
-      fetch(`/todos/${selectedTaskId}/toggle`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(() => {
-        loadAllTasks();
-        const blurContent = document.getElementById('task-blur-content');
-        blurContent.classList.add('blurred-panel');
-      })
-      .catch(err => console.error('Error marking task complete:', err));
-    }
-    
-    
-    
-    
-  </script>
-  
+   
+   
+  <script src="/js/todos.js"></script>
 </body>
-</html> 
+</html>
+
