@@ -145,7 +145,7 @@
 
   <!-- Main Content -->
   <div class="flex-1 flex">
-    <!-- Tasks List -->
+    <!-- Tasks List - keep width fixed -->
     <div class="w-96 border-r border-dark-border p-4">
       <h1 class="text-xl font-bold mb-4">All my tasks</h1>
       
@@ -190,8 +190,8 @@
 
     
 
-    <!-- Task Details -->
-    <div id="right-panel" class="bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto">
+    <!-- Task Details - increased width -->
+    <div id="right-panel" class="bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 min-w-[600px]">
       <!-- This stays visible -->
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -250,8 +250,10 @@
                 <p class="text-xs text-gray-500">(Max 10 images)</p>
               </div>
             </div>
-            <!-- Add height constraint to image container -->
-            <div id="imagePreviewContainer" class="grid grid-cols-3 gap-2 mt-4 overflow-y-auto" style="max-height: 200px;"></div>
+            <!-- Updated image preview container with fixed height -->
+            <div class="mt-4 h-[200px] overflow-hidden">
+              <div id="imagePreviewContainer" class="grid grid-cols-3 gap-2 h-full overflow-y-auto pr-2"></div>
+            </div>
             <div id="errorMessage" class="text-red-500 mt-2 text-sm hidden"></div>
           </div>
         </div>

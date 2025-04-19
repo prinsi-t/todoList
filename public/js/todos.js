@@ -262,7 +262,7 @@ function markSelectedTaskComplete() {
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-imagePreviewContainer.className = 'grid grid-cols-3 gap-3 mt-4 max-h-[200px] overflow-y-auto pr-1';
+imagePreviewContainer.className = 'grid grid-cols-3 gap-3 mt-4 max-h-[250px] overflow-y-auto pr-1';
 
 // Update the scrollbar and container styles
 const style = document.createElement('style');
@@ -347,10 +347,10 @@ function handleFiles(files) {
 // Update the image preview container styling
 function addImagePreview(src, filename) {
   const preview = document.createElement('div');
-  preview.className = 'relative group image-preview-item rounded-lg overflow-hidden aspect-square transition-all duration-200';
+  preview.className = 'relative group h-24 bg-dark-hover rounded-lg overflow-hidden'; // Increased height from h-20 to h-24
   preview.innerHTML = `
     <img src="${src}" alt="${filename}" class="w-full h-full object-cover">
-    <button class="delete-image absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+    <button class="delete-image absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
       <i class="fas fa-times text-xs"></i>
     </button>
   `;
