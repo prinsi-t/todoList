@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Tasks</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Add Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind Configuration -->
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
             dark: {
-              'bg': '#1B1E26',
+              DEFAULT: '#22252D',
+              'secondary': '#1B1E26',
               'sidebar': '#22252D',
               'hover': '#2A2E37',
               'border': '#363B46'
@@ -26,111 +26,72 @@
       },
     }
   </script>
+
+  <!-- Custom styles -->
   <style>
     body {
       background-color: #1B1E26;
       color: #fff;
     }
-    .sidebar-item {
-      padding: 8px 16px;
-      border-radius: 6px;
-      margin: 2px 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+
+    /* Scrollbar customization */
+    #imagePreviewContainer {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
-    .sidebar-item:hover {
-      background-color: #2A2E37;
+
+    #imagePreviewContainer::-webkit-scrollbar {
+      display: none;
     }
-    .sidebar-item.active {
-      background-color: #2A2E37;
-    }
-    .task-item {
-      padding: 8px 16px;
-      border-radius: 6px;
-      margin: 2px 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: relative;
-    }
-    .task-item:hover {
-      background-color: #2A2E37;
-    }
-    .task-item:hover .delete-btn {
-      opacity: 1;
-    }
-    .delete-btn {
-      position: absolute;
-      right: 16px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      color: #6B7280;
-    }
-    .delete-btn:hover {
-      color: #EF4444;
-    }
-    .checkbox {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #363B46;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .checkbox.checked {
-      background-color: #3B82F6;
-      border-color: #3B82F6;
-    }
-    .task-details {
-      padding: 32px;
-      background-color: #22252D;
-      border-radius: 16px;
-      min-height: 600px; 
-      min-width: 500px;
-      font-size: 1.1rem;
-    }
-    
-    .subtask-add {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .subtask-add:hover {
-      background-color: #2A2E37;
-    }
+
     .blurred-panel {
+      opacity: 0.5;
       filter: blur(1px);
       pointer-events: none;
-      opacity: 0.4;
-      transition: all 0.3s ease;
     }
-    .blurred-panel #task-blur-content {
-      filter: blur(3px);
-      pointer-events: none;
-      opacity: 0.6;
-      transition: all 0.3s ease;
+
+    .sidebar-item {
+      @apply px-4 py-2 rounded-lg mb-1 cursor-pointer flex items-center gap-3 transition-colors duration-200;
     }
-    .completed-button {
-      background-color: #22c55e; /* Tailwind's green-500 */
-      cursor: default;
-      pointer-events: none;
-      transition: background-color 0.3s ease, transform 0.2s ease;
+
+    .sidebar-item:hover {
+      @apply bg-dark-hover;
     }
-    .completed-button:hover {
-      background-color: #16a34a; /* green-600 */
-      transform: scale(1.02);
+
+    .sidebar-item.active {
+      @apply bg-dark-hover;
     }
-    
-    
+
+    .task-item {
+      @apply px-4 py-2 rounded-lg mb-1 cursor-pointer flex items-center gap-3 transition-colors duration-200 relative;
+    }
+
+    .task-item:hover {
+      @apply bg-dark-hover;
+    }
+
+    .checkbox {
+      @apply w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200;
+    }
+
+    .checkbox.checked {
+      @apply bg-blue-500 border-blue-500;
+    }
+
+    .image-preview-item {
+      @apply bg-dark border border-dark-border rounded-lg overflow-hidden;
+    }
+
+    .image-preview-item:hover {
+      @apply border-blue-500;
+    }
   </style>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="h-screen flex">
  <!-- Sidebar -->
@@ -281,22 +242,17 @@
           <!-- ATTACHMENTS -->
           <div class="w-full">
             <h3 class="text-sm text-gray-400 mb-3">ATTACHMENTS</h3>
-            <div id="dropZone" class="border-2 border-dashed border-dark-border rounded-xl p-10 text-center text-gray-400 relative w-full max-w-4xl mx-auto hover:border-blue-500 transition-colors duration-300">
+            <div id="dropZone" class="border-2 border-dashed border-dark-border rounded-xl p-6 text-center text-gray-400 relative w-full hover:border-blue-500 transition-colors duration-300">
               <input type="file" id="fileInput" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-              <div class="pointer-events-none space-y-4">
-                <i class="fas fa-cloud-upload-alt text-4xl mb-3 text-gray-500"></i>
-                <div class="space-y-2">
-                  <p class="text-xl font-medium">Click to add / drop your files here</p>
-                  <p class="text-sm text-gray-500">(Max 10 images)</p>
-                </div>
+              <div class="pointer-events-none space-y-2">
+                <i class="fas fa-cloud-upload-alt text-2xl text-gray-500"></i>
+                <p class="text-sm">Click to add / drop your files here</p>
+                <p class="text-xs text-gray-500">(Max 10 images)</p>
               </div>
             </div>
-            
-            <div id="imagePreviewContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 mt-6 max-w-4xl mx-auto">
-            </div>
-            
-            <div id="errorMessage" class="text-red-500 mt-3 text-center hidden max-w-4xl mx-auto">
-            </div>
+            <!-- Add height constraint to image container -->
+            <div id="imagePreviewContainer" class="grid grid-cols-3 gap-2 mt-4 overflow-y-auto" style="max-height: 200px;"></div>
+            <div id="errorMessage" class="text-red-500 mt-2 text-sm hidden"></div>
           </div>
         </div>
       </div>
@@ -309,6 +265,31 @@
     
    
    
+  <!-- Move these styles to the end of the file, just before the closing </body> tag -->
+  <style>
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(55, 65, 81, 0.2);
+      border-radius: 20px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(55, 65, 81, 0.3);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(55, 65, 81, 0.2) transparent;
+    }
+  </style>
+
   <script src="/js/todos.js"></script>
 </body>
 </html>
