@@ -262,6 +262,40 @@ function markSelectedTaskComplete() {
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+imagePreviewContainer.className = 'grid grid-cols-3 gap-3 mt-4 max-h-[200px] overflow-y-auto pr-1';
+
+// Update the scrollbar and container styles
+const style = document.createElement('style');
+style.textContent = `
+  #imagePreviewContainer {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(55, 65, 81, 0.3) transparent;
+  }
+
+  #imagePreviewContainer::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  #imagePreviewContainer::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #imagePreviewContainer::-webkit-scrollbar-thumb {
+    background: rgba(55, 65, 81, 0.3);
+    border-radius: 20px;
+  }
+
+  .image-preview-item {
+    background: #22252D;
+    border: 1px solid #363B46;
+  }
+
+  .image-preview-item:hover {
+    border-color: #3B82F6;
+  }
+`;
+document.head.appendChild(style);
+
 const errorMessage = document.getElementById('errorMessage');
 
 let uploadedFiles = [];
@@ -310,13 +344,14 @@ function handleFiles(files) {
   });
 }
 
+// Update the image preview container styling
 function addImagePreview(src, filename) {
   const preview = document.createElement('div');
-  preview.className = 'relative group';
+  preview.className = 'relative group image-preview-item rounded-lg overflow-hidden aspect-square transition-all duration-200';
   preview.innerHTML = `
-    <img src="${src}" alt="${filename}" class="w-full h-24 object-cover rounded">
-    <button class="delete-image absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-      <i class="fas fa-times"></i>
+    <img src="${src}" alt="${filename}" class="w-full h-full object-cover">
+    <button class="delete-image absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+      <i class="fas fa-times text-xs"></i>
     </button>
   `;
 
