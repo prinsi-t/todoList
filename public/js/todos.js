@@ -338,11 +338,10 @@ function showError(message) {
 
 // Subtask handling
 const subtasksList = document.getElementById('subtasksList');
-const newSubtaskInput = document.getElementById('newSubtaskInput');
 
-// Update the subtask-add section in your HTML via JavaScript
+// Update the subtask-add section
 const subtaskAddContainer = document.querySelector('.subtask-add');
-subtaskAddContainer.className = 'subtask-add text-gray-400 flex items-center gap-2 mt-3';
+subtaskAddContainer.className = 'subtask-add text-gray-400 flex items-center gap-2 mt-3 group';
 subtaskAddContainer.innerHTML = `
   <i class="fas fa-plus mt-2"></i>
   <div class="flex-grow flex items-center gap-2">
@@ -354,53 +353,20 @@ subtaskAddContainer.innerHTML = `
     >
     <button 
       id="addSubtaskButton"
-      class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors duration-200 opacity-0 group-focus-within:opacity-100"
+      class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors duration-200"
     >
       Add
     </button>
   </div>
 `;
 
-// Add event listeners
-const addSubtaskButton = document.getElementById('addSubtaskButton');
-addSubtaskButton.addEventListener('click', () => {
-  handleSubtaskInput();
-});
-
-// Update the existing event listeners
-newSubtaskInput.addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    handleSubtaskInput();
-  }
-});
-
-newSubtaskInput.addEventListener('input', function() {
-  const hasValue = this.value.trim().length > 0;
-  addSubtaskButton.style.opacity = hasValue ? '1' : '0';
-});
-
-// Add click handler for the plus icon
-document.querySelector('.subtask-add').addEventListener('click', () => {
-  newSubtaskInput.focus();
-});
-
-// Handle both Enter key and blur events
-newSubtaskInput.addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') {
-    handleSubtaskInput();
-  }
-});
-
-newSubtaskInput.addEventListener('blur', function() {
-  handleSubtaskInput();
-});
-
 function handleSubtaskInput() {
+  const newSubtaskInput = document.getElementById('newSubtaskInput');
   const subtaskText = newSubtaskInput.value.trim();
+  
   if (subtaskText) {
     addSubtask(subtaskText);
-    newSubtaskInput.value = ''; // Clear input
+    newSubtaskInput.value = '';
   }
 }
 
@@ -421,15 +387,25 @@ function addSubtask(text) {
   subtasksList.appendChild(subtaskElement);
 }
 
+// Add event listeners
+document.getElementById('addSubtaskButton').addEventListener('click', (e) => {
+  e.preventDefault();
+  handleSubtaskInput();
+});
+
+document.getElementById('newSubtaskInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleSubtaskInput();
+  }
+});
+
 function deleteSubtask(button) {
   const subtaskElement = button.closest('div');
   if (subtaskElement) {
     subtaskElement.remove();
   }
 }
-
-// Apply improved input styling
-newSubtaskInput.className = 'bg-transparent border-none focus:outline-none text-gray-300 placeholder-gray-500 w-full text-sm py-1.5 transition-colors duration-200 hover:text-gray-200 focus:text-gray-200';
 
 
 
