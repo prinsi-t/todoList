@@ -104,41 +104,34 @@
     <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
   </div>
 
-  <!-- Quick Actions -->
-  <div class="flex items-center gap-2 mb-6 px-3 text-lg">
-    <button class="flex items-center gap-2 w-full py-2 px-4 rounded-lg text-blue-500 transition-colors">
-      <i class="fas fa-bars text-blue-500"></i>
-      <span>My Tasks</span>
-    </button>
-  </div>
   
 
-  <!-- Lists -->
-  <div class="space-y-1">
-    <div class="mt-4 mb-2">
-      <div class="text-sm text-gray-400 px-4 mb-2">My lists</div>
-      <div class="sidebar-item" onclick="filterTasks('personal')">
-        <i class="fas fa-user text-gray-400"></i>
-        <span class="flex justify-between w-full">
-          Personal
-          <span class="ml-auto text-sm text-gray-400" id="count-personal"></span>
-        </span>
+    <!-- My Lists -->
+    <div class="ml-5 mt-2">
+      <div class="text-lg text-gray-300 px-4 mb-4 ">My Lists</div>
+      <div class="space-y-2"> <!-- Added space between items -->
+        <div class="sidebar-item" onclick="filterTasks('personal')">
+          <i class="fas fa-user text-purple-500"></i>
+          <span class="flex justify-between w-full">
+            Personal
+            <span class="ml-auto text-sm text-gray-500" id="count-personal"></span>
+          </span>
+        </div>
+        <div class="sidebar-item" onclick="filterTasks('work')">
+          <i class="fas fa-briefcase text-orange-500"></i>
+          <span class="flex justify-between w-full">
+            Work
+            <span class="ml-auto text-sm text-gray-500" id="count-work"></span>
+          </span>
+        </div>
+        <div class="sidebar-item" onclick="filterTasks('grocery')">
+          <i class="fas fa-shopping-cart text-cyan-500"></i>
+          <span class="flex justify-between w-full">
+            Grocery List
+            <span class="ml-auto text-sm text-gray-500" id="count-grocery"></span>
+          </span>
+        </div>
       </div>
-      <div class="sidebar-item" onclick="filterTasks('work')">
-        <i class="fas fa-briefcase text-gray-400"></i>
-        <span class="flex justify-between w-full">
-          Work
-          <span class="ml-auto text-sm text-gray-400" id="count-work"></span>
-        </span>
-      </div>
-      <div class="sidebar-item" onclick="filterTasks('grocery')">
-        <i class="fas fa-shopping-cart text-gray-400"></i>
-        <span class="flex justify-between w-full">
-          Grocery List
-          <span class="ml-auto text-sm text-gray-400" id="count-grocery"></span>
-        </span>
-      </div>
-      
     </div>
   </div>
 </div>
