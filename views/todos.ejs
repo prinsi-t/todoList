@@ -27,65 +27,7 @@
     }
   </script>
 
-  <!-- Custom styles -->
-  <style>
-    body {
-      background-color: #1B1E26;
-      color: #fff;
-    }
-
-    /* Scrollbar customization */
-    #imagePreviewContainer {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    #imagePreviewContainer::-webkit-scrollbar {
-      display: none;
-    }
-
-    .blurred-panel {
-      opacity: 0.5;
-      filter: blur(1px);
-      pointer-events: none;
-    }
-
-    .sidebar-item {
-      @apply px-4 py-2 rounded-lg mb-1 cursor-pointer flex items-center gap-3 transition-colors duration-200;
-    }
-
-    .sidebar-item:hover {
-      @apply bg-dark-hover;
-    }
-
-    .sidebar-item.active {
-      @apply bg-dark-hover;
-    }
-
-    .task-item {
-      @apply px-4 py-2 rounded-lg mb-1 cursor-pointer flex items-center gap-3 transition-colors duration-200 relative;
-    }
-
-    .task-item:hover {
-      @apply bg-dark-hover;
-    }
-
-    .checkbox {
-      @apply w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200;
-    }
-
-    .checkbox.checked {
-      @apply bg-blue-500 border-blue-500;
-    }
-
-    .image-preview-item {
-      @apply bg-dark border border-dark-border rounded-lg overflow-hidden;
-    }
-
-    .image-preview-item:hover {
-      @apply border-blue-500;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/style.css">
 
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
