@@ -46,34 +46,25 @@
     <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
   </div>
 
-  
-
-    <!-- My Lists -->
-    <div class="ml-5 mt-2">
-      <div class="text-lg text-gray-300 px-4 mb-4 ">My Lists</div>
-      <div class="space-y-2"> <!-- Added space between items -->
-        <div class="sidebar-item" onclick="filterTasks('personal')">
-          <i class="fas fa-user text-purple-500"></i>
-          <span class="flex justify-between w-full">
-            Personal
-            <span class="ml-auto text-sm text-gray-500" id="count-personal"></span>
-          </span>
-        </div>
-        <div class="sidebar-item" onclick="filterTasks('work')">
-          <i class="fas fa-briefcase text-orange-500"></i>
-          <span class="flex justify-between w-full">
-            Work
-            <span class="ml-auto text-sm text-gray-500" id="count-work"></span>
-          </span>
-        </div>
-        <div class="sidebar-item" onclick="filterTasks('grocery')">
-          <i class="fas fa-shopping-cart text-cyan-500"></i>
-          <span class="flex justify-between w-full">
-            Grocery List
-            <span class="ml-auto text-sm text-gray-500" id="count-grocery"></span>
-          </span>
-        </div>
-      </div>
+  <!-- My Lists -->
+  <div class="ml-5 mt-2">
+    <div class="text-lg text-gray-300 px-4 mb-4 ">My Lists</div>
+    <div class="sidebar-items flex flex-col gap-2 mb-6">
+      <a href="#" onclick="filterTasks('Personal')" class="sidebar-item" data-list="Personal">
+        <i class="fas fa-user text-purple-400"></i>
+        <span class="flex-grow">Personal</span>
+        <span id="count-personal" class="text-sm text-gray-500">0</span>
+      </a>
+      <a href="#" onclick="filterTasks('Work')" class="sidebar-item" data-list="Work">
+        <i class="fas fa-briefcase text-orange-400"></i>
+        <span class="flex-grow">Work</span>
+        <span id="count-work" class="text-sm text-gray-500">0</span>
+      </a>
+      <a href="#" onclick="filterTasks('Grocery List')" class="sidebar-item" data-list="Grocery List">
+        <i class="fas fa-shopping-cart text-cyan-400"></i>
+        <span class="flex-grow">Grocery List</span>
+        <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
+      </a>
     </div>
   </div>
 </div>
@@ -82,7 +73,7 @@
   <div class="flex-1 flex">
     <!-- Tasks List - keep width fixed -->
     <div class="w-96 border-r border-dark-border p-4">
-      <h1 class="text-xl font-bold mb-4">All my tasks</h1>
+      <h1 class="text-xl font-bold mb-4">Personal tasks</h1>
       
       <!-- Add Task Button -->
       <div class="mb-4">
@@ -93,6 +84,13 @@
             id="newTaskInput"
             placeholder="Add a task..."
             class="flex-1 bg-dark-hover text-white px-4 py-2 rounded-lg border border-dark-border focus:outline-none focus:border-blue-500"
+            required
+          >
+          <input 
+            type="hidden" 
+            name="category" 
+            id="taskCategory" 
+            value="Personal"
           >
           <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
             Add
@@ -100,50 +98,66 @@
         </form>
       </div>
 
-      
-     <!-- Tasks -->
-<div id="taskList" class="space-y-1">
-
+      <!-- Tasks -->
+      <div id="taskList" class="space-y-1">
         <% tasks.forEach(task => { %>
-        <div class="task-item" data-task-id="<%= task._id %>">
-          <div class="checkbox <%= task.completed ? 'checked' : '' %>">
+        <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
+          <div class="checkbox <%= task.completed ? 'checked' : '' %> w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200">
             <% if (task.completed) { %>
               <i class="fas fa-check text-white text-xs"></i>
             <% } %>
-            
           </div>
-          <span class="<%= task.completed ? 'line-through text-gray-500' : '' %>"><%= task.title %></span>
-          <button class="delete-btn" onclick="deleteTask(event, '<%= task._id %>')">
-            <i class="fas fa-times"></i>
-          </button>
-          
+          <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm"><%= task.title %></span>
+          <div class="task-item-actions flex items-center gap-1.5">
+            <div class="relative">
+              <button class="menu-btn p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <i class="fas fa-ellipsis-v text-white/70 hover:text-white"></i>
+              </button>
+              <div class="task-menu hidden absolute right-0 top-[120%] w-36 bg-dark-hover rounded-lg shadow-xl py-1">
+                <a href="#" class="menu-item" data-list="Personal">
+                  <i class="fas fa-user text-purple-400"></i>
+                  <span class="text-gray-300 hover:text-white">Personal</span>
+                </a>
+                <a href="#" class="menu-item" data-list="Work">
+                  <i class="fas fa-briefcase text-orange-400"></i>
+                  <span class="text-gray-300 hover:text-white">Work</span>
+                </a>
+                <a href="#" class="menu-item" data-list="Grocery List">
+                  <i class="fas fa-shopping-cart text-cyan-400"></i>
+                  <span class="text-gray-300 hover:text-white">Grocery List</span>
+                </a>
+              </div>
+            </div>
+            <button class="delete-btn p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <i class="fas fa-times text-red-400/90 hover:text-red-400"></i>
+            </button>
+          </div>
         </div>
         <% }) %>
-        
       </div>
     </div>
 
-    
-
     <!-- Task Details - increased width -->
     <div id="right-panel" class="bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 min-w-[600px]">
-      <!-- This stays visible -->
       <div class="flex items-center justify-between mb-6">
         <div>
           <h2 class="text-2xl font-bold mb-1">Selected Task</h2>
           <div class="text-sm text-gray-400">Personal</div>
         </div>
         <button 
-           id="complete-btn"
-           class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
+          id="complete-btn"
+          class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
           onclick="markSelectedTaskComplete()"
         >
           Mark as Complete
         </button>
       </div>
     
-      <!-- 🔥 Blurred box-style container -->
-      <div id="task-blur-content" class="transition duration-300">
+      <!-- Content container -->
+      <!-- <div id="task-blur-content" class="task-blur-content transition-all duration-300"> -->
+        <div id="task-blur-content" class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
+
+
         <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
           <!-- NOTES -->
           <div>
@@ -156,53 +170,47 @@
           </div>
     
           <!-- SUBTASKS -->
-          <div>
+          <div class="subtasks-section">
             <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
-            <div class="space-y-2">
-              <div id="subtasksList" class="space-y-2">
-                <!-- Subtasks will be added here -->
-              </div>
-              <div class="subtask-add text-gray-400 cursor-pointer flex items-center gap-2 mt-3">
-                <i class="fas fa-plus"></i>
-                <input 
-                  type="text" 
-                  id="newSubtaskInput" 
-                  placeholder="Add a new subtask" 
-                  class="bg-transparent border-none focus:outline-none text-gray-300 placeholder-gray-500 w-full"
-                >
-              </div>
+            <div class="flex items-center gap-2 mb-4">
+              <input 
+                type="text" 
+                id="subtaskInput"
+                class="bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
+                placeholder="Add a new subtask..."
+              >
+              <button 
+                id="addSubtaskBtn"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
+              >
+                Add
+              </button>
+            </div>
+            <div id="subtasksList" class="space-y-1">
+              <!-- Subtasks will be rendered here -->
             </div>
           </div>
-    
+          
+
           <!-- ATTACHMENTS -->
-          <div class="w-full">
-            <h3 class="text-sm text-gray-400 mb-3">ATTACHMENTS</h3>
-            <div id="dropZone" class="border-2 border-dashed border-dark-border rounded-xl p-6 text-center text-gray-400 relative w-full hover:border-blue-500 transition-colors duration-300">
-              <input type="file" id="fileInput" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-              <div class="pointer-events-none space-y-2">
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-500"></i>
-                <p class="text-sm">Click to add / drop your files here</p>
-                <p class="text-xs text-gray-500">(Max 10 images)</p>
-              </div>
+          <div class="mt-6">
+            <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
+            <div 
+              id="dropZone"
+              class="border-2 border-dashed border-dark-border rounded-lg p-6 text-center cursor-pointer hover:border-gray-600 transition-colors duration-200"
+            >
+              <i class="fas fa-cloud-upload-alt text-2xl text-gray-600 mb-2"></i>
+              <p class="text-sm text-gray-500">Click to add / drop your files here</p>
+              <p class="text-xs text-gray-600 mt-1">(Max 10 images)</p>
             </div>
-            <!-- Updated image preview container with fixed height -->
-            <div class="mt-4 h-[200px] overflow-hidden">
-              <div id="imagePreviewContainer" class="grid grid-cols-3 gap-2 h-full overflow-y-auto pr-2"></div>
-            </div>
-            <div id="errorMessage" class="text-red-500 mt-2 text-sm hidden"></div>
+            <div id="imagePreviewContainer" class="grid grid-cols-3 gap-3 mt-4"></div>
           </div>
         </div>
       </div>
     </div>
-    
-  
-
-    
-        
-    
+  </div>
    
-   
-  <!-- Move these styles to the end of the file, just before the closing </body> tag -->
+  <!-- Styles section -->
   <style>
     ::-webkit-scrollbar {
       width: 4px;
@@ -225,9 +233,55 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(55, 65, 81, 0.2) transparent;
     }
+
+    /* Blurred panel style - only applied when task is completed */
+    .blurred-panel {
+      opacity: 0.6;
+      filter: blur(1px);
+      pointer-events: none;
+    }
+    
+    .blurred-panel-header {
+      position: relative;
+      z-index: 5;
+    }
+    
+    /* Styles for task items */
+    .task-item {
+      position: relative;
+    }
+    
+    .checkbox.checked {
+      background-color: #3B82F6;
+      border-color: #3B82F6;
+    }
+    
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      transition: all 0.2s;
+    }
+    
+    .menu-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    
+    .sidebar-item:hover, .sidebar-item.active {
+      background-color: #2A2E37;
+    }
   </style>
 
   <script src="/js/todos.js"></script>
 </body>
 </html>
-

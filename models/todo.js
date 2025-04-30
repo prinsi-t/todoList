@@ -1,40 +1,43 @@
 import mongoose from 'mongoose';
 
-const todoSchema = new mongoose.Schema({
+const subtaskSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    trim: true,
   },
   completed: {
     type: Boolean,
     default: false,
   },
-  notes: {
-    type: String,
-    default: '',
-  },
-  list: {
-    type: String,
-    default: 'Personal',
-    enum: ['Personal', 'Work', 'Grocery List'],
-  },
-  subtasks: [{
-    title: String,
+});
+
+const todoSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    list: {
+      type: String,
+      required: true,
+    },
     completed: {
       type: Boolean,
       default: false,
     },
-  }],
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+    notes: {
+      type: String,
+      default: '',
+    },
+    subtasks: [subtaskSchema],
   },
-}, {
-  timestamps: true,
-});
+  { timestamps: true }
+);
 
-const Todo = mongoose.models.Todo || mongoose.model('Todo', todoSchema);
-
+const Todo = mongoose.model('Todo', todoSchema);
 export default Todo;
