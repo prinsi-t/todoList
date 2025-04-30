@@ -7,40 +7,69 @@ body {
   #imagePreviewContainer {
     -ms-overflow-style: none;
     scrollbar-width: none;
+    @apply grid grid-cols-3 gap-3 mt-4 max-h-[250px] overflow-y-auto pr-1;
+  }
+
+  #imagePreviewContainer::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  #imagePreviewContainer::-webkit-scrollbar-track {
+    @apply bg-dark rounded-full;
+  }
+
+  #imagePreviewContainer::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded-full;
   }
 
   #imagePreviewContainer::-webkit-scrollbar {
     display: none;
   }
 
-  .blurred-panel {
-    opacity: 0.5;
-    filter: blur(1px);
-    pointer-events: none;
+  
+
+  .sidebar-items {
+    @apply mt-6;
   }
 
   .sidebar-item {
-    @apply px-4 py-2 rounded-lg mb-1 cursor-pointer flex items-center gap-3 transition-colors duration-200;
-  }
-
-  .sidebar-item:hover {
-    @apply bg-dark-hover;
+    @apply px-4 py-2.5 rounded-lg cursor-pointer flex items-center gap-3 transition-colors duration-200 text-gray-300 hover:text-white hover:bg-dark-hover;
   }
 
   .sidebar-item.active {
-    @apply bg-dark-hover;
+    @apply bg-dark-hover text-white;
+  }
+
+  .sidebar-item i {
+    @apply w-5 text-center;
+  }
+
+  .sidebar-item:hover span:last-child {
+    @apply text-gray-400;
   }
 
   .task-item {
-    @apply px-4 py-2 rounded-lg mb-1 cursor-pointer flex items-center gap-3 transition-colors duration-200 relative;
+    @apply px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 relative;
   }
 
   .task-item:hover {
     @apply bg-dark-hover;
   }
 
+  .task-item span {
+    @apply transition-all duration-200;
+  }
+
+  .task-item span.line-through {
+    @apply text-gray-500;
+  }
+
+  .task-item-actions {
+    @apply flex items-center gap-1.5;
+  }
+
   .checkbox {
-    @apply w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200;
+    @apply w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200 hover:border-blue-500 cursor-pointer;
   }
 
   .checkbox.checked {
@@ -54,3 +83,66 @@ body {
   .image-preview-item:hover {
     @apply border-blue-500;
   }
+
+  .menu-btn {
+    @apply opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-gray-700/30 transition-all duration-200;
+  }
+
+  .menu-btn i {
+    @apply text-white/70 hover:text-white transition-colors duration-200;
+  }
+
+  .delete-btn {
+    @apply opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-red-400/10 transition-all duration-200;
+  }
+
+  .delete-btn i {
+    @apply text-red-400/90 hover:text-red-400 transition-colors duration-200;
+  }
+
+  .task-menu {
+    @apply border border-dark-border bg-dark shadow-lg rounded-lg py-1 z-10;
+  }
+
+  .task-menu .menu-item {
+    @apply w-full flex items-center px-4 py-2 hover:bg-gray-700/30 transition-all duration-200;
+  }
+
+  .task-menu .menu-item i {
+    @apply w-5;
+  }
+
+  .task-menu .menu-item span {
+    @apply ml-2 text-sm;
+  }
+
+  .menu-item {
+    @apply flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 cursor-pointer transition-colors duration-200;
+  }
+
+  .menu-item:hover {
+    @apply text-white bg-gray-700/30;
+  }
+
+  .relative {
+    @apply inline-block;
+  }
+
+  .dropzone-highlight {
+    @apply border-blue-500;
+  }
+
+  .task-blur-content {
+    transition: filter 0.3s ease;
+  }
+  
+  .task-blur-content.blurred {
+    filter: blur(5px) brightness(0.8) !important;
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    transition: all 0.4s ease;
+  }
+  
+  
+  
+  
