@@ -12,6 +12,8 @@ import authRoutes from './routes/authRoutes.js';
 import User from './models/user.js';
 import './config/passport.js';
 
+
+
 // Define __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,7 +28,9 @@ mongoose
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// Middleware: Body parser
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
+  // Middleware: Body parser
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -45,6 +49,7 @@ app.use(passport.session());
 
 // Middleware: Static files
 app.use(express.static(path.resolve(__dirname, 'public')));
+
 
 // View Engine: EJS with layouts
 app.use(expressLayouts);

@@ -210,78 +210,15 @@
     </div>
   </div>
    
-  <!-- Styles section -->
-  <style>
-    ::-webkit-scrollbar {
-      width: 4px;
-    }
+  
 
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(55, 65, 81, 0.2);
-      border-radius: 20px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(55, 65, 81, 0.3);
-    }
-
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(55, 65, 81, 0.2) transparent;
-    }
-
-    /* Blurred panel style - only applied when task is completed */
-    .blurred-panel {
-      opacity: 0.6;
-      filter: blur(1px);
-      pointer-events: none;
-    }
-    
-    .blurred-panel-header {
-      position: relative;
-      z-index: 5;
-    }
-    
-    /* Styles for task items */
-    .task-item {
-      position: relative;
-    }
-    
-    .checkbox.checked {
-      background-color: #3B82F6;
-      border-color: #3B82F6;
-    }
-    
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      transition: all 0.2s;
-    }
-    
-    .menu-item:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-    
-    .sidebar-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      transition: all 0.2s;
-    }
-    
-    .sidebar-item:hover, .sidebar-item.active {
-      background-color: #2A2E37;
-    }
-  </style>
-
-  <script src="/js/todos.js"></script>
+  
+  <script src="/js/taskManager.js"></script>
+  <script src="/js/subtaskManager.js"></script>
+  <script src="/js/uiUpdater.js"></script>
+  <script src="/js/serverCommunicator.js"></script>
+  <script src="/js/fileManager.js"></script>
+  <script src="/js/init.js"></script>
+  
 </body>
 </html>
