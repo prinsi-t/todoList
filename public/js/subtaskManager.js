@@ -1,5 +1,14 @@
 function updateSubtaskCompletionStatus(subtaskId, completed) {
-  if (!window.currentTaskId) return;
+  if (!window.currentTaskId) {
+    // Update local storage for subtasks
+    const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
+    const subtaskIndex = localSubtasks.findIndex(s => s.id === subtaskId);
+    if (subtaskIndex !== -1) {
+      localSubtasks[subtaskIndex].completed = completed;
+      localStorage.setItem('localSubtasks', JSON.stringify(localSubtasks));
+    }
+    return;
+  }
   
   const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
   if (taskIndex === -1 || !localTaskCache[taskIndex].subtasks) return;
