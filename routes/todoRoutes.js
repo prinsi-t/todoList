@@ -1,5 +1,7 @@
 import express from 'express';
 import Todo from '../models/todo.js';
+import multer from 'multer';
+import path from 'path';
 
 const router = express.Router();
 
@@ -10,7 +12,7 @@ const ensureAuthenticated = (req, res, next) => {
 
 router.get('/all', ensureAuthenticated, async (req, res) => {
   try {
-    const tasks = await Todo.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const tasks = await Todo.find({ user: req.user._id }).sort({ createdAt: -1 }).lean();
     res.json(tasks);
   } catch (err) {
     console.error(err);
@@ -185,6 +187,42 @@ router.put('/todos/:id/subtasks/:index/complete', ensureAuthenticated, async (re
     res.status(500).json({ error: 'Failed to update subtask' });
   }
 });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(process.cwd(), 'uploads')); // ✅ Saves in project root
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// Route to handle file uploads
+router.post('/todos/:id/attachments', ensureAuthenticated, upload.single('file'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const todo = await Todo.findOne({ _id: id, user: req.user._id });
+
+    if (!todo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    // Add the uploaded file to the attachments array
+    const filePath = `/uploads/${req.file.filename}`;
+    todo.attachments.push({ path: filePath, name: req.file.originalname });
+    await todo.save();
+
+    res.status(200).json(todo); // Return the updated todo
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
+
+
 
 
 export default router;
