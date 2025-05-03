@@ -42,46 +42,61 @@ function markSelectedTaskComplete() {
 }
 
 function updateAllListCounts(tasks) {
-  // Define all the lists we want to track
-  const lists = ['Personal', 'Work', 'Grocery List'];
-  
-  // Update count for each list
-  lists.forEach(list => {
-    const count = tasks.filter(todo => todo.list === list).length;
-    const countElement = document.getElementById(`count-${list.toLowerCase().replace(' ', '-')}`);
-    if (countElement) {
-      countElement.textContent = count;
+  try {
+    // Count tasks by list
+    const listCounts = {};
+    tasks.forEach(task => {
+      const list = task.list || 'Personal';
+      listCounts[list] = (listCounts[list] || 0) + 1;
+    });
+    
+    // Update sidebar counts
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      const listName = item.textContent.trim().split(' ')[0];
+      const countElement = item.querySelector('.count');
+      if (countElement && listName) {
+        countElement.textContent = listCounts[listName] || 0;
+      }
+    });
+    
+    // Update all tasks count
+    const allTasksCount = document.getElementById('allTasksCount');
+    if (allTasksCount) {
+      allTasksCount.textContent = tasks.length;
     }
-  });
-  
-  // Also update the "All" count if it exists
-  const allTasksCount = document.getElementById('allTasksCount');
-  if (allTasksCount) {
-    allTasksCount.textContent = tasks.length;
+    
+    console.log('Updated all list counts:', listCounts);
+  } catch (error) {
+    console.error('Error updating all list counts:', error);
   }
 }
 
-function updateTaskCount(list, delta = 0, override = null) {
-  const countElement = document.getElementById(`count-${list.toLowerCase().replace(' ', '-')}`);
-  if (countElement) {
-    const currentCount = override !== null ? override : parseInt(countElement.textContent || '0') + delta;
-    countElement.textContent = Math.max(0, currentCount);
-  }
-  
-  // Also update the total count if we're changing counts
-  if (delta !== 0 || override !== null) {
-    const allTasksCount = document.getElementById('allTasksCount');
-    if (allTasksCount) {
-      if (override !== null) {
-        // Recalculate the total from all lists
-        const totalTasks = localTaskCache.length;
-        allTasksCount.textContent = totalTasks;
-      } else {
-        // Just adjust by delta
-        const currentTotal = parseInt(allTasksCount.textContent || '0') + delta;
-        allTasksCount.textContent = Math.max(0, currentTotal);
+
+function updateTaskCount(listName, change) {
+  try {
+    // Find the count element for this list
+    const listItem = Array.from(document.querySelectorAll('.sidebar-item'))
+      .find(item => item.textContent.includes(listName));
+    
+    if (listItem) {
+      const countElement = listItem.querySelector('.count');
+      if (countElement) {
+        const currentCount = parseInt(countElement.textContent, 10) || 0;
+        const newCount = Math.max(0, currentCount + change);
+        countElement.textContent = newCount;
+        console.log(`Updated count for ${listName}: ${currentCount} → ${newCount}`);
       }
     }
+    
+    // Also update the all tasks count
+    const allTasksCount = document.getElementById('allTasksCount');
+    if (allTasksCount) {
+      const currentCount = parseInt(allTasksCount.textContent, 10) || 0;
+      const newCount = Math.max(0, currentCount + change);
+      allTasksCount.textContent = newCount;
+    }
+  } catch (error) {
+    console.error(`Error updating task count for ${listName}:`, error);
   }
 }
 
