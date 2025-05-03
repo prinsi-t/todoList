@@ -4,9 +4,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let localTaskCache = [];
 
+function loadLocalTaskCache() {
+  try {
+    const savedCache = localStorage.getItem('taskCache');
+    if (savedCache) {
+      localTaskCache = JSON.parse(savedCache);
+      console.log(`Loaded ${localTaskCache.length} tasks from localStorage`);
+    } else {
+      localTaskCache = [];
+      console.log('No tasks found in localStorage');
+    }
+  } catch (error) {
+    console.error('Error loading tasks from localStorage:', error);
+    localTaskCache = [];
+  }
+}
+
+
 
 
 function initApp() {
+  loadLocalTaskCache();
   loadTasksFromServer();
   setEventListeners();
   filterTasks('Personal'); 
@@ -15,7 +33,12 @@ function initApp() {
 }
 
 function saveTaskCacheToLocalStorage() {
-  localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+  try {
+    localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+    console.log(`Task cache saved to localStorage: ${localTaskCache.length} tasks`);
+  } catch (error) {
+    console.error('Error saving task cache to localStorage:', error);
+  }
 }
 
 function setEventListeners() {
