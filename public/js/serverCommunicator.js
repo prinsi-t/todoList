@@ -62,7 +62,6 @@ async function handleAddTask(e) {
   }
 }
 
-
 function moveTaskToList(taskId, newList) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex !== -1) {

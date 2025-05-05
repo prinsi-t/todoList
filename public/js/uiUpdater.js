@@ -43,14 +43,12 @@ function markSelectedTaskComplete() {
 
 function updateAllListCounts(tasks) {
   try {
-    // Count tasks by list
     const listCounts = {};
     tasks.forEach(task => {
       const list = task.list || 'Personal';
       listCounts[list] = (listCounts[list] || 0) + 1;
     });
     
-    // Update sidebar counts
     document.querySelectorAll('.sidebar-item').forEach(item => {
       const listName = item.textContent.trim().split(' ')[0];
       const countElement = item.querySelector('.count');
@@ -59,7 +57,6 @@ function updateAllListCounts(tasks) {
       }
     });
     
-    // Update all tasks count
     const allTasksCount = document.getElementById('allTasksCount');
     if (allTasksCount) {
       allTasksCount.textContent = tasks.length;
@@ -71,10 +68,8 @@ function updateAllListCounts(tasks) {
   }
 }
 
-
 function updateTaskCount(listName, change) {
   try {
-    // Find the count element for this list
     const listItem = Array.from(document.querySelectorAll('.sidebar-item'))
       .find(item => item.textContent.includes(listName));
     
@@ -88,7 +83,6 @@ function updateTaskCount(listName, change) {
       }
     }
     
-    // Also update the all tasks count
     const allTasksCount = document.getElementById('allTasksCount');
     if (allTasksCount) {
       const currentCount = parseInt(allTasksCount.textContent, 10) || 0;
@@ -139,6 +133,15 @@ function filterTasks(list) {
     const taskElement = createTaskElement(task);
     taskList.appendChild(taskElement);
   });
+  console.log('Filtering tasks for list:', listName);
+
+  // Highlight the active list in the sidebar
+  highlightActiveList(listName);
+
+  // Filter tasks and render them
+  const filteredTasks = localTaskCache.filter(task => task.list === listName);
+  renderTasks(filteredTasks);
+
 
   updateTaskCount(list, 0, listTasks.length);
 } 

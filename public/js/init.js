@@ -20,9 +20,6 @@ function loadLocalTaskCache() {
   }
 }
 
-
-
-
 function initApp() {
   loadLocalTaskCache();
   loadTasksFromServer();

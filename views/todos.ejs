@@ -1,12 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-
-  <!-- Add Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Tailwind Configuration -->
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -30,13 +25,8 @@
   </script>
 
   <link rel="stylesheet" href="/css/style.css">
-
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  
-  <!-- Inter Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 
 </head>
 <body class="h-screen flex">
@@ -52,7 +42,17 @@
 
   <!-- My Lists -->
   <div class="ml-5 mt-2">
-    <div class="text-lg text-gray-300 px-4 mb-4 ">My Lists</div>
+    <div class="flex items-center justify-between text-lg text-gray-300 px-4 mb-4">
+      <span>My Lists</span>
+      <button 
+        id="addListButton" 
+        class="text-gray-400 hover:text-white transition-colors duration-200"
+        onclick="openAddListModal()"
+      >
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+    
     <div class="sidebar-items flex flex-col gap-2 mb-6">
       <a href="#" onclick="filterTasks('Personal')" class="sidebar-item" data-list="Personal">
         <i class="fas fa-user text-purple-400"></i>
@@ -71,6 +71,7 @@
       </a>
     </div>
   </div>
+  
 </div>
 
   <!-- Main Content -->
@@ -112,38 +113,10 @@
             <% } %>
           </div>
           <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm"><%= task.title %></span>
-          <div class="task-item-actions flex items-center gap-1.5">
-            <div class="relative">
-              <button class="menu-btn p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
-                <i class="fas fa-ellipsis-v text-white/70 hover:text-white"></i>
-              </button>
-              <div class="task-menu hidden absolute right-0 top-[120%] w-36 bg-dark-hover rounded-lg shadow-xl py-1">
-                <a href="#" class="menu-item" data-list="Personal">
-                  <i class="fas fa-user text-purple-400"></i>
-                  <span class="text-gray-300 hover:text-white">Personal</span>
-                </a>
-                <a href="#" class="menu-item" data-list="Work">
-                  <i class="fas fa-briefcase text-orange-400"></i>
-                  <span class="text-gray-300 hover:text-white">Work</span>
-                </a>
-                <a href="#" class="menu-item" data-list="Grocery List">
-                  <i class="fas fa-shopping-cart text-cyan-400"></i>
-                  <span class="text-gray-300 hover:text-white">Grocery List</span>
-                </a>
-              </div>
-            </div>
-            <button class="delete-btn p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
-              <i class="fas fa-times text-red-400/90 hover:text-red-400"></i>
-            </button>
-          </div>
-        </div>
         <% }) %>
       </div>
     </div>
 
-    
-
-    <!-- Task Details - increased width -->
     <div id="right-panel" class="bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 min-w-[600px]">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -158,12 +131,8 @@
           Mark as Complete
         </button>
       </div>
-    
-      <!-- Content container -->
-      <!-- <div id="task-blur-content" class="task-blur-content transition-all duration-300"> -->
+
         <div id="task-blur-content" class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-
-
         <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
           <!-- NOTES -->
           <div>
@@ -193,11 +162,9 @@
               </button>
             </div>
             <div id="subtasksList" class="space-y-1">
-              <!-- Subtasks will be rendered here -->
             </div>
           </div>
           
-
           <!-- ATTACHMENTS -->
           <div class="mt-6">
             <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
@@ -215,10 +182,8 @@
       </div>
     </div>
   </div>
-   
-  
 
-  
+  <script src="/js/sidebarManager.js"></script>
   <script src="/js/taskManager.js"></script>
   <script src="/js/subtaskManager.js"></script>
   <script src="/js/uiUpdater.js"></script>
@@ -227,5 +192,101 @@
   <script src="/js/init.js"></script>
   <script src="/js/notesManager.js"></script>
   <script src="/js/taskListManager.js"></script>
+  <script src="/js/listManager.js"></script>
+  <script src="/js/sidebarFix.js"></script>
+  <script src="/js/taskFormFix.js"></script>
+
+  <script>
+    // Verify localStorage works correctly
+    function testLocalStorage() {
+      try {
+        localStorage.setItem('test', 'test');
+        const value = localStorage.getItem('test');
+        if (value !== 'test') {
+          console.error('localStorage not working correctly');
+          alert('Warning: Your browser storage may not be working correctly');
+        }
+        localStorage.removeItem('test');
+        console.log('localStorage test passed');
+      } catch (error) {
+        console.error('localStorage test failed:', error);
+        alert('Warning: Your browser has issues with local storage');
+      }
+    }
+    
+    // Run the test when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      testLocalStorage();
+    });
+    </script>
+    
+    
+    
+    <!-- Alternatively, you can include the fixes directly in your HTML -->
+    <script>
+    // Alternative: Include the fixes directly
+    
+    // Debug function to check active list
+    function logActiveList() {
+      console.log("CURRENT ACTIVE LIST:", localStorage.getItem('activeList'));
+    }
+    
+    // Make sure form uses active list
+    document.addEventListener('DOMContentLoaded', function() {
+      // Create a direct hook for the add task form
+      const form = document.getElementById('addTaskForm');
+      if (form) {
+        form.onsubmit = function(e) {
+          e.preventDefault();
+          
+          const input = document.getElementById('newTaskInput');
+          if (!input || !input.value.trim()) return;
+          
+          const task = input.value.trim();
+          const list = localStorage.getItem('activeList') || 'Personal';
+          
+          console.log(`Adding task "${task}" to list "${list}"`);
+          
+          // Create and add task
+          const newTask = {
+            _id: 'local_' + Date.now(),
+            title: task,
+            list: list,
+            completed: false,
+            subtasks: [],
+            attachments: []
+          };
+          
+          // Add to cache and update UI
+          if (typeof localTaskCache === 'undefined') {
+            window.localTaskCache = [];
+          }
+          
+          localTaskCache.push(newTask);
+          localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+          
+          // Refresh the view
+          window.filterTasks(list);
+          
+          // Clear input
+          input.value = '';
+        };
+      }
+      
+      // Hook up sidebar links
+      setTimeout(function() {
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        sidebarItems.forEach(function(item) {
+          if (item.dataset.list) {
+            item.addEventListener('click', function() {
+              const list = this.dataset.list;
+              localStorage.setItem('activeList', list);
+              console.log('Active list set to:', list);
+            });
+          }
+        });
+      }, 200);
+    });
+    </script>
 </body>
 </html>
