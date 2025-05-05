@@ -1,4 +1,3 @@
-// Set up IndexedDB
 let db;
 
 function openDatabase() {
@@ -66,7 +65,6 @@ function deleteAttachmentFromDB(fileName) {
   };
 }
 
-// Initialize IndexedDB on page load
 document.addEventListener('DOMContentLoaded', () => {
   openDatabase();
 });

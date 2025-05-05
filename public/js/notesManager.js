@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Load notes on page load
   const savedNotes = localStorage.getItem('globalNotes');
   if (savedNotes) {
     notesTextarea.value = savedNotes;
@@ -14,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('No notes found in localStorage');
   }
 
-  // Save notes on change
   notesTextarea.addEventListener('input', () => {
     localStorage.setItem('globalNotes', notesTextarea.value);
     console.log('Saved notes to localStorage:', notesTextarea.value);

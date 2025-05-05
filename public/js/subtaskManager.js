@@ -1,6 +1,5 @@
 function updateSubtaskCompletionStatus(subtaskId, completed) {
   if (!window.currentTaskId) {
-    // Update local storage for subtasks
     const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
     const subtaskIndex = localSubtasks.findIndex(s => s.id === subtaskId);
     if (subtaskIndex !== -1) {
@@ -18,11 +17,9 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
   );
   
   if (subtaskIndex !== -1) {
-    // 🔥 1. Update local immediately
     localTaskCache[taskIndex].subtasks[subtaskIndex].completed = completed;
     saveTaskCacheToLocalStorage();
     
-    // 🔥 2. Update UI immediately
     const subtaskElement = document.querySelector(`[data-subtask-id="${subtaskId}"]`);
     if (subtaskElement) {
       const checkbox = subtaskElement.querySelector('.checkbox');
@@ -44,7 +41,23 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
       subtaskElement.dataset.completed = completed ? 'true' : 'false';
     }
     
-    // 🔥 3. Then send to server
+    const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
+    let taskSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
+    const localSubtaskIndex = taskSubtasks.findIndex(s => s.id === subtaskId);
+    
+    if (localSubtaskIndex !== -1) {
+      taskSubtasks[localSubtaskIndex].completed = completed;
+    } else {
+      const subtask = localTaskCache[taskIndex].subtasks[subtaskIndex];
+      taskSubtasks.push({
+        id: subtaskId,
+        text: subtask.text,
+        completed: completed
+      });
+    }
+    
+    localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
+    
     fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}/complete`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -53,12 +66,13 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
       .then(res => res.ok ? res.json() : null)
       .then(updatedTask => {
         if (updatedTask) {
-          // 🔥 4. BUT: keep our local completed status intact
           if (updatedTask.subtasks && updatedTask.subtasks.length > subtaskIndex) {
             updatedTask.subtasks[subtaskIndex].completed = completed;
           }
           localTaskCache[taskIndex] = updatedTask;
           saveTaskCacheToLocalStorage();
+          
+          updateTaskSubtasksInLocalStorage(updatedTask);
         }
       })
       .catch(err => {
@@ -68,7 +82,6 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
 }
 
 function createSubtaskElement(text, subtaskId, isCompleted = false) {
-    // 🛠 Fetch the actual completion state from localTaskCache
     let completed = isCompleted;
   
     if (window.currentTaskId) {
@@ -104,15 +117,11 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
   const textSpan = subtaskItem.querySelector('span');
 
   checkbox.addEventListener('click', () => {
-    // Get the current state from the dataset
     const currentState = subtaskItem.dataset.completed === 'true';
-    // Toggle to the opposite state
     const newState = !currentState;
     
-    // Update the DOM element's dataset
     subtaskItem.dataset.completed = newState ? 'true' : 'false';
     
-    // Update the visual appearance
     if (newState) {
       checkbox.classList.add('bg-blue-500', 'border-blue-500');
       checkIcon.style.display = '';
@@ -125,50 +134,20 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
       textSpan.classList.add('text-gray-200');
     }
     
-    // Update the data in the cache and server
     updateSubtaskCompletionStatus(subtaskId, newState);
   });
 
   subtaskItem.querySelector('.delete-subtask').addEventListener('click', () => {
-    deleteSubtask(subtaskItem.dataset.subtaskId);
+    deleteSubtask(subtaskId);
     subtaskItem.remove();
+
+    const subtasksList = document.getElementById('subtasksList');
+    if (subtasksList && subtasksList.children.length === 0) {
+      showNoSubtasksMessage();
+    }
   });
 
   return subtaskItem;
-}
-
-function deleteSubtask(subtaskId) {
-  if (window.currentTaskId) {
-    const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
-    if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks) {
-     
-      const subtaskIndex = localTaskCache[taskIndex].subtasks.findIndex(s => 
-        s.id === subtaskId || s.id === subtaskId.replace('index_', '') || `index_${s.id}` === subtaskId
-      );
-      
-      if (subtaskIndex !== -1) {
-        localTaskCache[taskIndex].subtasks.splice(subtaskIndex, 1);
-        saveTaskCacheToLocalStorage();
-        
-        fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}`, { method: 'DELETE' })
-          .then(res => {
-            if (res.ok) return res.json();
-            return null;
-          })
-          .then(updatedTodo => {
-            if (updatedTodo && taskIndex !== -1) {
-              localTaskCache[taskIndex] = updatedTodo;
-              saveTaskCacheToLocalStorage();
-            }
-          })
-          .catch(error => console.error('Error deleting subtask:', error));
-      }
-    }
-  } else {
-    const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
-    const updatedSubtasks = localSubtasks.filter(s => s.id !== subtaskId);
-    localStorage.setItem('localSubtasks', JSON.stringify(updatedSubtasks));
-  }
 }
 
 function addSubtask() {
@@ -186,8 +165,8 @@ function addSubtask() {
 
   const subtasksList = document.getElementById('subtasksList');
   if (!subtasksList) return;
+  hideNoSubtasksMessage();
   
-  // Create the subtask element with the correct completion status (false for new subtasks)
   const subtaskElement = createSubtaskElement(subtaskText, subtaskId, false);
   subtasksList.appendChild(subtaskElement);
 
@@ -204,7 +183,11 @@ function addSubtask() {
       localTaskCache[taskIndex].subtasks.push(newSubtask);
       saveTaskCacheToLocalStorage();
       
-      // Store a copy of the current subtasks array before making the server request
+      const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
+      let taskSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
+      taskSubtasks.push(newSubtask);
+      localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
+      
       const currentSubtasks = JSON.parse(JSON.stringify(localTaskCache[taskIndex].subtasks));
       
       fetch(`/todos/${window.currentTaskId}/subtasks`, {
@@ -215,43 +198,34 @@ function addSubtask() {
         .then(res => res.ok ? res.json() : null)
         .then(updatedTodo => {
           if (updatedTodo) {
-            // Create a map of current subtasks by text and id for quick lookup
             const subtaskMap = {};
             currentSubtasks.forEach(subtask => {
               if (subtask.text) subtaskMap[subtask.text] = subtask;
               if (subtask.id) subtaskMap[subtask.id] = subtask;
             });
             
-            // Make a copy of the updated todo
             const updatedTaskCopy = {...updatedTodo};
             
-            // Ensure subtasks array exists
             if (!updatedTaskCopy.subtasks) {
               updatedTaskCopy.subtasks = [];
             }
             
-            // Apply our local completion status to the server response
             updatedTaskCopy.subtasks.forEach(serverSubtask => {
-              // Try to match by text first
               let localSubtask = serverSubtask.text ? subtaskMap[serverSubtask.text] : null;
               
-              // If not found by text, try by id
               if (!localSubtask && serverSubtask.id) {
                 localSubtask = subtaskMap[serverSubtask.id];
               }
               
               if (localSubtask) {
-                // Preserve the completion status
                 serverSubtask.completed = localSubtask.completed;
                 
-                // Preserve the ID if needed
                 if (!serverSubtask.id && localSubtask.id) {
                   serverSubtask.id = localSubtask.id;
                 }
               }
             });
             
-            // Make sure our new subtask is included
             const hasNewSubtask = updatedTaskCopy.subtasks.some(
               s => s.text === newSubtask.text || s.id === newSubtask.id
             );
@@ -260,9 +234,10 @@ function addSubtask() {
               updatedTaskCopy.subtasks.push(newSubtask);
             }
             
-            // Update local cache with our modified version
             localTaskCache[taskIndex] = updatedTaskCopy;
             saveTaskCacheToLocalStorage();
+            
+            updateTaskSubtasksInLocalStorage(updatedTaskCopy);
           }
         })
         .catch(error => console.error('Error adding subtask:', error));
@@ -274,12 +249,102 @@ function addSubtask() {
   }
 }
 
+function updateTaskSubtasksInLocalStorage(task) {
+  if (!task || !task._id || !task.subtasks) return;
+  
+  const taskSubtasksKey = `subtasks_${task._id}`;
+  const subtasksToStore = task.subtasks.map(subtask => {
+    return {
+      id: subtask.id || `index_${subtask._id || Date.now()}`,
+      text: subtask.text,
+      completed: subtask.completed || false
+    };
+  });
+  
+  localStorage.setItem(taskSubtasksKey, JSON.stringify(subtasksToStore));
+}
+
+function loadSubtasksForCurrentTask() {
+  const subtasksList = document.getElementById('subtasksList');
+  if (!subtasksList || !window.currentTaskId) return;
+  
+  subtasksList.innerHTML = '';
+  
+  const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
+  const taskSpecificSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
+  
+  if (taskSpecificSubtasks.length > 0) {
+    hideNoSubtasksMessage();
+    taskSpecificSubtasks.forEach(subtask => {
+      if (subtask && subtask.text) {
+        const subtaskElement = createSubtaskElement(
+          subtask.text,
+          subtask.id,
+          subtask.completed || false
+        );
+        subtasksList.appendChild(subtaskElement);
+      }
+    });
+  } else {
+    const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
+    if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks && localTaskCache[taskIndex].subtasks.length > 0) {
+      hideNoSubtasksMessage();
+      updateTaskSubtasksInLocalStorage(localTaskCache[taskIndex]);
+      
+      localTaskCache[taskIndex].subtasks.forEach(subtask => {
+        if (subtask && subtask.text) {
+          const subtaskElement = createSubtaskElement(
+            subtask.text,
+            subtask.id || `index_${subtask._id || Date.now()}`,
+            subtask.completed || false
+          );
+          subtasksList.appendChild(subtaskElement);
+        }
+      });
+    } else {
+      showNoSubtasksMessage();
+      fetchTaskFromServer(window.currentTaskId);
+    }
+  }
+}
+
+function fetchTaskFromServer(taskId) {
+  if (!taskId) return;
+  
+  fetch(`/todos/${taskId}`)
+    .then(res => res.ok ? res.json() : null)
+    .then(task => {
+      if (task) {
+        const existingIndex = localTaskCache.findIndex(t => t._id === task._id);
+        if (existingIndex !== -1) {
+          localTaskCache[existingIndex] = task;
+        } else {
+          localTaskCache.push(task);
+        }
+        saveTaskCacheToLocalStorage();
+        
+        updateTaskSubtasksInLocalStorage(task);
+        
+        loadSubtasksForCurrentTask();
+      }
+    })
+    .catch(error => console.error('Error fetching task:', error));
+}
+
 function loadLocalSubtasks() {
   const subtasksList = document.getElementById('subtasksList');
   if (!subtasksList) return;
   
+  if (window.currentTaskId) {
+    loadSubtasksForCurrentTask();
+    return;
+  }
+  
+  subtasksList.innerHTML = '';
+  
   const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
   if (localSubtasks.length > 0) {
+    hideNoSubtasksMessage();
     localSubtasks.forEach(subtask => {
       const subtaskElement = createSubtaskElement(
         subtask.text, 
@@ -288,5 +353,114 @@ function loadLocalSubtasks() {
       );
       subtasksList.appendChild(subtaskElement);
     });
+  } else {
+    showNoSubtasksMessage();
   }
-} 
+}
+
+function showNoSubtasksMessage() {
+  const subtasksList = document.getElementById('subtasksList');
+  if (!subtasksList) return;
+  
+  const existingMessage = subtasksList.querySelector('.no-subtasks-message');
+  if (existingMessage) return; 
+
+  const noSubtasksMessage = document.createElement('div');
+  noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
+  noSubtasksMessage.textContent = 'No subtasks added yet.';
+  subtasksList.appendChild(noSubtasksMessage);
+}
+
+function hideNoSubtasksMessage() {
+  const noSubtasksMessages = document.querySelectorAll('.no-subtasks-message');
+  noSubtasksMessages.forEach(msg => {
+    msg.remove();
+  });
+}
+
+function deleteSubtask(subtaskId) {
+  if (window.currentTaskId) {
+    const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
+    if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks) {
+     
+      const subtaskIndex = localTaskCache[taskIndex].subtasks.findIndex(s => 
+        s.id === subtaskId || s.id === subtaskId.replace('index_', '') || `index_${s.id}` === subtaskId
+      );
+      
+      if (subtaskIndex !== -1) {
+        localTaskCache[taskIndex].subtasks.splice(subtaskIndex, 1);
+        saveTaskCacheToLocalStorage();
+        
+        const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
+        let taskSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
+        taskSubtasks = taskSubtasks.filter(s => 
+          s.id !== subtaskId && s.id !== subtaskId.replace('index_', '') && `index_${s.id}` !== subtaskId
+        );
+        localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
+        
+        if (localTaskCache[taskIndex].subtasks.length === 0 || taskSubtasks.length === 0) {
+          showNoSubtasksMessage();
+        }
+        
+        fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}`, { method: 'DELETE' })
+          .then(res => {
+            if (res.ok) return res.json();
+            return null;
+          })
+          .then(updatedTodo => {
+            if (updatedTodo && taskIndex !== -1) {
+              localTaskCache[taskIndex] = updatedTodo;
+              saveTaskCacheToLocalStorage();
+              
+              updateTaskSubtasksInLocalStorage(updatedTodo);
+              
+              if (!updatedTodo.subtasks || updatedTodo.subtasks.length === 0) {
+                showNoSubtasksMessage();
+              }
+            }
+          })
+          .catch(error => console.error('Error deleting subtask:', error));
+      }
+    }
+  } else {
+    const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
+    const updatedSubtasks = localSubtasks.filter(s => s.id !== subtaskId);
+    localStorage.setItem('localSubtasks', JSON.stringify(updatedSubtasks));
+    
+    if (updatedSubtasks.length === 0) {
+      showNoSubtasksMessage();
+    }
+  }
+}
+
+document.addEventListener('taskSelected', function(e) {
+  if (e.detail && e.detail.taskId) {
+    window.currentTaskId = e.detail.taskId;
+    loadSubtasksForCurrentTask();
+  }
+});
+
+function initSubtaskManager() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadLocalSubtasks);
+  } else {
+    loadLocalSubtasks();
+  }
+
+  const subtaskForm = document.getElementById('subtaskForm');
+  if (subtaskForm) {
+    subtaskForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      addSubtask();
+    });
+  }
+  
+  const addSubtaskBtn = document.getElementById('addSubtaskBtn');
+  if (addSubtaskBtn) {
+    addSubtaskBtn.addEventListener('click', function() {
+      addSubtask();
+    });
+  }
+}
+
+initSubtaskManager();
