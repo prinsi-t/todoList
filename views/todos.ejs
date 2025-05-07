@@ -30,55 +30,50 @@
 
 </head>
 <body class="h-screen flex">
- <!-- Sidebar -->
-<div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
-  <!-- User Profile -->
-  <div class="flex items-center gap-3 mb-6 px-2">
-    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-      <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
+  <!-- Sidebar -->
+  <div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
+    <!-- User Profile -->
+    <div class="flex items-center gap-3 mb-6 px-2">
+      <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+        <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
+      </div>
+      <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
     </div>
-    <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
-  </div>
 
-  <!-- My Lists -->
-  <div class="ml-5 mt-2">
-    <div class="flex items-center justify-between text-lg text-gray-300 px-4 mb-4">
-      <span>My Lists</span>
-      <button 
-        id="addListButton" 
-        class="text-gray-400 hover:text-white transition-colors duration-200"
-        onclick="openAddListModal()"
-      >
-        <i class="fas fa-plus"></i>
-      </button>
-    </div>
-    
-    <div class="sidebar-items flex flex-col gap-2 mb-6">
-      <a href="#" onclick="filterTasks('Personal')" class="sidebar-item" data-list="Personal">
-        <i class="fas fa-user text-purple-400"></i>
-        <span class="flex-grow">Personal</span>
-        <span id="count-personal" class="text-sm text-gray-500">0</span>
-      </a>
-      <a href="#" onclick="filterTasks('Work')" class="sidebar-item" data-list="Work">
-        <i class="fas fa-briefcase text-orange-400"></i>
-        <span class="flex-grow">Work</span>
-        <span id="count-work" class="text-sm text-gray-500">0</span>
-      </a>
-      <a href="#" onclick="filterTasks('Grocery List')" class="sidebar-item" data-list="Grocery List">
-        <i class="fas fa-shopping-cart text-cyan-400"></i>
-        <span class="flex-grow">Grocery List</span>
-        <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
-      </a>
+    <!-- My Lists -->
+    <div class="ml-5 mt-2">
+      <div class="flex items-center justify-between text-lg text-gray-300 px-4 mb-4">
+        <span>My Lists</span>
+      </div>
+      
+      <div class="sidebar-items flex flex-col gap-2 mb-6">
+        <a href="#" onclick="filterTasks('Personal')" class="sidebar-item" data-list="Personal">
+          <i class="fas fa-user text-purple-400"></i>
+          <span class="flex-grow">Personal</span>
+          <span id="count-personal" class="text-sm text-gray-500">0</span>
+        </a>
+        <a href="#" onclick="filterTasks('Work')" class="sidebar-item" data-list="Work">
+          <i class="fas fa-briefcase text-orange-400"></i>
+          <span class="flex-grow">Work</span>
+          <span id="count-work" class="text-sm text-gray-500">0</span>
+        </a>
+        <a href="#" onclick="filterTasks('Grocery List')" class="sidebar-item" data-list="Grocery List">
+          <i class="fas fa-shopping-cart text-cyan-400"></i>
+          <span class="flex-grow">Grocery List</span>
+          <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
+        </a>
+      </div>
     </div>
   </div>
-  
-</div>
 
   <!-- Main Content -->
   <div class="flex-1 flex">
     <!-- Tasks List - keep width fixed -->
     <div class="w-96 border-r border-dark-border p-4">
-      <h1 class="text-xl font-bold mb-4">Personal tasks</h1>
+      <div class="flex items-center mb-4">
+        <h1 class="text-xl font-bold flex-grow">Personal tasks</h1>
+        
+      </div>
       
       <!-- Add Task Button -->
       <div class="mb-4">
@@ -106,17 +101,19 @@
       <!-- Tasks -->
       <div id="taskList" class="space-y-1">
         <% tasks.forEach(task => { %>
-        <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
-          <div class="checkbox <%= task.completed ? 'checked' : '' %> w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200">
-            <% if (task.completed) { %>
-              <i class="fas fa-check text-white text-xs"></i>
-            <% } %>
+          <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
+            <div class="checkbox <%= task.completed ? 'checked' : '' %> w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200">
+              <% if (task.completed) { %>
+                <i class="fas fa-check text-white text-xs"></i>
+              <% } %>
+            </div>
+            <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm"><%= task.title %></span>
           </div>
-          <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm"><%= task.title %></span>
         <% }) %>
       </div>
     </div>
 
+    <!-- Right Panel -->
     <div id="right-panel" class="bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 min-w-[600px]">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -132,7 +129,7 @@
         </button>
       </div>
 
-        <div id="task-blur-content" class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
+      <div id="task-blur-content" class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
         <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
           <!-- NOTES -->
           <div>
@@ -191,102 +188,6 @@
   <script src="/js/fileManager.js"></script>
   <script src="/js/init.js"></script>
   <script src="/js/notesManager.js"></script>
-  <script src="/js/taskListManager.js"></script>
-  <script src="/js/listManager.js"></script>
-  <script src="/js/sidebarFix.js"></script>
-  <script src="/js/taskFormFix.js"></script>
-
-  <script>
-    // Verify localStorage works correctly
-    function testLocalStorage() {
-      try {
-        localStorage.setItem('test', 'test');
-        const value = localStorage.getItem('test');
-        if (value !== 'test') {
-          console.error('localStorage not working correctly');
-          alert('Warning: Your browser storage may not be working correctly');
-        }
-        localStorage.removeItem('test');
-        console.log('localStorage test passed');
-      } catch (error) {
-        console.error('localStorage test failed:', error);
-        alert('Warning: Your browser has issues with local storage');
-      }
-    }
-    
-    // Run the test when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      testLocalStorage();
-    });
-    </script>
-    
-    
-    
-    <!-- Alternatively, you can include the fixes directly in your HTML -->
-    <script>
-    // Alternative: Include the fixes directly
-    
-    // Debug function to check active list
-    function logActiveList() {
-      console.log("CURRENT ACTIVE LIST:", localStorage.getItem('activeList'));
-    }
-    
-    // Make sure form uses active list
-    document.addEventListener('DOMContentLoaded', function() {
-      // Create a direct hook for the add task form
-      const form = document.getElementById('addTaskForm');
-      if (form) {
-        form.onsubmit = function(e) {
-          e.preventDefault();
-          
-          const input = document.getElementById('newTaskInput');
-          if (!input || !input.value.trim()) return;
-          
-          const task = input.value.trim();
-          const list = localStorage.getItem('activeList') || 'Personal';
-          
-          console.log(`Adding task "${task}" to list "${list}"`);
-          
-          // Create and add task
-          const newTask = {
-            _id: 'local_' + Date.now(),
-            title: task,
-            list: list,
-            completed: false,
-            subtasks: [],
-            attachments: []
-          };
-          
-          // Add to cache and update UI
-          if (typeof localTaskCache === 'undefined') {
-            window.localTaskCache = [];
-          }
-          
-          localTaskCache.push(newTask);
-          localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-          
-          // Refresh the view
-          window.filterTasks(list);
-          
-          // Clear input
-          input.value = '';
-        };
-      }
-      
-      // Hook up sidebar links
-      setTimeout(function() {
-        const sidebarItems = document.querySelectorAll('.sidebar-item');
-        sidebarItems.forEach(function(item) {
-          if (item.dataset.list) {
-            item.addEventListener('click', function() {
-              const list = this.dataset.list;
-              localStorage.setItem('activeList', list);
-              console.log('Active list set to:', list);
-            });
-          }
-        });
-      }, 200);
-    });
-    </script>
+  
 </body>
 </html>
