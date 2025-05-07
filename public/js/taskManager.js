@@ -251,8 +251,9 @@ function createTaskElement(task) {
   menuBtn.className = 'menu-btn p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200';
   menuBtn.innerHTML = '<i class="fas fa-ellipsis-v text-white/70 hover:text-white"></i>';
   
+  // Fix for the dropdown positioning - add z-index and absolute positioning
   const dropdown = document.createElement('div');
-  dropdown.className = 'task-menu hidden absolute right-0 top-[120%] w-36 bg-dark-hover rounded-lg shadow-xl py-1';
+  dropdown.className = 'task-menu hidden absolute right-0 top-full mt-1 w-36 bg-dark-hover rounded-lg shadow-xl py-1 z-50';
   
   const lists = ['Personal', 'Work', 'Grocery List'];
   const icons = {
@@ -281,6 +282,7 @@ function createTaskElement(task) {
     
     listItem.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation(); // Prevent event bubbling
       moveTaskToList(task._id, list);
       dropdown.classList.add('hidden');
     });
@@ -303,8 +305,17 @@ function createTaskElement(task) {
     }
   });
   
+  // Improved menu toggle behavior with proper click handling
   menuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    
+    // Close all other open dropdowns first
+    document.querySelectorAll('.task-menu').forEach(menu => {
+      if (menu !== dropdown) {
+        menu.classList.add('hidden');
+      }
+    });
+    
     dropdown.classList.toggle('hidden');
   });
   
@@ -313,6 +324,7 @@ function createTaskElement(task) {
     deleteTask(task._id);
   });
   
+  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     if (!menuContainer.contains(e.target)) {
       dropdown.classList.add('hidden');
@@ -330,6 +342,8 @@ function createTaskElement(task) {
   
   return taskElement;
 }
+
+
 
 function toggleTaskCompletion(taskId) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
@@ -396,6 +410,7 @@ function toggleTaskCompletion(taskId) {
     console.error('Error making network request:', error);
   }
 }
+
 function moveTaskToList(taskId, newList) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) {
@@ -418,9 +433,27 @@ function moveTaskToList(taskId, newList) {
   // Get the current active list
   const currentList = localStorage.getItem('activeList') || 'Personal';
   
-  // Update task counts for both lists immediately
-  window.updateTaskCount(oldList, -1); // Decrease count in old list
-  window.updateTaskCount(newList, 1);  // Increase count in new list
+  // Format list names properly for DOM selectors
+  const oldListSelector = oldList.toLowerCase().replace(/\s+/g, '-');
+  const newListSelector = newList.toLowerCase().replace(/\s+/g, '-');
+  
+  // Update task counts for both lists correctly
+  const oldCountElement = document.getElementById(`count-${oldListSelector}`);
+  const newCountElement = document.getElementById(`count-${newListSelector}`);
+  
+  if (oldCountElement) {
+    let oldCount = parseInt(oldCountElement.textContent) || 0;
+    oldCount = Math.max(0, oldCount - 1);
+    oldCountElement.textContent = oldCount;
+    console.log(`Updated count for ${oldList} to ${oldCount}`);
+  }
+  
+  if (newCountElement) {
+    let newCount = parseInt(newCountElement.textContent) || 0;
+    newCount += 1;
+    newCountElement.textContent = newCount;
+    console.log(`Updated count for ${newList} to ${newCount}`);
+  }
   
   // If we're currently viewing the source list, remove the task from view
   if (currentList === oldList) {
@@ -440,21 +473,16 @@ function moveTaskToList(taskId, newList) {
       }
     }
 
-    // Reset right panel if this was the selected task
     if (window.currentTaskId === taskId) {
       resetRightPanel();
       window.currentTaskId = null;
     }
   } 
   
-  // Important: Even if we're not viewing the destination list, create the task element
-  // so it's ready when the user navigates to that list
-  const destinationTaskList = document.getElementById('taskList-' + newList.toLowerCase().replace(/\s+/g, '-'));
+  const destinationTaskList = document.getElementById('taskList-' + newListSelector);
   if (destinationTaskList) {
-    // If the destination list element exists in the DOM, update it
     const taskElement = createTaskElement(localTaskCache[taskIndex]);
     if (taskElement) {
-      // Remove any empty state message
       const emptyState = destinationTaskList.querySelector('.text-gray-500');
       if (emptyState) {
         emptyState.remove();
@@ -462,19 +490,16 @@ function moveTaskToList(taskId, newList) {
       destinationTaskList.appendChild(taskElement);
     }
   } else {
-    // If we're viewing the destination list, refresh it to show the moved task
     if (currentList === newList) {
       refreshTaskList(newList);
     }
   }
   
-  // If this is a local task, skip server update
   if (taskId.startsWith('local_')) {
     console.log(`Skipping server update for local task: ${taskId}`);
     return;
   }
   
-  // Update on server
   try {
     fetch(`/todos/${taskId}`, {
       method: 'PUT',
@@ -637,10 +662,8 @@ function deleteTask(taskId) {
 window.filterTasks = function(listName) {
   console.log('Filtering tasks for list:', listName);
   
-  // Save the active list to localStorage
   localStorage.setItem('activeList', listName);
   
-  // Update the UI to show which list is active
   const titleElement = document.querySelector('h1');
   if (titleElement) {
     titleElement.textContent = `${listName} tasks`;
@@ -661,14 +684,12 @@ window.filterTasks = function(listName) {
     rightPanelListName.textContent = listName;
   }
 
-  // Highlight the active list in the sidebar
   if (typeof window.highlightActiveList === 'function') {
     window.highlightActiveList(listName);
   } else {
     highlightActiveList(listName);
   }
 
-  // Refresh the task list with the filtered tasks
   refreshTaskList(listName);
 };
 
@@ -703,10 +724,8 @@ function updateAllTaskCounts() {
       // But we can check if there's a list item for this list
       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
       if (listItem) {
-        // If we found the list item but not the count, let's try to find/create the count span
         let countSpan = listItem.querySelector('.task-count');
         if (!countSpan) {
-          // Create a new count span if needed
           countSpan = document.createElement('span');
           countSpan.id = `count-${listSelector}`;
           countSpan.className = 'task-count text-xs bg-dark-hover rounded-md px-1.5 py-0.5 ml-auto';
