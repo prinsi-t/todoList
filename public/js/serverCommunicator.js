@@ -67,21 +67,65 @@ async function handleAddTask(e) {
   }
 }
 
+// Centralized function to update task count
+function updateTaskCount(listName, delta) {
+  if (!listName) {
+    console.error('No list name provided to updateTaskCount');
+    return;
+  }
+  
+  // Format the list name for DOM selectors
+  const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+  const countElement = document.getElementById(`count-${listSelector}`);
+  
+  console.log(`Updating count for ${listName} (selector: count-${listSelector}) by ${delta}`);
+  
+  if (countElement) {
+    let count = parseInt(countElement.textContent) || 0;
+    count = Math.max(0, count + delta); // Ensure it doesn't go negative
+    countElement.textContent = count;
+    console.log(`Updated count for ${listName} to ${count}`);
+  } else {
+    console.warn(`Count element for "${listName}" not found with selector: count-${listSelector}`);
+  }
+  
+  // Also update the total count
+  const allTasksCount = document.getElementById('allTasksCount');
+  if (allTasksCount) {
+    let total = parseInt(allTasksCount.textContent) || 0;
+    total = Math.max(0, total + delta);
+    allTasksCount.textContent = total;
+    console.log(`Updated total tasks count to ${total}`);
+  }
+}
+
 function moveTaskToList(taskId, newList) {
   // Check if the task ID is a local ID
   const isLocalId = taskId.startsWith('local_');
   
-  // Update local cache
+  // Find the task in local cache
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
-  if (taskIndex !== -1) {
-    const oldList = localTaskCache[taskIndex].list;
-    localTaskCache[taskIndex].list = newList;
-    
-    updateTaskCount(oldList, -1);
-    updateTaskCount(newList, 1);
-    saveTaskCacheToLocalStorage();
+  if (taskIndex === -1) {
+    console.error(`Task with ID ${taskId} not found in local cache`);
+    return;
   }
 
+  const oldList = localTaskCache[taskIndex].list;
+  if (oldList === newList) {
+    console.log(`Task is already in ${newList} list`);
+    return;
+  }
+  
+  console.log(`Moving task ${taskId} from ${oldList} to ${newList}`);
+  
+  // Update the task in local cache
+  localTaskCache[taskIndex].list = newList;
+  saveTaskCacheToLocalStorage();
+  
+  // Update counts for both lists
+  updateTaskCount(oldList, -1);
+  updateTaskCount(newList, 1);
+  
   // Don't attempt server sync if it's a local ID that hasn't been synced yet
   if (isLocalId) {
     console.log('Task has not been synced to server yet, skipping server update');
@@ -128,112 +172,4 @@ function saveTaskCacheToLocalStorage() {
 window.moveTaskToList = moveTaskToList;
 window.handleAddTask = handleAddTask;
 window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
-
-function moveTaskToList(taskId, newList) {
-  // Check if the task ID is a local ID
-  const isLocalId = taskId.startsWith('local_');
-  
-  // Update local cache
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
-  if (taskIndex !== -1) {
-    const oldList = localTaskCache[taskIndex].list;
-    localTaskCache[taskIndex].list = newList;
-    
-    updateTaskCount(oldList, -1);
-    updateTaskCount(newList, 1);
-    saveTaskCacheToLocalStorage();
-  }
-
-  // Don't attempt server sync if it's a local ID that hasn't been synced yet
-  if (isLocalId) {
-    console.log('Task has not been synced to server yet, skipping server update');
-    const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
-    if (typeof filterTasks === 'function') {
-      filterTasks(currentList);
-    }
-    return;
-  }
-
-  // Only proceed with server sync for server-assigned IDs
-  fetch(`/todos/${taskId}/move`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ list: newList })
-  })
-    .then(res => {
-      if (!res.ok) {
-        console.error(`Server error when moving task: ${res.status}`);
-        return;
-      }
-      return res.json();
-    })
-    .then(() => {
-      const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
-      if (typeof filterTasks === 'function') {
-        filterTasks(currentList);
-      }
-    })
-    .catch(error => console.error('Error moving task:', error));
-}
-
-// Helper function to save task cache to local storage
-function saveTaskCacheToLocalStorage() {
-  try {
-    localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-    console.log('Tasks saved to localStorage cache');
-  } catch (error) {
-    console.error('Error saving tasks to localStorage:', error);
-  }
-}
-
-// Ensure the function is globally available
-window.moveTaskToList = moveTaskToList;
-window.handleAddTask = handleAddTask;
-window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
-
-function moveTaskToList(taskId, newList) {
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
-  if (taskIndex !== -1) {
-    const oldList = localTaskCache[taskIndex].list;
-    localTaskCache[taskIndex].list = newList;
- 
-    updateTaskCount(oldList, -1);
-    updateTaskCount(newList, 1);
-    saveTaskCacheToLocalStorage();
-  }
-
-  fetch(`/todos/${taskId}/move`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ list: newList })
-  })
-    .then(res => {
-      if (!res.ok) {
-        console.error('Server error when moving task');
-        return;
-      }
-      return res.json();
-    })
-    .then(() => {
-      const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
-      if (typeof filterTasks === 'function') {
-        filterTasks(currentList);
-      }
-    })
-    .catch(error => console.error('Error moving task:', error));
-}
-
-// Helper function to save task cache to local storage
-function saveTaskCacheToLocalStorage() {
-  try {
-    localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-    console.log('Tasks saved to localStorage cache');
-  } catch (error) {
-    console.error('Error saving tasks to localStorage:', error);
-  }
-}
-
-// Ensure the function is globally available
-window.moveTaskToList = moveTaskToList;
-window.handleAddTask = handleAddTask;
-window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
+window.updateTaskCount = updateTaskCount;
