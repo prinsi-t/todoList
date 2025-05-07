@@ -95,31 +95,34 @@ function updateTaskCount(listName, change) {
 }
 
 function filterTasks(list) {
+  // Explicitly define listName as the parameter passed to the function
+  const listName = list;
+  
   const titleElement = document.querySelector('h1');
   if (titleElement) {
-    titleElement.textContent = `${list} tasks`;
+    titleElement.textContent = `${listName} tasks`;
   }
 
   const taskCategory = document.getElementById('taskCategory');
-  if (taskCategory) taskCategory.value = list;
+  if (taskCategory) taskCategory.value = listName;
 
   const newTaskInput = document.getElementById('newTaskInput');
   if (newTaskInput) newTaskInput.value = '';
 
   document.querySelectorAll('.sidebar-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.list === list);
+    item.classList.toggle('active', item.dataset.list === listName);
   });
 
   const rightPanelText = document.querySelector('#right-panel .text-gray-400');
   if (rightPanelText) {
-    rightPanelText.textContent = list;
+    rightPanelText.textContent = listName;
   }
 
   const taskList = document.getElementById('taskList');
   if (!taskList) return;
   taskList.innerHTML = '';
 
-  const listTasks = localTaskCache.filter(todo => todo.list === list);
+  const listTasks = localTaskCache.filter(todo => todo.list === listName);
 
   listTasks.forEach(task => {
     const cachedTask = localTaskCache.find(t => t._id === task._id);
@@ -136,12 +139,16 @@ function filterTasks(list) {
   console.log('Filtering tasks for list:', listName);
 
   // Highlight the active list in the sidebar
-  highlightActiveList(listName);
+  if (typeof highlightActiveList === 'function') {
+    highlightActiveList(listName);
+  }
 
   // Filter tasks and render them
   const filteredTasks = localTaskCache.filter(task => task.list === listName);
-  renderTasks(filteredTasks);
+  if (typeof renderTasks === 'function') {
+    renderTasks(filteredTasks);
+  }
 
-
-  updateTaskCount(list, 0, listTasks.length);
-} 
+  // Pass the correct arguments to updateTaskCount
+  updateTaskCount(listName, 0);
+}

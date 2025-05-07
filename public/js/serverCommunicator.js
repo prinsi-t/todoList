@@ -23,6 +23,11 @@ async function handleAddTask(e) {
     attachments: []
   };
 
+  // Make sure localTaskCache exists
+  if (typeof window.localTaskCache === 'undefined') {
+    window.localTaskCache = [];
+  }
+
   localTaskCache.push(newTask);
   saveTaskCacheToLocalStorage();
   
@@ -30,7 +35,7 @@ async function handleAddTask(e) {
   const taskList = document.getElementById('taskList');
   if (taskList) {
     taskList.insertAdjacentElement('afterbegin', taskElement);
-    updateTaskCount(currentList, +1);
+    updateTaskCount(currentList, 1);
   }
   
   input.value = '';
@@ -63,6 +68,130 @@ async function handleAddTask(e) {
 }
 
 function moveTaskToList(taskId, newList) {
+  // Check if the task ID is a local ID
+  const isLocalId = taskId.startsWith('local_');
+  
+  // Update local cache
+  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  if (taskIndex !== -1) {
+    const oldList = localTaskCache[taskIndex].list;
+    localTaskCache[taskIndex].list = newList;
+    
+    updateTaskCount(oldList, -1);
+    updateTaskCount(newList, 1);
+    saveTaskCacheToLocalStorage();
+  }
+
+  // Don't attempt server sync if it's a local ID that hasn't been synced yet
+  if (isLocalId) {
+    console.log('Task has not been synced to server yet, skipping server update');
+    const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
+    if (typeof filterTasks === 'function') {
+      filterTasks(currentList);
+    }
+    return;
+  }
+
+  // Only proceed with server sync for server-assigned IDs
+  fetch(`/todos/${taskId}/move`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ list: newList })
+  })
+    .then(res => {
+      if (!res.ok) {
+        console.error(`Server error when moving task: ${res.status}`);
+        return;
+      }
+      return res.json();
+    })
+    .then(() => {
+      const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
+      if (typeof filterTasks === 'function') {
+        filterTasks(currentList);
+      }
+    })
+    .catch(error => console.error('Error moving task:', error));
+}
+
+// Helper function to save task cache to local storage
+function saveTaskCacheToLocalStorage() {
+  try {
+    localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+    console.log('Tasks saved to localStorage cache');
+  } catch (error) {
+    console.error('Error saving tasks to localStorage:', error);
+  }
+}
+
+// Ensure the function is globally available
+window.moveTaskToList = moveTaskToList;
+window.handleAddTask = handleAddTask;
+window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
+
+function moveTaskToList(taskId, newList) {
+  // Check if the task ID is a local ID
+  const isLocalId = taskId.startsWith('local_');
+  
+  // Update local cache
+  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  if (taskIndex !== -1) {
+    const oldList = localTaskCache[taskIndex].list;
+    localTaskCache[taskIndex].list = newList;
+    
+    updateTaskCount(oldList, -1);
+    updateTaskCount(newList, 1);
+    saveTaskCacheToLocalStorage();
+  }
+
+  // Don't attempt server sync if it's a local ID that hasn't been synced yet
+  if (isLocalId) {
+    console.log('Task has not been synced to server yet, skipping server update');
+    const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
+    if (typeof filterTasks === 'function') {
+      filterTasks(currentList);
+    }
+    return;
+  }
+
+  // Only proceed with server sync for server-assigned IDs
+  fetch(`/todos/${taskId}/move`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ list: newList })
+  })
+    .then(res => {
+      if (!res.ok) {
+        console.error(`Server error when moving task: ${res.status}`);
+        return;
+      }
+      return res.json();
+    })
+    .then(() => {
+      const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
+      if (typeof filterTasks === 'function') {
+        filterTasks(currentList);
+      }
+    })
+    .catch(error => console.error('Error moving task:', error));
+}
+
+// Helper function to save task cache to local storage
+function saveTaskCacheToLocalStorage() {
+  try {
+    localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+    console.log('Tasks saved to localStorage cache');
+  } catch (error) {
+    console.error('Error saving tasks to localStorage:', error);
+  }
+}
+
+// Ensure the function is globally available
+window.moveTaskToList = moveTaskToList;
+window.handleAddTask = handleAddTask;
+window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
+
+function moveTaskToList(taskId, newList) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex !== -1) {
     const oldList = localTaskCache[taskIndex].list;
@@ -87,7 +216,24 @@ function moveTaskToList(taskId, newList) {
     })
     .then(() => {
       const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
-      filterTasks(currentList);
+      if (typeof filterTasks === 'function') {
+        filterTasks(currentList);
+      }
     })
     .catch(error => console.error('Error moving task:', error));
-} 
+}
+
+// Helper function to save task cache to local storage
+function saveTaskCacheToLocalStorage() {
+  try {
+    localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+    console.log('Tasks saved to localStorage cache');
+  } catch (error) {
+    console.error('Error saving tasks to localStorage:', error);
+  }
+}
+
+// Ensure the function is globally available
+window.moveTaskToList = moveTaskToList;
+window.handleAddTask = handleAddTask;
+window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
