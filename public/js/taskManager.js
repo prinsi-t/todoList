@@ -255,23 +255,39 @@ function createTaskElement(task) {
   const dropdown = document.createElement('div');
   dropdown.className = 'task-menu hidden absolute right-0 top-full mt-1 w-36 bg-dark-hover rounded-lg shadow-xl py-1 z-50';
   
-  const lists = ['Personal', 'Work', 'Grocery List'];
+  // Get default lists
+  const defaultLists = ['Personal', 'Work', 'Grocery List'];
   const icons = {
     'Personal': 'fas fa-user text-purple-400',
     'Work': 'fas fa-briefcase text-orange-400',
     'Grocery List': 'fas fa-shopping-cart text-cyan-400'
   };
   
-  lists.forEach(list => {
-    if (list === task.list) return;
+  // Get custom lists from localStorage
+  let customLists = [];
+  try {
+    customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
+  } catch (error) {
+    console.error('Error loading custom lists:', error);
+  }
+  
+  // Combine default and custom lists
+  const allLists = [...defaultLists, ...customLists];
+  
+  // Add menu items for all lists except the current one
+  allLists.forEach(list => {
+    if (list === task.list) return; // Skip current list
     
     const listItem = document.createElement('a');
     listItem.href = '#';
     listItem.className = 'menu-item px-3 py-2 flex items-center gap-2 hover:bg-dark-accent transition-colors duration-150';
     listItem.dataset.list = list;
     
+    // Choose icon - use default icon if available, otherwise use folder icon
+    const iconClass = icons[list] || 'fas fa-folder text-green-400';
+    
     const icon = document.createElement('i');
-    icon.className = icons[list] || 'fas fa-folder text-blue-400';
+    icon.className = iconClass;
     
     const span = document.createElement('span');
     span.className = 'text-gray-300 hover:text-white';
