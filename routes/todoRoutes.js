@@ -188,6 +188,27 @@ router.put('/todos/:id/subtasks/:index/complete', ensureAuthenticated, async (re
   }
 });
 
+// Route to update task notes
+router.put('/:id/notes', ensureAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const todo = await Todo.findOne({ _id: id, userId: req.user._id });
+    if (!todo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    todo.notes = notes;
+    await todo.save();
+
+    res.status(200).json(todo);
+  } catch (error) {
+    console.error('Error updating notes:', error);
+    res.status(500).json({ error: 'Failed to update notes' });
+  }
+});
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(process.cwd(), 'uploads')); // ✅ Saves in project root

@@ -8,24 +8,24 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
     }
     return;
   }
-  
+
   const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
   if (taskIndex === -1 || !localTaskCache[taskIndex].subtasks) return;
 
   const subtaskIndex = localTaskCache[taskIndex].subtasks.findIndex(
     s => s.id === subtaskId || s.id === subtaskId.replace('index_', '') || `index_${s.id}` === subtaskId
   );
-  
+
   if (subtaskIndex !== -1) {
     localTaskCache[taskIndex].subtasks[subtaskIndex].completed = completed;
     saveTaskCacheToLocalStorage();
-    
+
     const subtaskElement = document.querySelector(`[data-subtask-id="${subtaskId}"]`);
     if (subtaskElement) {
       const checkbox = subtaskElement.querySelector('.checkbox');
       const checkIcon = checkbox.querySelector('.fa-check');
       const textSpan = subtaskElement.querySelector('span');
-      
+
       if (completed) {
         checkbox.classList.add('bg-blue-500', 'border-blue-500');
         checkIcon.style.display = '';
@@ -37,14 +37,14 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
         textSpan.classList.remove('line-through', 'text-gray-500');
         textSpan.classList.add('text-gray-200');
       }
-      
+
       subtaskElement.dataset.completed = completed ? 'true' : 'false';
     }
-    
+
     const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
     let taskSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
     const localSubtaskIndex = taskSubtasks.findIndex(s => s.id === subtaskId);
-    
+
     if (localSubtaskIndex !== -1) {
       taskSubtasks[localSubtaskIndex].completed = completed;
     } else {
@@ -55,9 +55,9 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
         completed: completed
       });
     }
-    
+
     localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
-    
+
     fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}/complete`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -71,7 +71,7 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
           }
           localTaskCache[taskIndex] = updatedTask;
           saveTaskCacheToLocalStorage();
-          
+
           updateTaskSubtasksInLocalStorage(updatedTask);
         }
       })
@@ -83,7 +83,7 @@ function updateSubtaskCompletionStatus(subtaskId, completed) {
 
 function createSubtaskElement(text, subtaskId, isCompleted = false) {
     let completed = isCompleted;
-  
+
     if (window.currentTaskId) {
       const task = localTaskCache.find(t => t._id === window.currentTaskId);
       if (task && task.subtasks) {
@@ -95,12 +95,12 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
         }
       }
     }
-  
+
     const subtaskItem = document.createElement('div');
     subtaskItem.className = 'flex items-center gap-2 bg-dark-hover px-3 py-2 rounded-lg border border-dark-border';
     subtaskItem.dataset.subtaskId = subtaskId;
     subtaskItem.dataset.completed = completed ? 'true' : 'false';
-  
+
     subtaskItem.innerHTML = `
       <div class="checkbox w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200 cursor-pointer ${completed ? 'bg-blue-500 border-blue-500' : ''}">
         <i class="fas fa-check text-white text-xs" style="${completed ? '' : 'display: none;'}"></i>
@@ -110,7 +110,7 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
         <i class="fas fa-trash"></i>
       </button>
     `;
-  
+
 
   const checkbox = subtaskItem.querySelector('.checkbox');
   const checkIcon = checkbox.querySelector('.fa-check');
@@ -119,9 +119,9 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
   checkbox.addEventListener('click', () => {
     const currentState = subtaskItem.dataset.completed === 'true';
     const newState = !currentState;
-    
+
     subtaskItem.dataset.completed = newState ? 'true' : 'false';
-    
+
     if (newState) {
       checkbox.classList.add('bg-blue-500', 'border-blue-500');
       checkIcon.style.display = '';
@@ -133,7 +133,7 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
       textSpan.classList.remove('line-through', 'text-gray-500');
       textSpan.classList.add('text-gray-200');
     }
-    
+
     updateSubtaskCompletionStatus(subtaskId, newState);
   });
 
@@ -150,46 +150,71 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
   return subtaskItem;
 }
 
-function addSubtask() {
-  const subtaskInput = document.getElementById('subtaskInput');
-  const subtaskText = subtaskInput.value.trim();
-  
-  if (!subtaskText) return;
-  const subtaskId = 'subtask_' + Date.now();
+function addSubtask(listName) {
+  // Get the active list if not provided
+  if (!listName) {
+    listName = localStorage.getItem('activeList') || 'Personal';
+  }
 
+  // Get the panel for this list
+  const listId = listName.toLowerCase().replace(/\s+/g, '-');
+  const panelId = `right-panel-${listId}`;
+  const panel = document.getElementById(panelId);
+
+  if (!panel) {
+    console.error(`Panel not found for list: ${listName}`);
+    return;
+  }
+
+  // Get the subtask input for this panel
+  const subtaskInput = panel.querySelector('.subtask-input');
+  if (!subtaskInput) {
+    console.error(`Subtask input not found in panel: ${panelId}`);
+    return;
+  }
+
+  const subtaskText = subtaskInput.value.trim();
+  if (!subtaskText) return;
+
+  const subtaskId = 'subtask_' + Date.now();
   const newSubtask = {
     id: subtaskId,
     text: subtaskText,
     completed: false
   };
 
-  const subtasksList = document.getElementById('subtasksList');
-  if (!subtasksList) return;
-  hideNoSubtasksMessage();
-  
+  // Get the subtasks list for this panel
+  const subtasksList = panel.querySelector('.subtasks-list');
+  if (!subtasksList) {
+    console.error(`Subtasks list not found in panel: ${panelId}`);
+    return;
+  }
+
+  hideNoSubtasksMessage(panel);
+
   const subtaskElement = createSubtaskElement(subtaskText, subtaskId, false);
   subtasksList.appendChild(subtaskElement);
 
   subtaskInput.value = '';
- 
+
   if (window.currentTaskId) {
     const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
-    
+
     if (taskIndex !== -1) {
       if (!localTaskCache[taskIndex].subtasks) {
         localTaskCache[taskIndex].subtasks = [];
       }
-      
+
       localTaskCache[taskIndex].subtasks.push(newSubtask);
       saveTaskCacheToLocalStorage();
-      
+
       const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
       let taskSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
       taskSubtasks.push(newSubtask);
       localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
-      
+
       const currentSubtasks = JSON.parse(JSON.stringify(localTaskCache[taskIndex].subtasks));
-      
+
       fetch(`/todos/${window.currentTaskId}/subtasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -203,40 +228,40 @@ function addSubtask() {
               if (subtask.text) subtaskMap[subtask.text] = subtask;
               if (subtask.id) subtaskMap[subtask.id] = subtask;
             });
-            
+
             const updatedTaskCopy = {...updatedTodo};
-            
+
             if (!updatedTaskCopy.subtasks) {
               updatedTaskCopy.subtasks = [];
             }
-            
+
             updatedTaskCopy.subtasks.forEach(serverSubtask => {
               let localSubtask = serverSubtask.text ? subtaskMap[serverSubtask.text] : null;
-              
+
               if (!localSubtask && serverSubtask.id) {
                 localSubtask = subtaskMap[serverSubtask.id];
               }
-              
+
               if (localSubtask) {
                 serverSubtask.completed = localSubtask.completed;
-                
+
                 if (!serverSubtask.id && localSubtask.id) {
                   serverSubtask.id = localSubtask.id;
                 }
               }
             });
-            
+
             const hasNewSubtask = updatedTaskCopy.subtasks.some(
               s => s.text === newSubtask.text || s.id === newSubtask.id
             );
-            
+
             if (!hasNewSubtask) {
               updatedTaskCopy.subtasks.push(newSubtask);
             }
-            
+
             localTaskCache[taskIndex] = updatedTaskCopy;
             saveTaskCacheToLocalStorage();
-            
+
             updateTaskSubtasksInLocalStorage(updatedTaskCopy);
           }
         })
@@ -251,7 +276,7 @@ function addSubtask() {
 
 function updateTaskSubtasksInLocalStorage(task) {
   if (!task || !task._id || !task.subtasks) return;
-  
+
   const taskSubtasksKey = `subtasks_${task._id}`;
   const subtasksToStore = task.subtasks.map(subtask => {
     return {
@@ -260,19 +285,19 @@ function updateTaskSubtasksInLocalStorage(task) {
       completed: subtask.completed || false
     };
   });
-  
+
   localStorage.setItem(taskSubtasksKey, JSON.stringify(subtasksToStore));
 }
 
 function loadSubtasksForCurrentTask() {
   const subtasksList = document.getElementById('subtasksList');
   if (!subtasksList || !window.currentTaskId) return;
-  
+
   subtasksList.innerHTML = '';
-  
+
   const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
   const taskSpecificSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
-  
+
   if (taskSpecificSubtasks.length > 0) {
     hideNoSubtasksMessage();
     taskSpecificSubtasks.forEach(subtask => {
@@ -290,7 +315,7 @@ function loadSubtasksForCurrentTask() {
     if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks && localTaskCache[taskIndex].subtasks.length > 0) {
       hideNoSubtasksMessage();
       updateTaskSubtasksInLocalStorage(localTaskCache[taskIndex]);
-      
+
       localTaskCache[taskIndex].subtasks.forEach(subtask => {
         if (subtask && subtask.text) {
           const subtaskElement = createSubtaskElement(
@@ -310,7 +335,7 @@ function loadSubtasksForCurrentTask() {
 
 function fetchTaskFromServer(taskId) {
   if (!taskId) return;
-  
+
   fetch(`/todos/${taskId}`)
     .then(res => res.ok ? res.json() : null)
     .then(task => {
@@ -322,9 +347,9 @@ function fetchTaskFromServer(taskId) {
           localTaskCache.push(task);
         }
         saveTaskCacheToLocalStorage();
-        
+
         updateTaskSubtasksInLocalStorage(task);
-        
+
         loadSubtasksForCurrentTask();
       }
     })
@@ -334,21 +359,21 @@ function fetchTaskFromServer(taskId) {
 function loadLocalSubtasks() {
   const subtasksList = document.getElementById('subtasksList');
   if (!subtasksList) return;
-  
+
   if (window.currentTaskId) {
     loadSubtasksForCurrentTask();
     return;
   }
-  
+
   subtasksList.innerHTML = '';
-  
+
   const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
   if (localSubtasks.length > 0) {
     hideNoSubtasksMessage();
     localSubtasks.forEach(subtask => {
       const subtaskElement = createSubtaskElement(
-        subtask.text, 
-        subtask.id, 
+        subtask.text,
+        subtask.id,
         subtask.completed || false
       );
       subtasksList.appendChild(subtaskElement);
@@ -358,50 +383,74 @@ function loadLocalSubtasks() {
   }
 }
 
-function showNoSubtasksMessage() {
-  const subtasksList = document.getElementById('subtasksList');
-  if (!subtasksList) return;
-  
-  const existingMessage = subtasksList.querySelector('.no-subtasks-message');
-  if (existingMessage) return; 
+function showNoSubtasksMessage(panel) {
+  // If panel is provided, only show message in that panel
+  if (panel) {
+    const subtasksList = panel.querySelector('.subtasks-list');
+    if (!subtasksList) return;
 
-  const noSubtasksMessage = document.createElement('div');
-  noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
-  noSubtasksMessage.textContent = 'No subtasks added yet.';
-  subtasksList.appendChild(noSubtasksMessage);
+    const existingMessage = subtasksList.querySelector('.no-subtasks-message');
+    if (existingMessage) return;
+
+    const noSubtasksMessage = document.createElement('div');
+    noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
+    noSubtasksMessage.textContent = 'No subtasks added yet.';
+    subtasksList.appendChild(noSubtasksMessage);
+  } else {
+    // Otherwise, show message in all panels
+    const subtasksLists = document.querySelectorAll('.subtasks-list');
+    subtasksLists.forEach(list => {
+      const existingMessage = list.querySelector('.no-subtasks-message');
+      if (existingMessage) return;
+
+      const noSubtasksMessage = document.createElement('div');
+      noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
+      noSubtasksMessage.textContent = 'No subtasks added yet.';
+      list.appendChild(noSubtasksMessage);
+    });
+  }
 }
 
-function hideNoSubtasksMessage() {
-  const noSubtasksMessages = document.querySelectorAll('.no-subtasks-message');
-  noSubtasksMessages.forEach(msg => {
-    msg.remove();
-  });
+function hideNoSubtasksMessage(panel) {
+  // If panel is provided, only hide messages in that panel
+  if (panel) {
+    const noSubtasksMessages = panel.querySelectorAll('.no-subtasks-message');
+    noSubtasksMessages.forEach(msg => {
+      msg.remove();
+    });
+  } else {
+    // Otherwise, hide messages in all panels
+    const noSubtasksMessages = document.querySelectorAll('.no-subtasks-message');
+    noSubtasksMessages.forEach(msg => {
+      msg.remove();
+    });
+  }
 }
 
 function deleteSubtask(subtaskId) {
   if (window.currentTaskId) {
     const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
     if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks) {
-     
-      const subtaskIndex = localTaskCache[taskIndex].subtasks.findIndex(s => 
+
+      const subtaskIndex = localTaskCache[taskIndex].subtasks.findIndex(s =>
         s.id === subtaskId || s.id === subtaskId.replace('index_', '') || `index_${s.id}` === subtaskId
       );
-      
+
       if (subtaskIndex !== -1) {
         localTaskCache[taskIndex].subtasks.splice(subtaskIndex, 1);
         saveTaskCacheToLocalStorage();
-        
+
         const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
         let taskSubtasks = JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]');
-        taskSubtasks = taskSubtasks.filter(s => 
+        taskSubtasks = taskSubtasks.filter(s =>
           s.id !== subtaskId && s.id !== subtaskId.replace('index_', '') && `index_${s.id}` !== subtaskId
         );
         localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
-        
+
         if (localTaskCache[taskIndex].subtasks.length === 0 || taskSubtasks.length === 0) {
           showNoSubtasksMessage();
         }
-        
+
         fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}`, { method: 'DELETE' })
           .then(res => {
             if (res.ok) return res.json();
@@ -411,9 +460,9 @@ function deleteSubtask(subtaskId) {
             if (updatedTodo && taskIndex !== -1) {
               localTaskCache[taskIndex] = updatedTodo;
               saveTaskCacheToLocalStorage();
-              
+
               updateTaskSubtasksInLocalStorage(updatedTodo);
-              
+
               if (!updatedTodo.subtasks || updatedTodo.subtasks.length === 0) {
                 showNoSubtasksMessage();
               }
@@ -426,7 +475,7 @@ function deleteSubtask(subtaskId) {
     const localSubtasks = JSON.parse(localStorage.getItem('localSubtasks') || '[]');
     const updatedSubtasks = localSubtasks.filter(s => s.id !== subtaskId);
     localStorage.setItem('localSubtasks', JSON.stringify(updatedSubtasks));
-    
+
     if (updatedSubtasks.length === 0) {
       showNoSubtasksMessage();
     }
@@ -447,20 +496,22 @@ function initSubtaskManager() {
     loadLocalSubtasks();
   }
 
-  const subtaskForm = document.getElementById('subtaskForm');
-  if (subtaskForm) {
-    subtaskForm.addEventListener('submit', function(e) {
+  // Set up event listeners for all add subtask buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('add-subtask-btn')) {
+      const listName = e.target.getAttribute('data-list');
+      addSubtask(listName);
+    }
+  });
+
+  // Set up event listeners for subtask input fields (for Enter key)
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.classList.contains('subtask-input')) {
       e.preventDefault();
-      addSubtask();
-    });
-  }
-  
-  const addSubtaskBtn = document.getElementById('addSubtaskBtn');
-  if (addSubtaskBtn) {
-    addSubtaskBtn.addEventListener('click', function() {
-      addSubtask();
-    });
-  }
+      const listName = e.target.closest('.right-panel').getAttribute('data-list');
+      addSubtask(listName);
+    }
+  });
 }
 
 initSubtaskManager();
