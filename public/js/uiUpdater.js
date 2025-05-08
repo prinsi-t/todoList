@@ -95,7 +95,6 @@ function updateTaskCount(listName, change) {
 }
 
 function filterTasks(list) {
-  // Explicitly define listName as the parameter passed to the function
   const listName = list;
   
   const titleElement = document.querySelector('h1');
@@ -138,17 +137,14 @@ function filterTasks(list) {
   });
   console.log('Filtering tasks for list:', listName);
 
-  // Highlight the active list in the sidebar
   if (typeof highlightActiveList === 'function') {
     highlightActiveList(listName);
   }
 
-  // Filter tasks and render them
   const filteredTasks = localTaskCache.filter(task => task.list === listName);
   if (typeof renderTasks === 'function') {
     renderTasks(filteredTasks);
   }
 
-  // Pass the correct arguments to updateTaskCount
   updateTaskCount(listName, 0);
 }

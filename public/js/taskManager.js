@@ -165,8 +165,7 @@ function handleAddTask(e) {
   localTaskCache.push(newTask);
   saveTaskCacheToLocalStorage();
   
-  // Update the task count for this list immediately
-  window.updateTaskCount(currentList, 1); // Increase count by 1
+  window.updateTaskCount(currentList, 1); 
   
   refreshTaskList(currentList);
   
@@ -251,11 +250,9 @@ function createTaskElement(task) {
   menuBtn.className = 'menu-btn p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200';
   menuBtn.innerHTML = '<i class="fas fa-ellipsis-v text-white/70 hover:text-white"></i>';
   
-  // Fix for the dropdown positioning - add z-index and absolute positioning
   const dropdown = document.createElement('div');
   dropdown.className = 'task-menu hidden absolute right-0 top-full mt-1 w-36 bg-dark-hover rounded-lg shadow-xl py-1 z-50';
   
-  // Get default lists
   const defaultLists = ['Personal', 'Work', 'Grocery List'];
   const icons = {
     'Personal': 'fas fa-user text-purple-400',
@@ -263,7 +260,6 @@ function createTaskElement(task) {
     'Grocery List': 'fas fa-shopping-cart text-cyan-400'
   };
   
-  // Get custom lists from localStorage
   let customLists = [];
   try {
     customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
@@ -271,19 +267,16 @@ function createTaskElement(task) {
     console.error('Error loading custom lists:', error);
   }
   
-  // Combine default and custom lists
   const allLists = [...defaultLists, ...customLists];
   
-  // Add menu items for all lists except the current one
   allLists.forEach(list => {
-    if (list === task.list) return; // Skip current list
+    if (list === task.list) return; 
     
     const listItem = document.createElement('a');
     listItem.href = '#';
     listItem.className = 'menu-item px-3 py-2 flex items-center gap-2 hover:bg-dark-accent transition-colors duration-150';
     listItem.dataset.list = list;
     
-    // Choose icon - use default icon if available, otherwise use folder icon
     const iconClass = icons[list] || 'fas fa-folder text-green-400';
     
     const icon = document.createElement('i');
@@ -298,7 +291,7 @@ function createTaskElement(task) {
     
     listItem.addEventListener('click', (e) => {
       e.preventDefault();
-      e.stopPropagation(); // Prevent event bubbling
+      e.stopPropagation(); 
       moveTaskToList(task._id, list);
       dropdown.classList.add('hidden');
     });
@@ -321,11 +314,9 @@ function createTaskElement(task) {
     }
   });
   
-  // Improved menu toggle behavior with proper click handling
   menuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     
-    // Close all other open dropdowns first
     document.querySelectorAll('.task-menu').forEach(menu => {
       if (menu !== dropdown) {
         menu.classList.add('hidden');
@@ -340,7 +331,6 @@ function createTaskElement(task) {
     deleteTask(task._id);
   });
   
-  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     if (!menuContainer.contains(e.target)) {
       dropdown.classList.add('hidden');
@@ -358,8 +348,6 @@ function createTaskElement(task) {
   
   return taskElement;
 }
-
-
 
 function toggleTaskCompletion(taskId) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
@@ -442,18 +430,14 @@ function moveTaskToList(taskId, newList) {
   
   console.log(`Moving task ${taskId} from ${oldList} to ${newList}`);
   
-  // Update the task in local cache
   localTaskCache[taskIndex].list = newList;
   saveTaskCacheToLocalStorage();
   
-  // Get the current active list
   const currentList = localStorage.getItem('activeList') || 'Personal';
   
-  // Format list names properly for DOM selectors
   const oldListSelector = oldList.toLowerCase().replace(/\s+/g, '-');
   const newListSelector = newList.toLowerCase().replace(/\s+/g, '-');
   
-  // Update task counts for both lists correctly
   const oldCountElement = document.getElementById(`count-${oldListSelector}`);
   const newCountElement = document.getElementById(`count-${newListSelector}`);
   
@@ -471,7 +455,6 @@ function moveTaskToList(taskId, newList) {
     console.log(`Updated count for ${newList} to ${newCount}`);
   }
   
-  // If we're currently viewing the source list, remove the task from view
   if (currentList === oldList) {
     const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
     if (taskElement) {
@@ -600,10 +583,8 @@ function deleteTask(taskId) {
   const listName = localTaskCache[taskIndex].list;
   console.log(`Deleting task ${taskId} from list ${listName}`);
   
-  // Store the task's list name before removing it from cache
   const taskList = listName;
   
-  // Remove from local cache
   localTaskCache.splice(taskIndex, 1);
   saveTaskCacheToLocalStorage();
   
@@ -629,26 +610,23 @@ function deleteTask(taskId) {
     }, 200);
   }
 
-  // Debug output before updating count
   console.log(`About to decrease count for ${taskList} by 1`);
   
-  // Update the count indicator for this list directly
   const listSelector = taskList.toLowerCase().replace(/\s+/g, '-');
   const countElement = document.getElementById(`count-${listSelector}`);
   if (countElement) {
     let count = parseInt(countElement.textContent) || 0;
-    count = Math.max(0, count - 1); // Ensure it doesn't go negative
+    count = Math.max(0, count - 1); 
     countElement.textContent = count;
     console.log(`Updated count for ${taskList} to ${count}`);
   } else {
     console.warn(`Count element for "${taskList}" not found: count-${listSelector}`);
   }
   
-  // Also update the total count
   const allTasksCount = document.getElementById('allTasksCount');
   if (allTasksCount) {
     let total = parseInt(allTasksCount.textContent) || 0;
-    total = Math.max(0, total - 1); // Ensure it doesn't go negative
+    total = Math.max(0, total - 1); 
     allTasksCount.textContent = total;
     console.log(`Updated total count to ${total}`);
   }
@@ -673,7 +651,6 @@ function deleteTask(taskId) {
     console.error('Error making network request:', error);
   }
 }
-
 
 window.filterTasks = function(listName) {
   console.log('Filtering tasks for list:', listName);
@@ -711,12 +688,10 @@ window.filterTasks = function(listName) {
 
 function updateAllTaskCounts() {
   const lists = ['Personal', 'Work', 'Grocery List'];
-  // Get all unique list names from tasks
   const customLists = [...new Set(localTaskCache.map(task => task.list))].filter(list => 
     !lists.includes(list) && list
   );
   
-  // Combine default and custom lists
   const allLists = [...lists, ...customLists];
   
   let totalTasks = 0;
@@ -735,9 +710,6 @@ function updateAllTaskCounts() {
     } else {
       console.warn(`Count element for list "${listName}" not found, selector: count-${listSelector}`);
       
-      // For custom lists, we might need to create the count element
-      // This would require additional code to access the sidebar structure
-      // But we can check if there's a list item for this list
       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
       if (listItem) {
         let countSpan = listItem.querySelector('.task-count');

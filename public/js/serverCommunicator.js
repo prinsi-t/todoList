@@ -23,7 +23,6 @@ async function handleAddTask(e) {
     attachments: []
   };
 
-  // Make sure localTaskCache exists
   if (typeof window.localTaskCache === 'undefined') {
     window.localTaskCache = [];
   }
@@ -67,14 +66,12 @@ async function handleAddTask(e) {
   }
 }
 
-// Centralized function to update task count
 function updateTaskCount(listName, delta) {
   if (!listName) {
     console.error('No list name provided to updateTaskCount');
     return;
   }
   
-  // Format the list name for DOM selectors
   const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
   const countElement = document.getElementById(`count-${listSelector}`);
   
@@ -82,14 +79,13 @@ function updateTaskCount(listName, delta) {
   
   if (countElement) {
     let count = parseInt(countElement.textContent) || 0;
-    count = Math.max(0, count + delta); // Ensure it doesn't go negative
+    count = Math.max(0, count + delta); 
     countElement.textContent = count;
     console.log(`Updated count for ${listName} to ${count}`);
   } else {
     console.warn(`Count element for "${listName}" not found with selector: count-${listSelector}`);
   }
   
-  // Also update the total count
   const allTasksCount = document.getElementById('allTasksCount');
   if (allTasksCount) {
     let total = parseInt(allTasksCount.textContent) || 0;
@@ -100,10 +96,8 @@ function updateTaskCount(listName, delta) {
 }
 
 function moveTaskToList(taskId, newList) {
-  // Check if the task ID is a local ID
   const isLocalId = taskId.startsWith('local_');
   
-  // Find the task in local cache
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) {
     console.error(`Task with ID ${taskId} not found in local cache`);
@@ -118,15 +112,12 @@ function moveTaskToList(taskId, newList) {
   
   console.log(`Moving task ${taskId} from ${oldList} to ${newList}`);
   
-  // Update the task in local cache
   localTaskCache[taskIndex].list = newList;
   saveTaskCacheToLocalStorage();
   
-  // Update counts for both lists
   updateTaskCount(oldList, -1);
   updateTaskCount(newList, 1);
   
-  // Don't attempt server sync if it's a local ID that hasn't been synced yet
   if (isLocalId) {
     console.log('Task has not been synced to server yet, skipping server update');
     const currentList = document.querySelector('h1').textContent.replace(' tasks', '');
@@ -136,7 +127,6 @@ function moveTaskToList(taskId, newList) {
     return;
   }
 
-  // Only proceed with server sync for server-assigned IDs
   fetch(`/todos/${taskId}/move`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -158,7 +148,6 @@ function moveTaskToList(taskId, newList) {
     .catch(error => console.error('Error moving task:', error));
 }
 
-// Helper function to save task cache to local storage
 function saveTaskCacheToLocalStorage() {
   try {
     localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
@@ -168,7 +157,6 @@ function saveTaskCacheToLocalStorage() {
   }
 }
 
-// Ensure the function is globally available
 window.moveTaskToList = moveTaskToList;
 window.handleAddTask = handleAddTask;
 window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
