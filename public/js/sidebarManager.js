@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize the localTaskCache if it doesn't exist
   if (typeof window.localTaskCache === 'undefined') {
     window.localTaskCache = JSON.parse(localStorage.getItem('taskCache') || '[]');
   }
@@ -101,7 +100,6 @@ function fixAddTaskForm() {
       localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
       console.log('Task saved to localStorage cache');
       
-      // Update the count for the active list
       updateTaskCount(activeList, 1);
     } catch (error) {
       console.error('Error saving to localStorage:', error);
@@ -140,11 +138,9 @@ function updateSidebarCounts(taskCounts) {
   });
 }
 
-// Function to update a single task count
 function updateTaskCount(listName, change) {
   console.log(`Updating count for ${listName} by ${change}`);
   
-  // Handle different formats of list names in selectors
   const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
   const countElement = document.getElementById(`count-${listSelector}`);
   
@@ -157,7 +153,6 @@ function updateTaskCount(listName, change) {
     console.warn(`Count element for list "${listName}" not found with selector: count-${listSelector}`);
   }
   
-  // Also update the total task count
   const allTasksCount = document.getElementById('allTasksCount');
   if (allTasksCount && change !== 0) {
     const currentCount = parseInt(allTasksCount.textContent, 10) || 0;
@@ -167,7 +162,6 @@ function updateTaskCount(listName, change) {
   }
 }
 
-// Make updateTaskCount globally available
 window.updateTaskCount = updateTaskCount;
 
 function highlightActiveList(activeList) {
@@ -184,7 +178,6 @@ function highlightActiveList(activeList) {
   });
 }
 
-// Make highlightActiveList globally available
 window.highlightActiveList = highlightActiveList;
 
 function openAddListModal() {
@@ -370,14 +363,11 @@ function deleteList(listName) {
   localStorage.setItem('customLists', JSON.stringify(updatedLists));
   
   if (typeof localTaskCache !== 'undefined') {
-    // Count the tasks that will be removed
     const tasksToRemove = localTaskCache.filter(task => task.list === listName);
     
-    // Remove tasks from the list
     window.localTaskCache = localTaskCache.filter(task => task.list !== listName);
     localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
     
-    // Update the total task count
     const allTasksCount = document.getElementById('allTasksCount');
     if (allTasksCount && tasksToRemove.length > 0) {
       const currentTotal = parseInt(allTasksCount.textContent, 10) || 0;
@@ -401,7 +391,6 @@ function deleteList(listName) {
   }
 }
 
-// Make deleteList globally available
 window.deleteList = deleteList;
 
 function saveCustomListToLocalStorage(listName) {
@@ -422,11 +411,9 @@ function loadCustomListsFromLocalStorage() {
   
   updateDefaultListItems();
   
-  // Set active list from localStorage or default to Personal
   const activeList = localStorage.getItem('activeList') || 'Personal';
   highlightActiveList(activeList);
   
-  // Initialize with the active list
   if (typeof window.filterTasks === 'function') {
     window.filterTasks(activeList);
   }
@@ -476,7 +463,6 @@ function renderTasks(tasks) {
   });
 }
 
-// Make renderTasks globally available
 window.renderTasks = renderTasks;
 
 function refreshTaskList(listName) {
@@ -485,7 +471,6 @@ function refreshTaskList(listName) {
   }
 }
 
-// Make refreshTaskList globally available
 window.refreshTaskList = refreshTaskList;
 
 document.addEventListener('DOMContentLoaded', function() {
