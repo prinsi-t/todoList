@@ -54,22 +54,30 @@ body {
     filter: blur(1px);
     pointer-events: none;
   }
-  
+
   .blurred-panel-header {
     position: relative;
     z-index: 5;
   }
-  
+
   /* Styles for task items */
   .task-item {
     position: relative;
   }
-  
+
+  .task-item.selected {
+    background-color: #2A2E37 !important;
+    border-left: 3px solid #3B82F6 !important;
+    padding-left: 9px !important;
+    position: relative;
+    z-index: 1;
+  }
+
   .checkbox.checked {
     background-color: #3B82F6;
     border-color: #3B82F6;
   }
-  
+
   .menu-item {
     display: flex;
     align-items: center;
@@ -77,11 +85,11 @@ body {
     padding: 8px 12px;
     transition: all 0.2s;
   }
-  
+
   .menu-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
   }
-  
+
   .sidebar-item {
     display: flex;
     align-items: center;
@@ -90,7 +98,7 @@ body {
     border-radius: 8px;
     transition: all 0.2s;
   }
-  
+
   .sidebar-item:hover, .sidebar-item.active {
     background-color: #2A2E37;
   }
@@ -121,6 +129,15 @@ body {
 
   .task-item:hover {
     @apply bg-dark-hover;
+  }
+
+  .task-item.selected {
+    @apply bg-dark-hover border-l-3 border-blue-500 pl-3;
+    background-color: #2A2E37 !important;
+    border-left: 3px solid #3B82F6 !important;
+    padding-left: 12px !important;
+    position: relative;
+    z-index: 1;
   }
 
   .task-item span {
@@ -202,14 +219,14 @@ body {
   .task-blur-content {
     transition: filter 0.3s ease;
   }
-  
+
   .task-blur-content.blurred {
     filter: blur(5px) brightness(0.8) !important;
     opacity: 0.5 !important;
     pointer-events: none !important;
     transition: all 0.4s ease;
   }
-  
+
   /* Modal styles */
 #addListModal {
   z-index: 1000;
@@ -229,5 +246,4 @@ body {
     transform: scale(1);
   }
 }
-  
-  
+

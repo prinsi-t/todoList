@@ -20,13 +20,86 @@ function loadLocalTaskCache() {
   }
 }
 
+// Check if this is a fresh login or a page refresh
+function isNewLogin() {
+  // Get the session ID - this will be unique for each browser session
+  const sessionId = localStorage.getItem('sessionId');
+  const newSessionId = Math.random().toString(36).substring(2, 15);
+
+  // If there's no session ID, this is a new login
+  if (!sessionId) {
+    console.log('No session ID found, this is a new login');
+    localStorage.setItem('sessionId', newSessionId);
+    return true;
+  }
+
+  // Check if we have a login flag
+  const hasLoggedIn = sessionStorage.getItem('hasLoggedIn');
+
+  if (!hasLoggedIn) {
+    console.log('First page load in this session, this is a new login');
+    sessionStorage.setItem('hasLoggedIn', 'true');
+    return true;
+  }
+
+  console.log('User has already logged in this session, not a new login');
+  return false;
+}
+
 function initApp() {
+  // Load tasks from localStorage first
   loadLocalTaskCache();
-  loadTasksFromServer();
+
+  // Set up event listeners
   setEventListeners();
-  filterTasks('Personal'); 
+
+  // Check if we're coming from login or register
+  const isFromLogin = document.referrer.includes('/login') || document.referrer.includes('/register');
+
+  // If we're coming from login, set active list to Personal
+  if (isFromLogin) {
+    console.log('Coming from login, setting active list to Personal');
+    localStorage.setItem('activeList', 'Personal');
+  }
+
+  // Get the active list from localStorage
+  const activeList = localStorage.getItem('activeList') || 'Personal';
+  console.log('Active list:', activeList);
+
+  // Load tasks from server (this will also handle selecting the most recent task)
+  loadTasksFromServer();
+
+  // If we're coming from login, make sure we show the Personal list
+  if (isFromLogin) {
+    console.log('Coming from login, ensuring Personal list is shown');
+    setTimeout(() => {
+      if (typeof filterTasks === 'function') {
+        filterTasks('Personal', false);
+      }
+
+      if (typeof highlightActiveList === 'function') {
+        highlightActiveList('Personal');
+      }
+
+      if (typeof showPanelForList === 'function') {
+        showPanelForList('Personal');
+      }
+    }, 500);
+  }
+
+  // Load subtasks and set up file upload
   loadLocalSubtasks();
-  setupFileUpload(); 
+  setupFileUpload();
+
+  // Load notes for the active list
+  if (typeof loadNotesForActiveList === 'function') {
+    setTimeout(() => {
+      loadNotesForActiveList();
+    }, 500); // Delay to ensure panels are created
+  }
+
+  // Log the selected task ID for debugging
+  console.log('Initial selected task ID:', localStorage.getItem('selectedTaskId'));
 }
 
 function saveTaskCacheToLocalStorage() {
@@ -40,14 +113,14 @@ function saveTaskCacheToLocalStorage() {
 
 function setEventListeners() {
   console.log('Setting up event listeners');
-  
+
   const completeBtn = document.getElementById('complete-btn');
   if (completeBtn) {
-    
+
     const newBtn = completeBtn.cloneNode(true);
     completeBtn.parentNode.replaceChild(newBtn, completeBtn);
-    
-    
+
+
     newBtn.addEventListener('click', () => {
       console.log('Mark as Complete button clicked');
       markSelectedTaskComplete();
@@ -55,7 +128,7 @@ function setEventListeners() {
   } else {
     console.error('❌ Complete button not found');
   }
-  
+
   const addTaskForm = document.getElementById('addTaskForm');
   if (addTaskForm) {
     addTaskForm.addEventListener('submit', handleAddTask);
@@ -67,7 +140,9 @@ function setEventListeners() {
   if (addSubtaskBtn) {
     addSubtaskBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      addSubtask();
+      if (typeof window.addSubtask === 'function') {
+        window.addSubtask();
+      }
     });
   }
 
@@ -75,8 +150,10 @@ function setEventListeners() {
     subtaskInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        addSubtask();
+        if (typeof window.addSubtask === 'function') {
+          window.addSubtask();
+        }
       }
     });
   }
-} 
+}
