@@ -174,13 +174,8 @@ async function loadTasksFromServer() {
 }
 
 function setupAddTaskFormListener() {
-  const addTaskForm = document.getElementById('addTaskForm');
-  if (addTaskForm) {
-    const newForm = addTaskForm.cloneNode(true);
-    addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
-
-    newForm.addEventListener('submit', handleAddTask);
-  }
+  // We'll skip this since it's handled in sidebarManager.js
+  console.log('Skipping setupAddTaskFormListener in taskManager.js - handled by sidebarManager.js');
 }
 
 
@@ -227,11 +222,38 @@ function handleAddTask(e) {
   // Update task counts
   updateAllTaskCounts();
 
+  // CRITICAL FIX: Directly update the right panel with the new task
+  // Get the panel for this task's list
+  const listId = currentList.toLowerCase().replace(/\s+/g, '-');
+  const panelId = `right-panel-${listId}`;
+  const panel = document.getElementById(panelId);
+
+  if (panel) {
+    // Update the title in the right panel immediately
+    const titleElement = panel.querySelector('h2');
+    if (titleElement) {
+      titleElement.textContent = title;
+      console.log(`Directly updated panel title to: ${title}`);
+    }
+
+    // Update the panel with this task
+    updatePanelWithTask(panel, newTask);
+
+    // Dispatch task selected event
+    document.dispatchEvent(new CustomEvent('taskSelected', {
+      detail: { taskId: newTask._id, listName: currentList }
+    }));
+  }
+
+  // Set this new task as selected
+  window.currentTaskId = newTask._id;
+
+  // Store selectedTaskId and list for refresh persistence
+  localStorage.setItem('selectedTaskId', newTask._id);
+  localStorage.setItem('lastSelectedList', currentList);
+
   // Refresh the task list with preserveSelection=true to prevent auto-selecting another task
   filterTasks(currentList, true);
-
-  // Set this new task as selected (skip server fetch)
-  setSelectedTaskUI(newTask);
 
   // Also highlight the task in the list - use setTimeout to ensure DOM is updated
   setTimeout(() => {
@@ -269,10 +291,6 @@ function handleAddTask(e) {
       }, 100);
     }
   }, 100);
-
-  // Store selectedTaskId and list for refresh persistence
-  localStorage.setItem('selectedTaskId', newTask._id);
-  localStorage.setItem('lastSelectedList', currentList);
 
   // Log for debugging
   console.log(`New task added and selected: ${newTask.title} (ID: ${newTask._id})`);
