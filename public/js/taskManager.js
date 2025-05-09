@@ -1040,6 +1040,7 @@ window.filterTasks = function(listName, preserveSelection = false) {
 };
 
 function updateAllTaskCounts() {
+  console.log('Running updateAllTaskCounts...');
   const lists = ['Personal', 'Work', 'Grocery List'];
   const customLists = [...new Set(localTaskCache.map(task => task.list))].filter(list =>
     !lists.includes(list) && list
@@ -1063,16 +1064,26 @@ function updateAllTaskCounts() {
     } else {
       console.warn(`Count element for list "${listName}" not found, selector: count-${listSelector}`);
 
-      const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      // Try to find the list item using the actual list name (not the selector)
+      const listItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
       if (listItem) {
-        let countSpan = listItem.querySelector('.task-count');
-        if (!countSpan) {
+        console.log(`Found list item for "${listName}"`);
+        let countSpan = listItem.querySelector('.text-sm.text-gray-500');
+        if (countSpan) {
+          // Update existing count span
+          countSpan.textContent = count;
+          console.log(`Updated existing count span for "${listName}" to ${count}`);
+        } else {
+          // Create a new count span if needed
           countSpan = document.createElement('span');
           countSpan.id = `count-${listSelector}`;
-          countSpan.className = 'task-count text-xs bg-dark-hover rounded-md px-1.5 py-0.5 ml-auto';
+          countSpan.className = 'text-sm text-gray-500';
           listItem.appendChild(countSpan);
+          countSpan.textContent = count;
+          console.log(`Created new count span for "${listName}" with count ${count}`);
         }
-        countSpan.textContent = count;
+      } else {
+        console.error(`Could not find list item for "${listName}" using selector: .sidebar-item[data-list="${listName}"]`);
       }
     }
   });
@@ -1083,6 +1094,9 @@ function updateAllTaskCounts() {
     console.log(`Set all tasks count to ${totalTasks}`);
   }
 }
+
+// Make updateAllTaskCounts available globally
+window.updateAllTaskCounts = updateAllTaskCounts;
 
 function applyBlurEffect(isCompleted, listName) {
   // If listName is provided, only apply blur to that list's panel

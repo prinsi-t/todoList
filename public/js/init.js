@@ -100,6 +100,14 @@ function initApp() {
 
   // Log the selected task ID for debugging
   console.log('Initial selected task ID:', localStorage.getItem('selectedTaskId'));
+
+  // Make sure all task counts are updated
+  if (typeof window.updateAllTaskCounts === 'function') {
+    setTimeout(() => {
+      window.updateAllTaskCounts();
+      console.log('Updated all task counts on initialization');
+    }, 800);
+  }
 }
 
 function saveTaskCacheToLocalStorage() {
