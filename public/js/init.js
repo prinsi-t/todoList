@@ -129,10 +129,9 @@ function setEventListeners() {
     console.error('❌ Complete button not found');
   }
 
-  const addTaskForm = document.getElementById('addTaskForm');
-  if (addTaskForm) {
-    addTaskForm.addEventListener('submit', handleAddTask);
-  }
+  // We'll skip adding the event listener here since it's handled in sidebarManager.js
+  // This prevents multiple event handlers from being attached to the form
+  console.log('Skipping addTaskForm event listener in init.js - handled by sidebarManager.js');
 
   const addSubtaskBtn = document.getElementById('addSubtaskBtn');
   const subtaskInput = document.getElementById('subtaskInput');

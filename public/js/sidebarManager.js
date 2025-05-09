@@ -131,11 +131,46 @@ function fixAddTaskForm() {
       console.error('Error saving to localStorage:', error);
     }
 
+    // CRITICAL FIX: Directly update the right panel with the new task
+    // Get the panel for this task's list
+    const listId = activeList.toLowerCase().replace(/\s+/g, '-');
+    const panelId = `right-panel-${listId}`;
+    const panel = document.getElementById(panelId);
+
+    if (panel) {
+      // Update the title in the right panel immediately
+      const titleElement = panel.querySelector('h2');
+      if (titleElement) {
+        titleElement.textContent = taskText;
+        console.log(`Directly updated panel title to: ${taskText}`);
+      }
+
+      // If updatePanelWithTask function exists, use it to update the panel
+      if (typeof updatePanelWithTask === 'function') {
+        updatePanelWithTask(panel, newTask);
+        console.log('Updated panel with new task using updatePanelWithTask');
+      }
+
+      // Dispatch task selected event
+      document.dispatchEvent(new CustomEvent('taskSelected', {
+        detail: { taskId: newTask._id, listName: activeList }
+      }));
+
+      // Set this new task as selected
+      window.currentTaskId = newTask._id;
+
+      // Store selectedTaskId and list for refresh persistence
+      localStorage.setItem('selectedTaskId', newTask._id);
+      localStorage.setItem('lastSelectedList', activeList);
+    }
+
+    // Refresh the task list
     if (typeof window.refreshTaskList === 'function') {
       refreshTaskList(activeList);
       console.log('Task list refreshed');
     } else if (typeof window.filterTasks === 'function') {
-      window.filterTasks(activeList);
+      // Use preserveSelection=true to prevent auto-selecting another task
+      window.filterTasks(activeList, true);
       console.log('Tasks filtered for current list');
     } else {
       console.error('No refresh function found');
