@@ -212,6 +212,20 @@ function updateTaskCount(listName, change) {
     console.log(`Updated count for ${listName}: ${currentCount} → ${newCount}`);
   } else {
     console.warn(`Count element for list "${listName}" not found with selector: count-${listSelector}`);
+
+    // Try to find the list item using the actual list name
+    const listItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
+    if (listItem) {
+      console.log(`Found list item for "${listName}"`);
+      let countSpan = listItem.querySelector('.text-sm.text-gray-500');
+      if (countSpan) {
+        // Update existing count span
+        const currentCount = parseInt(countSpan.textContent, 10) || 0;
+        const newCount = Math.max(0, currentCount + change);
+        countSpan.textContent = newCount;
+        console.log(`Updated existing count span for "${listName}": ${currentCount} → ${newCount}`);
+      }
+    }
   }
 
   const allTasksCount = document.getElementById('allTasksCount');
@@ -220,6 +234,13 @@ function updateTaskCount(listName, change) {
     const newCount = Math.max(0, currentCount + change);
     allTasksCount.textContent = newCount;
     console.log(`Updated all tasks count: ${currentCount} → ${newCount}`);
+  }
+
+  // Force an update of all task counts to ensure consistency
+  if (typeof window.updateAllTaskCounts === 'function') {
+    setTimeout(() => {
+      window.updateAllTaskCounts();
+    }, 100);
   }
 }
 
@@ -364,6 +385,7 @@ function addNewList(listName) {
   const newListItem = document.createElement('a');
   newListItem.href = '#';
   newListItem.className = 'sidebar-item flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-dark-hover';
+  // Set data-list attribute to the original list name
   newListItem.setAttribute('data-list', listName);
 
   const isCustomList = !isDefaultList(listName);
