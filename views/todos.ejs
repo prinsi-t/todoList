@@ -28,6 +28,28 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <style>
+    /* Subtask hover styles */
+    .subtask-item {
+      position: relative;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+    }
+
+    .subtask-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .subtask-item .delete-subtask-btn {
+      opacity: 0;
+      transition: opacity 0.2s ease, color 0.2s ease;
+    }
+
+    .subtask-item:hover .delete-subtask-btn {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body class="h-screen flex">
   <!-- Sidebar -->
@@ -63,6 +85,8 @@
           <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
         </a>
       </div>
+
+
     </div>
   </div>
 
@@ -435,7 +459,6 @@
   </div>
 
   <script src="/js/sidebarManager.js"></script>
-  <script src="/js/panelManager.js"></script>
   <script src="/js/taskManager.js"></script>
   <script src="/js/subtaskManager.js"></script>
   <script src="/js/uiUpdater.js"></script>
@@ -444,40 +467,9 @@
   <script src="/js/init.js"></script>
   <script src="/js/notesManager.js"></script>
 
-  <script>
-    // When the page loads, ensure the correct list is shown
-    document.addEventListener('DOMContentLoaded', function() {
-      // Check if we're coming from login or register
-      const isFromLogin = document.referrer.includes('/login') || document.referrer.includes('/register');
+ 
 
-      // If we're coming from login, set active list to Personal
-      if (isFromLogin) {
-        localStorage.setItem('activeList', 'Personal');
-        console.log('Coming from login, setting active list to Personal');
-
-        // Force Personal list to be shown
-        setTimeout(function() {
-          if (typeof filterTasks === 'function') {
-            filterTasks('Personal', false);
-          }
-
-          if (typeof highlightActiveList === 'function') {
-            highlightActiveList('Personal');
-          }
-
-          if (typeof showPanelForList === 'function') {
-            showPanelForList('Personal');
-          }
-
-          console.log('Forced Personal list to be shown after login');
-        }, 500);
-      } else {
-        // Otherwise, use the active list from localStorage
-        const activeList = localStorage.getItem('activeList') || 'Personal';
-        console.log('Using active list from localStorage:', activeList);
-      }
-    });
-  </script>
+ 
 
 </body>
 </html>

@@ -5,6 +5,10 @@ const subtaskSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  text: {
+    type: String,
+    // Not required, will be set to same as title for compatibility
+  },
   completed: {
     type: Boolean,
     default: false,
