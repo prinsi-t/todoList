@@ -131,20 +131,36 @@ router.delete('/:id', ensureAuthenticated, async (req, res) => {
 });
 
 router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
-  const { title } = req.body;
+  // Accept either 'text' or 'title' for compatibility with client-side code
+  const subtaskText = req.body.text || req.body.title;
   const { id } = req.params;
 
-  if (!title) {
-    return res.status(400).json({ error: 'Subtask title is required' });
+  if (!subtaskText) {
+    return res.status(400).json({ error: 'Subtask text/title is required' });
   }
 
   try {
     const todo = await Todo.findOne({ _id: id, user: req.user._id });
     if (!todo) return res.status(404).json({ error: 'Todo not found' });
 
-    todo.subtasks.push({ title });
+    // Store both title and text properties to ensure compatibility
+    todo.subtasks.push({
+      title: subtaskText,
+      text: subtaskText  // Add text property for client-side compatibility
+    });
+
     await todo.save();
-    res.status(200).json(todo);
+
+    // Transform the response to include both title and text properties
+    const response = todo.toObject();
+    if (response.subtasks && Array.isArray(response.subtasks)) {
+      response.subtasks = response.subtasks.map(subtask => ({
+        ...subtask,
+        text: subtask.title || subtask.text || 'Untitled subtask'
+      }));
+    }
+
+    res.status(200).json(response);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });
@@ -158,7 +174,17 @@ router.delete('/todos/:id/subtasks/:index', ensureAuthenticated, async (req, res
 
     todo.subtasks.splice(req.params.index, 1);
     await todo.save();
-    res.json(todo);
+
+    // Transform the response to include both title and text properties
+    const response = todo.toObject();
+    if (response.subtasks && Array.isArray(response.subtasks)) {
+      response.subtasks = response.subtasks.map(subtask => ({
+        ...subtask,
+        text: subtask.title || subtask.text || 'Untitled subtask'
+      }));
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Error deleting subtask:', error);
     res.status(500).json({ error: 'Failed to delete subtask' });
@@ -181,7 +207,16 @@ router.put('/todos/:id/subtasks/:index/complete', ensureAuthenticated, async (re
 
     await todo.save();
 
-    res.json(todo);
+    // Transform the response to include both title and text properties
+    const response = todo.toObject();
+    if (response.subtasks && Array.isArray(response.subtasks)) {
+      response.subtasks = response.subtasks.map(subtask => ({
+        ...subtask,
+        text: subtask.title || subtask.text || 'Untitled subtask'
+      }));
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Error updating subtask completion:', error);
     res.status(500).json({ error: 'Failed to update subtask' });
