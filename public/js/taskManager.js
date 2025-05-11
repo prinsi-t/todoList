@@ -46,8 +46,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  ensureCountElementsExist();
+  
   loadTasksFromServer();
 });
+
 
 function loadTasksFromLocalStorage() {
   try {
@@ -104,36 +107,28 @@ async function loadTasksFromServer() {
       saveTaskCacheToLocalStorage();
       updateAllTaskCounts();
 
-      // Get the active list from localStorage
       const currentList = localStorage.getItem('activeList') || 'Personal';
       console.log(`Using active list from localStorage: ${currentList}`);
 
-      // Filter tasks for the current list, but don't auto-select a task yet
       filterTasks(currentList, true);
 
-      // Find the most recent task in the current list
       const recentTask = findMostRecentTask(currentList);
       if (recentTask) {
         console.log(`Found most recent task on load for ${currentList}: ${recentTask.title} (ID: ${recentTask._id})`);
 
-        // Select the most recent task
         setSelectedTaskUI(recentTask);
 
-        // Store the selected task ID for persistence
         localStorage.setItem('selectedTaskId', recentTask._id);
         localStorage.setItem('lastSelectedList', currentList);
 
-        // Highlight the task in the list - use setTimeout to ensure DOM is updated
         setTimeout(() => {
           const taskElements = document.querySelectorAll('.task-item');
           let found = false;
 
-          // First remove selection from all tasks
           taskElements.forEach(el => {
             el.classList.remove('selected', 'bg-dark-hover');
           });
 
-          // Then add selection to the recent task
           taskElements.forEach(el => {
             if (el.dataset.taskId === recentTask._id) {
               el.classList.add('selected', 'bg-dark-hover');
@@ -144,10 +139,9 @@ async function loadTasksFromServer() {
 
           if (!found) {
             console.warn(`Could not find task element for ID: ${recentTask._id} on load - refreshing task list`);
-            // If we couldn't find the task element, try refreshing the task list again
+            
             refreshTaskList(currentList);
 
-            // And try highlighting again
             setTimeout(() => {
               const taskElements = document.querySelectorAll('.task-item');
               taskElements.forEach(el => {
@@ -174,7 +168,7 @@ async function loadTasksFromServer() {
 }
 
 function setupAddTaskFormListener() {
-  // We'll skip this since it's handled in sidebarManager.js
+  
   console.log('Skipping setupAddTaskFormListener in taskManager.js - handled by sidebarManager.js');
 }
 
@@ -215,57 +209,45 @@ function handleAddTask(e) {
     attachments: []
   };
 
-  // Add the new task to the cache
   localTaskCache.push(newTask);
   saveTaskCacheToLocalStorage();
 
-  // Update task counts
   updateAllTaskCounts();
 
-  // CRITICAL FIX: Directly update the right panel with the new task
-  // Get the panel for this task's list
   const listId = currentList.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
   const panel = document.getElementById(panelId);
 
   if (panel) {
-    // Update the title in the right panel immediately
+    
     const titleElement = panel.querySelector('h2');
     if (titleElement) {
       titleElement.textContent = title;
       console.log(`Directly updated panel title to: ${title}`);
     }
 
-    // Update the panel with this task
     updatePanelWithTask(panel, newTask);
 
-    // Dispatch task selected event
     document.dispatchEvent(new CustomEvent('taskSelected', {
       detail: { taskId: newTask._id, listName: currentList }
     }));
   }
 
-  // Set this new task as selected
   window.currentTaskId = newTask._id;
 
-  // Store selectedTaskId and list for refresh persistence
   localStorage.setItem('selectedTaskId', newTask._id);
   localStorage.setItem('lastSelectedList', currentList);
 
-  // Refresh the task list with preserveSelection=true to prevent auto-selecting another task
   filterTasks(currentList, true);
 
-  // Also highlight the task in the list - use setTimeout to ensure DOM is updated
   setTimeout(() => {
     const taskElements = document.querySelectorAll('.task-item');
     let found = false;
 
-    // First remove selection from all tasks
     taskElements.forEach(el => {
       el.classList.remove('selected', 'bg-dark-hover');
     });
 
-    // Then add selection to the new task
     taskElements.forEach(el => {
       if (el.dataset.taskId === newTask._id) {
         el.classList.add('selected', 'bg-dark-hover');
@@ -276,10 +258,9 @@ function handleAddTask(e) {
 
     if (!found) {
       console.warn(`Could not find task element for new task ID: ${newTask._id} - refreshing task list`);
-      // If we couldn't find the task element, try refreshing the task list again
+     
       refreshTaskList(currentList);
 
-      // And try highlighting again
       setTimeout(() => {
         const taskElements = document.querySelectorAll('.task-item');
         taskElements.forEach(el => {
@@ -292,7 +273,6 @@ function handleAddTask(e) {
     }
   }, 100);
 
-  // Log for debugging
   console.log(`New task added and selected: ${newTask.title} (ID: ${newTask._id})`);
   console.log(`Selected task ID saved to localStorage: ${localStorage.getItem('selectedTaskId')}`);
 
@@ -332,20 +312,20 @@ function refreshTaskList(listName) {
     emptyState.textContent = `No tasks in ${listName} list yet. Add one above!`;
     taskList.appendChild(emptyState);
   } else {
-    // Sort tasks by recency (newest first) before adding to DOM
+   
     const sortedTasks = filteredTasks.sort((a, b) => {
-      // If tasks have timestamp-based IDs (like 'local_1234567890')
+
       if (a._id.startsWith('local_') && b._id.startsWith('local_')) {
         const aTime = parseInt(a._id.replace('local_', ''));
         const bTime = parseInt(b._id.replace('local_', ''));
-        return bTime - aTime; // Descending order (newest first)
+        return bTime - aTime; 
       }
-      // If one is a local task and one is a server task, prefer the local task
+     
       else if (a._id.startsWith('local_')) {
-        return -1; // a comes first
+        return -1; 
       }
       else if (b._id.startsWith('local_')) {
-        return 1; // b comes first
+        return 1;
       }
       return -1;
     });
@@ -357,10 +337,9 @@ function refreshTaskList(listName) {
       }
     });
 
-    // After adding all tasks to the DOM, ensure the selected task is highlighted
     const selectedTaskId = localStorage.getItem('selectedTaskId');
     if (selectedTaskId) {
-      // Use setTimeout to ensure the DOM is updated
+      
       setTimeout(() => {
         const taskElements = document.querySelectorAll('.task-item');
         let found = false;
@@ -385,7 +364,6 @@ function refreshTaskList(listName) {
 function createTaskElement(task) {
   if (!task) return null;
 
-  // Check if this task is the currently selected one
   const selectedTaskId = localStorage.getItem('selectedTaskId');
   const isSelected = selectedTaskId === task._id;
 
@@ -477,7 +455,7 @@ function createTaskElement(task) {
 
   taskElement.addEventListener('click', (e) => {
     if (!e.target.closest('.checkbox') && !e.target.closest('.menu-btn') && !e.target.closest('.delete-btn')) {
-      // Toggle selection when clicking on a task
+      
       selectTask(task._id);
     }
   });
@@ -545,7 +523,7 @@ function toggleTaskCompletion(taskId) {
 
   const selectedTask = document.querySelector('.task-item.selected');
   if (selectedTask && selectedTask.dataset.taskId === taskId) {
-    // Get the list name from the task
+
     const taskList = localTaskCache[taskIndex].list;
     applyBlurEffect(newCompletedState, taskList);
   }
@@ -643,13 +621,12 @@ function moveTaskToList(taskId, newList) {
     }
 
     if (window.currentTaskId === taskId) {
-      // If the moved task was selected, find and select the most recent task in the current list
+    
       const recentTask = findMostRecentTask(currentList);
       if (recentTask) {
         setSelectedTaskUI(recentTask);
         localStorage.setItem('selectedTaskId', recentTask._id);
 
-        // Highlight the task in the list - use setTimeout to ensure DOM is updated
         setTimeout(() => {
           const taskElements = document.querySelectorAll('.task-item');
           taskElements.forEach(el => {
@@ -661,7 +638,7 @@ function moveTaskToList(taskId, newList) {
           });
         }, 50);
       } else {
-        // If no tasks left in this list, reset the right panel
+      
         resetRightPanel(true);
         window.currentTaskId = null;
       }
@@ -717,35 +694,16 @@ function moveTaskToList(taskId, newList) {
 
 async function selectTask(taskId) {
   try {
-    // Check if the task is already selected
+
     const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
     const isAlreadySelected = currentSelectedTaskId === taskId;
 
-    // If the task is already selected, deselect it
-    if (isAlreadySelected) {
-      // Remove selection highlight from all tasks
-      const taskElements = document.querySelectorAll('.task-item');
-      taskElements.forEach(el => {
-        el.classList.remove('selected', 'bg-dark-hover');
-      });
-
-      // Reset the right panel with forceReset=true to prevent auto-selecting another task
-      resetRightPanel(true);
-
-      // Clear the selected task ID
-      localStorage.removeItem('selectedTaskId');
-      window.currentTaskId = null;
-      return;
-    }
-
-    // First try to find the task in the local cache
     const localTask = localTaskCache.find(task => task._id === taskId);
 
     if (localTask) {
-      // If found locally, use it directly
+
       setSelectedTaskUI(localTask);
 
-      // Highlight the task in the list
       const taskElements = document.querySelectorAll('.task-item');
       taskElements.forEach(el => {
         el.classList.remove('selected', 'bg-dark-hover');
@@ -754,12 +712,10 @@ async function selectTask(taskId) {
         }
       });
 
-      // Store the selected task ID for persistence
       localStorage.setItem('selectedTaskId', taskId);
       return;
     }
 
-    // If not found locally, try to fetch from server
     const res = await fetch(`/todos/${taskId}`);
     if (!res.ok) {
       console.error(`Error fetching task: ${res.status}`);
@@ -768,10 +724,8 @@ async function selectTask(taskId) {
 
     const task = await res.json();
 
-    // Update the UI with the fetched task
     setSelectedTaskUI(task);
 
-    // Highlight the task in the list
     const taskElements = document.querySelectorAll('.task-item');
     taskElements.forEach(el => {
       el.classList.remove('selected', 'bg-dark-hover');
@@ -780,7 +734,6 @@ async function selectTask(taskId) {
       }
     });
 
-    // Store the selected task ID for persistence
     localStorage.setItem('selectedTaskId', taskId);
   } catch (err) {
     console.error('Failed to select task:', err);
@@ -796,29 +749,25 @@ function setSelectedTaskUI(task) {
   console.log(`Setting selected task UI for: ${task.title} (ID: ${task._id}, List: ${task.list})`);
   window.currentTaskId = task._id;
 
-  // Get the panel for this task's list
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
   const panel = document.getElementById(panelId);
 
   if (panel) {
-    // Update the panel with this task
+    
     updatePanelWithTask(panel, task);
 
-    // Dispatch task selected event
     document.dispatchEvent(new CustomEvent('taskSelected', {
       detail: { taskId: task._id, listName: task.list }
     }));
   } else {
     console.warn(`Panel not found for list: ${task.list}`);
 
-    // Create a panel for this list if it doesn't exist
     if (typeof createPanelForList === 'function') {
       const newPanel = createPanelForList(task.list);
       if (newPanel) {
         updatePanelWithTask(newPanel, task);
 
-        // Dispatch task selected event
         document.dispatchEvent(new CustomEvent('taskSelected', {
           detail: { taskId: task._id, listName: task.list }
         }));
@@ -826,13 +775,10 @@ function setSelectedTaskUI(task) {
     }
   }
 
-  // Store the current task and list in localStorage for persistence
+
   localStorage.setItem('selectedTaskId', task._id);
   localStorage.setItem('lastSelectedList', task.list);
 }
-
-
-
 
 function loadTaskDetails(task) {
   selectTask(task._id);
@@ -894,13 +840,12 @@ function deleteTask(taskId) {
   }
 
   if (window.currentTaskId === taskId) {
-    // If the deleted task was selected, find and select the most recent task in the list
+    
     const recentTask = findMostRecentTask(taskList);
     if (recentTask) {
       setSelectedTaskUI(recentTask);
       localStorage.setItem('selectedTaskId', recentTask._id);
 
-      // Highlight the task in the list
       const taskElements = document.querySelectorAll('.task-item');
       taskElements.forEach(el => {
         el.classList.remove('selected', 'bg-dark-hover');
@@ -934,71 +879,56 @@ function deleteTask(taskId) {
 window.filterTasks = function(listName, preserveSelection = false) {
   console.log('Filtering tasks for list:', listName);
 
-  // Store the active list in localStorage
   localStorage.setItem('activeList', listName);
   console.log(`Set active list in localStorage to: ${listName}`);
 
-  // Update the main title
   const titleElement = document.querySelector('h1');
   if (titleElement) {
     titleElement.textContent = `${listName} tasks`;
   }
 
-  // Update the task category dropdown if it exists
   const taskCategory = document.getElementById('taskCategory');
   if (taskCategory) {
     taskCategory.value = listName;
   }
 
-  // Clear the new task input
   const newTaskInput = document.getElementById('newTaskInput');
   if (newTaskInput) {
     newTaskInput.value = '';
   }
 
-  // Highlight the active list in the sidebar
   if (typeof window.highlightActiveList === 'function') {
     window.highlightActiveList(listName);
   } else {
     highlightActiveList(listName);
   }
 
-  // First refresh the task list to show the tasks for this list
   refreshTaskList(listName);
 
-  // Show the panel for this list
   if (typeof showPanelForList === 'function') {
     showPanelForList(listName);
   }
 
-  // Check if we should preserve the current selection
   if (!preserveSelection) {
-    // ALWAYS find and select the most recent task in this list
-    // This is critical for showing the correct task when switching lists
+
     const recentTask = findMostRecentTask(listName);
 
     if (recentTask) {
       console.log(`Found most recent task in ${listName}: ${recentTask.title} (ID: ${recentTask._id})`);
 
-      // FORCE the right panel to show this task
-      // This is the key fix - we need to make sure the right panel shows the most recent task
       setSelectedTaskUI(recentTask);
 
-      // Store the selected task ID for persistence
       localStorage.setItem('selectedTaskId', recentTask._id);
       localStorage.setItem('lastSelectedList', listName);
 
-      // Highlight the task in the list - use setTimeout to ensure DOM is updated
       setTimeout(() => {
         const taskElements = document.querySelectorAll('.task-item');
         let found = false;
 
-        // First remove selection from all tasks
         taskElements.forEach(el => {
           el.classList.remove('selected', 'bg-dark-hover');
         });
 
-        // Then add selection to the recent task
         taskElements.forEach(el => {
           if (el.dataset.taskId === recentTask._id) {
             el.classList.add('selected', 'bg-dark-hover');
@@ -1009,10 +939,9 @@ window.filterTasks = function(listName, preserveSelection = false) {
 
         if (!found) {
           console.warn(`Could not find task element for ID: ${recentTask._id} - refreshing task list`);
-          // If we couldn't find the task element, try refreshing the task list again
+       
           refreshTaskList(listName);
 
-          // And try highlighting again
           setTimeout(() => {
             const taskElements = document.querySelectorAll('.task-item');
             taskElements.forEach(el => {
@@ -1027,7 +956,6 @@ window.filterTasks = function(listName, preserveSelection = false) {
     } else {
       console.log(`No tasks found in ${listName} list`);
 
-      // If no tasks in this list, clear the panel for this list
       const listId = listName.toLowerCase().replace(/\s+/g, '-');
       const panelId = `right-panel-${listId}`;
       const panel = document.getElementById(panelId);
@@ -1064,26 +992,63 @@ function updateAllTaskCounts() {
     } else {
       console.warn(`Count element for list "${listName}" not found, selector: count-${listSelector}`);
 
-      // Try to find the list item using the actual list name (not the selector)
-      const listItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
+      let listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      
+      if (!listItem) {
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        for (const item of sidebarItems) {
+          const textContent = item.textContent.trim();
+          if (textContent.includes(listName)) {
+            listItem = item;
+            break;
+          }
+        }
+      }
+
       if (listItem) {
         console.log(`Found list item for "${listName}"`);
         let countSpan = listItem.querySelector('.text-sm.text-gray-500');
+        
+        if (!countSpan) {
+          
+          countSpan = listItem.querySelector('span');
+        }
+        
         if (countSpan) {
-          // Update existing count span
+         
           countSpan.textContent = count;
+          countSpan.id = `count-${listSelector}`; 
           console.log(`Updated existing count span for "${listName}" to ${count}`);
         } else {
-          // Create a new count span if needed
+       
           countSpan = document.createElement('span');
           countSpan.id = `count-${listSelector}`;
-          countSpan.className = 'text-sm text-gray-500';
+          countSpan.className = 'text-sm text-gray-500 ml-auto';
           listItem.appendChild(countSpan);
           countSpan.textContent = count;
           console.log(`Created new count span for "${listName}" with count ${count}`);
         }
       } else {
-        console.error(`Could not find list item for "${listName}" using selector: .sidebar-item[data-list="${listName}"]`);
+       
+        console.log(`Could not find list item for "${listName}" - creating count element in DOM`);
+        
+        const sidebar = document.querySelector('.sidebar, #sidebar, nav, .sidebar-container');
+        if (sidebar) {
+          
+          const existingListItem = Array.from(sidebar.querySelectorAll('*')).find(el => 
+            el.textContent.includes(listName)
+          );
+          
+          if (existingListItem) {
+        
+            let countSpan = document.createElement('span');
+            countSpan.id = `count-${listSelector}`;
+            countSpan.className = 'text-sm text-gray-500 ml-auto';
+            countSpan.textContent = count;
+            existingListItem.appendChild(countSpan);
+            console.log(`Added count span to existing element for "${listName}"`);
+          }
+        }
       }
     }
   });
@@ -1095,11 +1060,44 @@ function updateAllTaskCounts() {
   }
 }
 
-// Make updateAllTaskCounts available globally
+function ensureCountElementsExist() {
+  const listsToCheck = ['jj', 'ff', 'k', 'nn'];
+  
+  listsToCheck.forEach(listName => {
+    const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+    const countId = `count-${listSelector}`;
+    
+    if (!document.getElementById(countId)) {
+      console.log(`Creating missing count element for ${listName}`);
+      
+      const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      
+      if (listItem) {
+        
+        const countSpan = document.createElement('span');
+        countSpan.id = countId;
+        countSpan.className = 'text-sm text-gray-500 ml-auto';
+        countSpan.textContent = '0'; // Default count
+        listItem.appendChild(countSpan);
+        console.log(`Created count element for ${listName}`);
+      } else {
+  
+        const hiddenCount = document.createElement('span');
+        hiddenCount.id = countId;
+        hiddenCount.style.display = 'none';
+        hiddenCount.textContent = '0';
+        document.body.appendChild(hiddenCount);
+        console.log(`Created hidden count element for ${listName}`);
+      }
+    }
+  });
+}
+
 window.updateAllTaskCounts = updateAllTaskCounts;
+window.ensureCountElementsExist = ensureCountElementsExist;
 
 function applyBlurEffect(isCompleted, listName) {
-  // If listName is provided, only apply blur to that list's panel
+  
   if (listName) {
     const listId = listName.toLowerCase().replace(/\s+/g, '-');
     const panelId = `right-panel-${listId}`;
@@ -1115,7 +1113,7 @@ function applyBlurEffect(isCompleted, listName) {
       }
     }
   } else {
-    // If no listName provided, try to get the current active list
+
     const currentList = localStorage.getItem('activeList') || 'Personal';
     const listId = currentList.toLowerCase().replace(/\s+/g, '-');
     const panelId = `right-panel-${listId}`;
@@ -1134,20 +1132,17 @@ function applyBlurEffect(isCompleted, listName) {
 }
 
 function resetRightPanel(forceReset = false) {
-  // Get the current active list
+
   const currentList = localStorage.getItem('activeList') || 'Personal';
 
-  // If not forcing a reset, try to find the most recently added task for this list
   if (!forceReset) {
     const recentTask = findMostRecentTask(currentList);
     if (recentTask) {
-      // If we have a recent task, display it
       setSelectedTaskUI(recentTask);
       return;
     }
   }
 
-  // If forcing a reset or no recent task, clear the panel for this list
   const listId = currentList.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
   const panel = document.getElementById(panelId);
@@ -1155,7 +1150,7 @@ function resetRightPanel(forceReset = false) {
   if (panel && typeof clearPanel === 'function') {
     clearPanel(panel, currentList);
   } else {
-    // Fallback to old method if panel or clearPanel function not found
+
     const titleElement = document.querySelector(`#${panelId} h2`);
     if (titleElement) {
       titleElement.textContent = '';
@@ -1181,7 +1176,6 @@ function resetRightPanel(forceReset = false) {
       imagePreviewContainer.innerHTML = '';
     }
 
-    // Remove blur effect
     const blurContent = document.querySelector(`#${panelId} .task-blur-content`);
     if (blurContent) {
       blurContent.classList.remove('blurred');
@@ -1190,14 +1184,12 @@ function resetRightPanel(forceReset = false) {
   }
 }
 
-// Find the most recently added task for a specific list
 function findMostRecentTask(listName) {
   if (!localTaskCache || localTaskCache.length === 0) {
     console.log(`No tasks in cache for list: ${listName}`);
     return null;
   }
 
-  // Filter tasks by the specified list
   const listTasks = localTaskCache.filter(task => task.list === listName);
   if (listTasks.length === 0) {
     console.log(`No tasks found for list: ${listName}`);
@@ -1206,40 +1198,36 @@ function findMostRecentTask(listName) {
 
   console.log(`Found ${listTasks.length} tasks for list: ${listName}`);
 
-  // Log all tasks in this list for debugging
   listTasks.forEach(task => {
     console.log(`- Task: ${task.title} (ID: ${task._id})`);
   });
 
-  // Always find the most recently added task
   const sortedTasks = listTasks.sort((a, b) => {
-    // If tasks have timestamp-based IDs (like 'local_1234567890')
+
     if (a._id.startsWith('local_') && b._id.startsWith('local_')) {
       const aTime = parseInt(a._id.replace('local_', ''));
       const bTime = parseInt(b._id.replace('local_', ''));
       return bTime - aTime; // Descending order (newest first)
     }
-    // If one is a local task and one is a server task, prefer the local task
+
     else if (a._id.startsWith('local_')) {
       return -1; // a comes first
     }
     else if (b._id.startsWith('local_')) {
       return 1; // b comes first
     }
-    // For server tasks, try to compare by ID (assuming newer tasks have higher IDs)
+
     else {
-      // Try to extract numeric parts if possible
       const aNum = parseInt(a._id.replace(/\D/g, ''));
       const bNum = parseInt(b._id.replace(/\D/g, ''));
       if (!isNaN(aNum) && !isNaN(bNum)) {
         return bNum - aNum; // Descending order (newest first)
       }
     }
-    // If all else fails, just return the first task
+
     return -1;
   });
 
-  // Log the sorted tasks for debugging
   console.log('Sorted tasks (newest first):');
   sortedTasks.forEach((task, index) => {
     console.log(`${index + 1}. ${task.title} (ID: ${task._id})`);
@@ -1258,3 +1246,4 @@ window.markSelectedTaskComplete = function() {
     toggleTaskCompletion(taskId);
   }
 };
+

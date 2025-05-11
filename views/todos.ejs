@@ -29,7 +29,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    /* Subtask hover styles */
     .subtask-item {
       position: relative;
       padding: 4px 8px;
@@ -52,9 +51,7 @@
   </style>
 </head>
 <body class="h-screen flex">
-  <!-- Sidebar -->
   <div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
-    <!-- User Profile -->
     <div class="flex items-center gap-3 mb-6 px-2">
       <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
         <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
@@ -62,7 +59,6 @@
       <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
     </div>
 
-    <!-- My Lists -->
     <div class="ml-5 mt-2">
       <div class="flex items-center justify-between text-lg text-gray-300 px-4 mb-4">
         <span>My Lists</span>
@@ -85,21 +81,15 @@
           <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
         </a>
       </div>
-
-
     </div>
   </div>
 
-  <!-- Main Content -->
   <div class="flex-1 flex">
-    <!-- Tasks List - keep width fixed -->
     <div class="w-96 border-r border-dark-border p-4">
       <div class="flex items-center mb-4">
         <h1 class="text-xl font-bold flex-grow">Personal tasks</h1>
-
       </div>
 
-      <!-- Add Task Button -->
       <div class="mb-4">
         <form id="addTaskForm" class="flex gap-2">
           <input
@@ -122,7 +112,6 @@
         </form>
       </div>
 
-      <!-- Tasks -->
       <div id="taskList" class="space-y-1">
         <% tasks.forEach(task => { %>
           <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
@@ -137,9 +126,7 @@
       </div>
     </div>
 
-    <!-- Right Panels Container -->
     <div id="right-panels-container" class="flex-1 min-w-[600px]">
-      <!-- Personal Panel -->
       <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal">
         <div class="flex items-center justify-between mb-6">
           <div>
@@ -156,7 +143,6 @@
 
         <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
           <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-            <!-- NOTES -->
             <div>
               <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
               <textarea
@@ -166,7 +152,6 @@
               ></textarea>
             </div>
 
-            <!-- SUBTASKS -->
             <div class="subtasks-section">
               <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
               <div class="flex items-center gap-2 mb-4">
@@ -186,7 +171,6 @@
               </div>
             </div>
 
-            <!-- ATTACHMENTS -->
             <div class="mt-6">
               <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
               <div
@@ -203,261 +187,6 @@
         </div>
       </div>
 
-      <!-- Work Panel -->
-      <div id="right-panel-work" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full hidden" data-list="Work">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-2xl font-bold mb-1"></h2>
-            <div class="text-sm text-gray-400">Work</div>
-          </div>
-          <button
-            class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
-            onclick="markSelectedTaskComplete('Work')"
-          >
-            Mark as Complete
-          </button>
-        </div>
-
-        <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-          <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-            <!-- NOTES -->
-            <div>
-              <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
-              <textarea
-                placeholder="Insert your notes here"
-                class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <!-- SUBTASKS -->
-            <div class="subtasks-section">
-              <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  type="text"
-                  class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
-                  placeholder="Add a new subtask..."
-                >
-                <button
-                  class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
-                  data-list="Work"
-                >
-                  Add
-                </button>
-              </div>
-              <div class="subtasks-list space-y-1">
-              </div>
-            </div>
-
-            <!-- ATTACHMENTS -->
-            <div class="mt-6">
-              <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-              <div
-                class="drop-zone border-2 border-dashed border-dark-border rounded-lg p-6 text-center cursor-pointer hover:border-gray-600 transition-colors duration-200"
-                data-list="Work"
-              >
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-600 mb-2"></i>
-                <p class="text-sm text-gray-500">Click to add / drop your files here</p>
-                <p class="text-xs text-gray-600 mt-1">(Max 10 images)</p>
-              </div>
-              <div class="image-preview-container grid grid-cols-3 gap-3 mt-4"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Grocery List Panel -->
-      <div id="right-panel-grocery-list" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full hidden" data-list="Grocery List">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-2xl font-bold mb-1"></h2>
-            <div class="text-sm text-gray-400">Grocery List</div>
-          </div>
-          <button
-            class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
-            onclick="markSelectedTaskComplete('Grocery List')"
-          >
-            Mark as Complete
-          </button>
-        </div>
-
-        <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-          <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-            <!-- NOTES -->
-            <div>
-              <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
-              <textarea
-                placeholder="Insert your notes here"
-                class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <!-- SUBTASKS -->
-            <div class="subtasks-section">
-              <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  type="text"
-                  class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
-                  placeholder="Add a new subtask..."
-                >
-                <button
-                  class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
-                  data-list="Grocery List"
-                >
-                  Add
-                </button>
-              </div>
-              <div class="subtasks-list space-y-1">
-              </div>
-            </div>
-
-            <!-- ATTACHMENTS -->
-            <div class="mt-6">
-              <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-              <div
-                class="drop-zone border-2 border-dashed border-dark-border rounded-lg p-6 text-center cursor-pointer hover:border-gray-600 transition-colors duration-200"
-                data-list="Grocery List"
-              >
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-600 mb-2"></i>
-                <p class="text-sm text-gray-500">Click to add / drop your files here</p>
-                <p class="text-xs text-gray-600 mt-1">(Max 10 images)</p>
-              </div>
-              <div class="image-preview-container grid grid-cols-3 gap-3 mt-4"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- K List Panel -->
-      <div id="right-panel-k" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full hidden" data-list="k">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-2xl font-bold mb-1"></h2>
-            <div class="text-sm text-gray-400">k</div>
-          </div>
-          <button
-            class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
-            onclick="markSelectedTaskComplete('k')"
-          >
-            Mark as Complete
-          </button>
-        </div>
-
-        <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-          <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-            <!-- NOTES -->
-            <div>
-              <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
-              <textarea
-                placeholder="Insert your notes here"
-                class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <!-- SUBTASKS -->
-            <div class="subtasks-section">
-              <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  type="text"
-                  class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
-                  placeholder="Add a new subtask..."
-                >
-                <button
-                  class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
-                  data-list="k"
-                >
-                  Add
-                </button>
-              </div>
-              <div class="subtasks-list space-y-1">
-              </div>
-            </div>
-
-            <!-- ATTACHMENTS -->
-            <div class="mt-6">
-              <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-              <div
-                class="drop-zone border-2 border-dashed border-dark-border rounded-lg p-6 text-center cursor-pointer hover:border-gray-600 transition-colors duration-200"
-                data-list="k"
-              >
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-600 mb-2"></i>
-                <p class="text-sm text-gray-500">Click to add / drop your files here</p>
-                <p class="text-xs text-gray-600 mt-1">(Max 10 images)</p>
-              </div>
-              <div class="image-preview-container grid grid-cols-3 gap-3 mt-4"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Template for dynamically created panels -->
-      <div id="right-panel-template" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full hidden" style="display: none;">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-2xl font-bold mb-1"></h2>
-            <div class="text-sm text-gray-400"></div>
-          </div>
-          <button
-            class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
-          >
-            Mark as Complete
-          </button>
-        </div>
-
-        <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-          <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-            <!-- NOTES -->
-            <div>
-              <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
-              <textarea
-                placeholder="Insert your notes here"
-                class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <!-- SUBTASKS -->
-            <div class="subtasks-section">
-              <h3 class="text-sm text-gray-400 mb-2">SUBTASKS</h3>
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  type="text"
-                  class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
-                  placeholder="Add a new subtask..."
-                >
-                <button
-                  class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
-                >
-                  Add
-                </button>
-              </div>
-              <div class="subtasks-list space-y-1">
-              </div>
-            </div>
-
-            <!-- ATTACHMENTS -->
-            <div class="mt-6">
-              <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-              <div
-                class="drop-zone border-2 border-dashed border-dark-border rounded-lg p-6 text-center cursor-pointer hover:border-gray-600 transition-colors duration-200"
-              >
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-600 mb-2"></i>
-                <p class="text-sm text-gray-500">Click to add / drop your files here</p>
-                <p class="text-xs text-gray-600 mt-1">(Max 10 images)</p>
-              </div>
-              <div class="image-preview-container grid grid-cols-3 gap-3 mt-4"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script src="/js/sidebarManager.js"></script>
   <script src="/js/taskManager.js"></script>
   <script src="/js/subtaskManager.js"></script>
@@ -466,10 +195,6 @@
   <script src="/js/fileManager.js"></script>
   <script src="/js/init.js"></script>
   <script src="/js/notesManager.js"></script>
-
- 
-
- 
 
 </body>
 </html>
