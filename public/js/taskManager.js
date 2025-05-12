@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTasksFromServer();
 });
 
-
 function loadTasksFromLocalStorage() {
   try {
     const cachedTasks = localStorage.getItem('taskCache');
@@ -171,8 +170,6 @@ function setupAddTaskFormListener() {
   
   console.log('Skipping setupAddTaskFormListener in taskManager.js - handled by sidebarManager.js');
 }
-
-
 
 function handleAddTask(e) {
   e.preventDefault();
@@ -775,7 +772,6 @@ function setSelectedTaskUI(task) {
     }
   }
 
-
   localStorage.setItem('selectedTaskId', task._id);
   localStorage.setItem('lastSelectedList', task.list);
 }
@@ -854,7 +850,7 @@ function deleteTask(taskId) {
         }
       });
     } else {
-      // If no tasks left in this list, reset the right panel
+     
       resetRightPanel(true);
       window.currentTaskId = null;
     }

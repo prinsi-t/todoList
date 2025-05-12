@@ -37,7 +37,6 @@ function fixSidebarNavigation() {
 
           highlightActiveList(listName);
 
-          // Show the appropriate panel
           showPanelForList(listName, null);
 
           if (typeof window.filterTasks === 'function') {
@@ -51,19 +50,16 @@ function fixSidebarNavigation() {
   });
 }
 
-// Add this to the DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-    // First, make sure we have panels for all lists
+  
     createPanelsForAllLists();
     
     const activeList = localStorage.getItem('activeList') || 'Personal';
     console.log('DOMContentLoaded - Showing panel for active list:', activeList);
     
-    // Show the panel for the active list
     showPanelForList(activeList);
     
-    // Highlight the active list in the sidebar
     highlightActiveList(activeList);
   }, 500);
 });
@@ -405,7 +401,6 @@ function clearExistingCustomLists() {
   function addNewList(listName, saveToStorage = true) {
     console.log('Adding new list:', listName);
   
-    // Check if this list already exists in the sidebar
     const existingItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
     if (existingItem) {
       console.log(`List ${listName} already exists in the sidebar, not adding again`);
@@ -738,53 +733,6 @@ const panelData = {};
 
 let panelManagerInitialized = false;
 
-// function initPanelManager() {
-  
-//   if (panelManagerInitialized) {
-//     console.log('Panel manager already initialized, skipping');
-//     return;
-//   }
-  
-//   console.log('Initializing Panel Manager');
-//   panelManagerInitialized = true;
-
-//   createPanelsForCustomLists();
-
-//   setupListSwitchListeners();
-
-//   const activeList = localStorage.getItem('activeList');
-//   console.log(`Active list from localStorage in initPanelManager: ${activeList || 'not found'}`);
-
-//   const selectedTaskId = localStorage.getItem('selectedTaskId');
-  
-//   setTimeout(() => {
-//     if (activeList) {
-      
-//       showPanelForList(activeList, selectedTaskId);
-
-//       if (typeof window.highlightActiveList === 'function') {
-//         window.highlightActiveList(activeList);
-//       }
-      
-//       if (typeof window.filterTasks === 'function') {
-//         window.filterTasks(activeList, true); 
-//       }
-//     } else {
-      
-//       localStorage.setItem('activeList', 'Personal');
-//       console.log('No active list found, setting to Personal as default');
-//       showPanelForList('Personal', selectedTaskId);
-      
-//       if (typeof window.highlightActiveList === 'function') {
-//         window.highlightActiveList('Personal');
-//       }
-      
-//       if (typeof window.filterTasks === 'function') {
-//         window.filterTasks('Personal', true);
-//       }
-//     }
-//   }, 300);
-// }
 function initPanelManager() {
   if (panelManagerInitialized) {
     console.log('Panel manager already initialized, skipping');
@@ -794,7 +742,6 @@ function initPanelManager() {
   console.log('Initializing Panel Manager');
   panelManagerInitialized = true;
 
-  // Create panels for all lists
   createPanelsForAllLists();
 
   setupListSwitchListeners();
@@ -852,14 +799,13 @@ window.createPanelsForCustomLists = createPanelsForCustomLists;
 
 function createPanelsForAllLists() {
   try {
-    // Create panels for default lists
+    
     const defaultLists = ['Personal', 'Work', 'Grocery List'];
     defaultLists.forEach(listName => {
       const panel = createPanelForList(listName);
       if (panel) console.log(`Successfully created panel for ${listName}`);
     });
     
-    // Create panels for custom lists
     const customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
     customLists.forEach(listName => {
       const panel = createPanelForList(listName);
@@ -870,66 +816,12 @@ function createPanelsForAllLists() {
   }
 }
 
-// function createPanelForList(listName) {
-//   if (!listName) return;
-
-//   const listId = listName.toLowerCase().replace(/\s+/g, '-');
-//   const panelId = `right-panel-${listId}`;
-
-//   if (document.getElementById(panelId)) {
-//     console.log(`Panel for ${listName} already exists`);
-//     return;
-//   }
-
-//   console.log(`Creating panel for list: ${listName}`);
-
-//   const template = document.getElementById('right-panel-template');
-//   if (!template) {
-//     console.error('Panel template not found');
-//     return;
-//   }
-
-//   const newPanel = template.cloneNode(true);
-//   newPanel.id = panelId;
-//   newPanel.setAttribute('data-list', listName);
-//   newPanel.classList.remove('hidden');
-//   newPanel.style.display = 'none';
-
-//   const listNameElement = newPanel.querySelector('.text-gray-400');
-//   if (listNameElement) {
-//     listNameElement.textContent = listName;
-//   }
-
-//   const completeBtn = newPanel.querySelector('.complete-btn');
-//   if (completeBtn) {
-//     completeBtn.setAttribute('onclick', `markSelectedTaskComplete('${listName}')`);
-//     completeBtn.setAttribute('data-list', listName);
-//   }
-
-//   const addSubtaskBtn = newPanel.querySelector('.add-subtask-btn');
-//   if (addSubtaskBtn) {
-//     addSubtaskBtn.setAttribute('data-list', listName);
-//   }
-
-//   const dropZone = newPanel.querySelector('.drop-zone');
-//   if (dropZone) {
-//     dropZone.setAttribute('data-list', listName);
-//   }
-
-//   const container = document.getElementById('right-panels-container');
-//   if (container) {
-//     container.appendChild(newPanel);
-//   }
-
-//   return newPanel;
-// }
 function createPanelForList(listName) {
   if (!listName) return null;
 
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
 
-  // Check if panel already exists
   let panel = document.getElementById(panelId);
   if (panel) {
     console.log(`Panel for ${listName} already exists`);
@@ -938,7 +830,6 @@ function createPanelForList(listName) {
 
   console.log(`Creating panel for list: ${listName}`);
 
-  // Look for any panel to use as a template
   let template = document.getElementById('right-panel-personal');
   if (!template) {
     template = document.querySelector('.right-panel');
@@ -949,20 +840,17 @@ function createPanelForList(listName) {
     return null;
   }
 
-  // Clone the template
   const newPanel = template.cloneNode(true);
   newPanel.id = panelId;
   newPanel.setAttribute('data-list', listName);
   newPanel.classList.add('hidden');
   newPanel.style.display = 'none';
 
-  // Update list name in the panel
   const listNameElement = newPanel.querySelector('.text-sm.text-gray-400');
   if (listNameElement) {
     listNameElement.textContent = listName;
   }
 
-  // Update button attributes
   const completeBtn = newPanel.querySelector('.complete-btn');
   if (completeBtn) {
     completeBtn.setAttribute('onclick', `markSelectedTaskComplete('${listName}')`);
@@ -979,7 +867,6 @@ function createPanelForList(listName) {
     dropZone.setAttribute('data-list', listName);
   }
 
-  // Add the panel to the container
   const container = document.getElementById('right-panels-container');
   if (container) {
     container.appendChild(newPanel);
@@ -998,58 +885,6 @@ function createPanelForList(listName) {
  * @param {string|null} taskId - Optional task ID to display
  */
 
-// function showPanelForList(listName, selectedTaskId = null) {
-//   if (!listName) {
-//     console.error('No list name provided to showPanelForList');
-//     return;
-//   }
-
-//   console.log(`Showing panel for list: ${listName}, selected task: ${selectedTaskId || 'none'}`);
-
-//   const currentActiveList = localStorage.getItem('activeList');
-//   if (currentActiveList !== listName) {
-//     localStorage.setItem('activeList', listName);
-//     console.log(`Setting activeList in localStorage to: ${listName} in showPanelForList`);
-//   }
-
-//   const panels = document.querySelectorAll('.right-panel');
-//   panels.forEach(panel => {
-//     if (panel.id !== 'right-panel-template') {
-//       panel.classList.add('hidden');
-//       panel.style.display = 'none';
-//     }
-//   });
-
-//   const listId = listName.toLowerCase().replace(/\s+/g, '-');
-//   const panelId = `right-panel-${listId}`;
-
-//   let panel = document.getElementById(panelId);
-  
-//   if (!panel) {
-//     console.log(`Panel for ${listName} doesn't exist, creating it`);
-//     panel = createPanelForList(listName);
-//   }
-  
-//   if (panel) {
-//     panel.classList.remove('hidden');
-//     panel.style.display = 'block';
-
-//     if (selectedTaskId) {
-//       const selectedTask = findTaskById(selectedTaskId);
-//       if (selectedTask && selectedTask.list === listName) {
-//         updatePanelWithTask(panel, selectedTask);
-//       } else {
-//         updatePanelWithRecentTask(listName, panel);
-//       }
-//     } else {
-//       updatePanelWithRecentTask(listName, panel);
-//     }
-
-//     document.dispatchEvent(new CustomEvent('listChanged', {
-//       detail: { listName }
-//     }));
-//   }
-// }
 function showPanelForList(listName, selectedTaskId = null) {
   if (!listName) {
     console.error('No list name provided to showPanelForList');
@@ -1282,45 +1117,7 @@ function renderSubtasksForPanel(subtasksList, subtasks) {
   });
 }
 
-// function setupListSwitchListeners() {
-//   const originalFilterTasks = window.filterTasks;
-
-//   if (typeof originalFilterTasks === 'function') {
-//     window.filterTasks = function(listName, preserveSelection = false) {
-    
-//       localStorage.setItem('activeList', listName);
-//       localStorage.setItem('lastSelectedList', listName);
-//       console.log(`Set active list in localStorage to: ${listName} (from filterTasks)`);
-      
-//       originalFilterTasks(listName, preserveSelection);
-
-//       const selectedTaskId = preserveSelection ? localStorage.getItem('selectedTaskId') : null;
-//       showPanelForList(listName, selectedTaskId);
-//     };
-//   }
-
-//   window.markSelectedTaskComplete = function(listName) {
-//     const panel = document.querySelector(`.right-panel[data-list="${listName}"]:not(.hidden)`);
-//     if (panel) {
-//       const taskId = panel.getAttribute('data-current-task-id');
-//       if (taskId) {
-//         toggleTaskCompletion(taskId);
-//       }
-//     }
-//   };
-  
-//   document.addEventListener('taskSelected', function(e) {
-//     if (e.detail && e.detail.taskId) {
-//       localStorage.setItem('selectedTaskId', e.detail.taskId);
-      
-//       if (e.detail.listName) {
-//         localStorage.setItem('activeList', e.detail.listName);
-//         console.log(`Set active list in localStorage to: ${e.detail.listName} (from taskSelected event)`);
-//       }
-//     }
-//   });
-// }
-function setupListSwitchListeners() {
+  function setupListSwitchListeners() {
   const originalFilterTasks = window.filterTasks;
 
   if (typeof originalFilterTasks === 'function') {
