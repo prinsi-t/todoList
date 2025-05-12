@@ -963,14 +963,107 @@ window.filterTasks = function(listName, preserveSelection = false) {
   }
 };
 
+// function updateAllTaskCounts() {
+//   console.log('Running updateAllTaskCounts...');
+//   const lists = ['Personal', 'Work', 'Grocery List'];
+//   const customLists = [...new Set(localTaskCache.map(task => task.list))].filter(list =>
+//     !lists.includes(list) && list
+//   );
+
+//   const allLists = [...lists, ...customLists];
+
+//   let totalTasks = 0;
+
+//   allLists.forEach(listName => {
+//     const listTasks = localTaskCache.filter(task => task.list === listName);
+//     const count = listTasks.length;
+//     totalTasks += count;
+
+//     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+//     const countElement = document.getElementById(`count-${listSelector}`);
+
+//     if (countElement) {
+//       countElement.textContent = count;
+//       console.log(`Set count for ${listName} to ${count}`);
+//     } else {
+//       console.warn(`Count element for list "${listName}" not found, selector: count-${listSelector}`);
+
+//       let listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      
+//       if (!listItem) {
+//         const sidebarItems = document.querySelectorAll('.sidebar-item');
+//         for (const item of sidebarItems) {
+//           const textContent = item.textContent.trim();
+//           if (textContent.includes(listName)) {
+//             listItem = item;
+//             break;
+//           }
+//         }
+//       }
+
+//       if (listItem) {
+//         console.log(`Found list item for "${listName}"`);
+//         let countSpan = listItem.querySelector('.text-sm.text-gray-500');
+        
+//         if (!countSpan) {
+          
+//           countSpan = listItem.querySelector('span');
+//         }
+        
+//         if (countSpan) {
+         
+//           countSpan.textContent = count;
+//           countSpan.id = `count-${listSelector}`; 
+//           console.log(`Updated existing count span for "${listName}" to ${count}`);
+//         } else {
+       
+//           countSpan = document.createElement('span');
+//           countSpan.id = `count-${listSelector}`;
+//           countSpan.className = 'text-sm text-gray-500 ml-auto';
+//           listItem.appendChild(countSpan);
+//           countSpan.textContent = count;
+//           console.log(`Created new count span for "${listName}" with count ${count}`);
+//         }
+//       } else {
+       
+//         console.log(`Could not find list item for "${listName}" - creating count element in DOM`);
+        
+//         const sidebar = document.querySelector('.sidebar, #sidebar, nav, .sidebar-container');
+//         if (sidebar) {
+          
+//           const existingListItem = Array.from(sidebar.querySelectorAll('*')).find(el => 
+//             el.textContent.includes(listName)
+//           );
+          
+//           if (existingListItem) {
+        
+//             let countSpan = document.createElement('span');
+//             countSpan.id = `count-${listSelector}`;
+//             countSpan.className = 'text-sm text-gray-500 ml-auto';
+//             countSpan.textContent = count;
+//             existingListItem.appendChild(countSpan);
+//             console.log(`Added count span to existing element for "${listName}"`);
+//           }
+//         }
+//       }
+//     }
+//   });
+
+//   const allTasksCount = document.getElementById('allTasksCount');
+//   if (allTasksCount) {
+//     allTasksCount.textContent = totalTasks;
+//     console.log(`Set all tasks count to ${totalTasks}`);
+//   }
+// }
 function updateAllTaskCounts() {
   console.log('Running updateAllTaskCounts...');
-  const lists = ['Personal', 'Work', 'Grocery List'];
-  const customLists = [...new Set(localTaskCache.map(task => task.list))].filter(list =>
-    !lists.includes(list) && list
-  );
+  const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
+  
+  // Collect all unique lists from task cache, including default and custom lists
+  const customLists = [...new Set(localTaskCache.map(task => task.list))]
+    .filter(list => list && !defaultLists.includes(list));
 
-  const allLists = [...lists, ...customLists];
+  const allLists = [...defaultLists, ...customLists];
 
   let totalTasks = 0;
 
@@ -980,104 +1073,100 @@ function updateAllTaskCounts() {
     totalTasks += count;
 
     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
-    const countElement = document.getElementById(`count-${listSelector}`);
-
-    if (countElement) {
-      countElement.textContent = count;
-      console.log(`Set count for ${listName} to ${count}`);
-    } else {
-      console.warn(`Count element for list "${listName}" not found, selector: count-${listSelector}`);
-
-      let listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
-      
-      if (!listItem) {
-        const sidebarItems = document.querySelectorAll('.sidebar-item');
-        for (const item of sidebarItems) {
-          const textContent = item.textContent.trim();
-          if (textContent.includes(listName)) {
-            listItem = item;
-            break;
-          }
-        }
-      }
-
-      if (listItem) {
-        console.log(`Found list item for "${listName}"`);
-        let countSpan = listItem.querySelector('.text-sm.text-gray-500');
-        
-        if (!countSpan) {
-          
-          countSpan = listItem.querySelector('span');
-        }
-        
-        if (countSpan) {
-         
-          countSpan.textContent = count;
-          countSpan.id = `count-${listSelector}`; 
-          console.log(`Updated existing count span for "${listName}" to ${count}`);
-        } else {
-       
-          countSpan = document.createElement('span');
-          countSpan.id = `count-${listSelector}`;
-          countSpan.className = 'text-sm text-gray-500 ml-auto';
-          listItem.appendChild(countSpan);
-          countSpan.textContent = count;
-          console.log(`Created new count span for "${listName}" with count ${count}`);
-        }
-      } else {
-       
-        console.log(`Could not find list item for "${listName}" - creating count element in DOM`);
-        
-        const sidebar = document.querySelector('.sidebar, #sidebar, nav, .sidebar-container');
-        if (sidebar) {
-          
-          const existingListItem = Array.from(sidebar.querySelectorAll('*')).find(el => 
-            el.textContent.includes(listName)
-          );
-          
-          if (existingListItem) {
-        
-            let countSpan = document.createElement('span');
-            countSpan.id = `count-${listSelector}`;
-            countSpan.className = 'text-sm text-gray-500 ml-auto';
-            countSpan.textContent = count;
-            existingListItem.appendChild(countSpan);
-            console.log(`Added count span to existing element for "${listName}"`);
-          }
-        }
-      }
-    }
-  });
-
-  const allTasksCount = document.getElementById('allTasksCount');
-  if (allTasksCount) {
-    allTasksCount.textContent = totalTasks;
-    console.log(`Set all tasks count to ${totalTasks}`);
-  }
-}
-
-function ensureCountElementsExist() {
-  const listsToCheck = ['jj', 'ff', 'k', 'nn'];
-  
-  listsToCheck.forEach(listName => {
-    const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
     const countId = `count-${listSelector}`;
+
+    // Find the count element, first by ID, then by selector methods
+    let countElement = document.getElementById(countId);
     
-    if (!document.getElementById(countId)) {
-      console.log(`Creating missing count element for ${listName}`);
-      
+    if (!countElement) {
+      // Try finding in sidebar items
       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
       
       if (listItem) {
+        // Create count span if it doesn't exist
+        countElement = document.createElement('span');
+        countElement.id = countId;
+        countElement.className = 'text-sm text-gray-500 ml-auto';
+        listItem.appendChild(countElement);
+      } else {
+        // Fallback: create a hidden count element
+        countElement = document.createElement('span');
+        countElement.id = countId;
+        countElement.style.display = 'none';
+        document.body.appendChild(countElement);
+      }
+    }
+
+    if (countElement) {
+      countElement.textContent = count.toString();
+      console.log(`Set count for ${listName} to ${count}`);
+    } else {
+      console.warn(`Could not find or create count element for ${listName}`);
+    }
+  });
+
+  // Update total tasks count
+  const allTasksCount = document.getElementById('allTasksCount');
+  if (allTasksCount) {
+    allTasksCount.textContent = totalTasks.toString();
+    console.log(`Updated total tasks count to ${totalTasks}`);
+  }
+}
+
+// function ensureCountElementsExist() {
+//   const listsToCheck = ['jj', 'ff', 'k', 'nn'];
+  
+//   listsToCheck.forEach(listName => {
+//     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+//     const countId = `count-${listSelector}`;
+    
+//     if (!document.getElementById(countId)) {
+//       console.log(`Creating missing count element for ${listName}`);
+      
+//       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      
+//       if (listItem) {
         
+//         const countSpan = document.createElement('span');
+//         countSpan.id = countId;
+//         countSpan.className = 'text-sm text-gray-500 ml-auto';
+//         countSpan.textContent = '0'; // Default count
+//         listItem.appendChild(countSpan);
+//         console.log(`Created count element for ${listName}`);
+//       } else {
+  
+//         const hiddenCount = document.createElement('span');
+//         hiddenCount.id = countId;
+//         hiddenCount.style.display = 'none';
+//         hiddenCount.textContent = '0';
+//         document.body.appendChild(hiddenCount);
+//         console.log(`Created hidden count element for ${listName}`);
+//       }
+//     }
+//   });
+// }
+function ensureCountElementsExist() {
+  const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
+  
+  defaultLists.forEach(listName => {
+    const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+    const countId = `count-${listSelector}`;
+    
+    // Check if count element exists
+    if (!document.getElementById(countId)) {
+      // Find the corresponding sidebar item
+      const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      
+      if (listItem) {
+        // Create and append count span
         const countSpan = document.createElement('span');
         countSpan.id = countId;
         countSpan.className = 'text-sm text-gray-500 ml-auto';
-        countSpan.textContent = '0'; // Default count
+        countSpan.textContent = '0'; // Default to 0
         listItem.appendChild(countSpan);
         console.log(`Created count element for ${listName}`);
       } else {
-  
+        // Fallback: create a hidden count element
         const hiddenCount = document.createElement('span');
         hiddenCount.id = countId;
         hiddenCount.style.display = 'none';
@@ -1087,6 +1176,36 @@ function ensureCountElementsExist() {
       }
     }
   });
+
+  // Handle custom lists
+  try {
+    const customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
+    
+    customLists.forEach(listName => {
+      const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+      const countId = `count-${listSelector}`;
+      
+      if (!document.getElementById(countId)) {
+        const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+        
+        if (listItem) {
+          const countSpan = document.createElement('span');
+          countSpan.id = countId;
+          countSpan.className = 'text-sm text-gray-500 ml-auto';
+          countSpan.textContent = '0';
+          listItem.appendChild(countSpan);
+        } else {
+          const hiddenCount = document.createElement('span');
+          hiddenCount.id = countId;
+          hiddenCount.style.display = 'none';
+          hiddenCount.textContent = '0';
+          document.body.appendChild(hiddenCount);
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error processing custom lists:', error);
+  }
 }
 
 window.updateAllTaskCounts = updateAllTaskCounts;
