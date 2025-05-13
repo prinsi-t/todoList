@@ -226,6 +226,7 @@ function addSubtask(listName) {
     return;
   }
 
+  // Hide any existing "No subtasks" message in THIS PANEL ONLY
   hideNoSubtasksMessage(panel);
 
   const subtaskElement = createSubtaskElement(newSubtask.text, newSubtask.id, newSubtask.completed);
@@ -396,7 +397,9 @@ function deleteSubtask(subtaskId) {
         localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
 
         // Show "no subtasks" message if all subtasks are removed
-        if (localTaskCache[taskIndex].subtasks.length === 0 || taskSubtasks.length === 0) {
+        const subtasksList = document.getElementById('subtasksList');
+        if (subtasksList && (subtasksList.children.length === 0 || 
+            (subtasksList.children.length === 1 && subtasksList.querySelector('.no-subtasks-message')))) {
           showNoSubtasksMessage();
         }
 
@@ -437,7 +440,9 @@ function deleteSubtask(subtaskId) {
     const updatedSubtasks = localSubtasks.filter(s => s.id !== subtaskId);
     localStorage.setItem('localSubtasks', JSON.stringify(updatedSubtasks));
 
-    if (updatedSubtasks.length === 0) {
+    const subtasksList = document.getElementById('subtasksList');
+    if (subtasksList && (subtasksList.children.length === 0 || 
+        (subtasksList.children.length === 1 && subtasksList.querySelector('.no-subtasks-message')))) {
       showNoSubtasksMessage();
     }
   }
@@ -548,25 +553,41 @@ function showNoSubtasksMessage(panel) {
     const subtasksList = panel.querySelector('.subtasks-list');
     if (!subtasksList) return;
 
-    const existingMessage = subtasksList.querySelector('.no-subtasks-message');
-    if (existingMessage) return;
+    // Remove any existing messages first to prevent duplicates
+    const existingMessages = subtasksList.querySelectorAll('.no-subtasks-message');
+    existingMessages.forEach(msg => msg.remove());
 
-    const noSubtasksMessage = document.createElement('div');
-    noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
-    noSubtasksMessage.textContent = 'No subtasks added yet.';
-    subtasksList.appendChild(noSubtasksMessage);
-  } else {
-    // Otherwise, show message in all panels
-    const subtasksLists = document.querySelectorAll('.subtasks-list');
-    subtasksLists.forEach(list => {
-      const existingMessage = list.querySelector('.no-subtasks-message');
-      if (existingMessage) return;
-
+    // Only add the message if there are no subtask elements
+    const hasSubtasks = Array.from(subtasksList.children).some(
+      child => !child.classList.contains('no-subtasks-message')
+    );
+    
+    if (!hasSubtasks) {
       const noSubtasksMessage = document.createElement('div');
       noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
       noSubtasksMessage.textContent = 'No subtasks added yet.';
-      list.appendChild(noSubtasksMessage);
-    });
+      subtasksList.appendChild(noSubtasksMessage);
+    }
+  } else {
+    // For all panels, first get the main subtasksList
+    const mainSubtasksList = document.getElementById('subtasksList');
+    if (mainSubtasksList) {
+      // Remove any existing messages first to prevent duplicates
+      const existingMessages = mainSubtasksList.querySelectorAll('.no-subtasks-message');
+      existingMessages.forEach(msg => msg.remove());
+
+      // Only add the message if there are no subtask elements
+      const hasSubtasks = Array.from(mainSubtasksList.children).some(
+        child => !child.classList.contains('no-subtasks-message')
+      );
+      
+      if (!hasSubtasks) {
+        const noSubtasksMessage = document.createElement('div');
+        noSubtasksMessage.className = 'no-subtasks-message text-gray-500 mt-2';
+        noSubtasksMessage.textContent = 'No subtasks added yet.';
+        mainSubtasksList.appendChild(noSubtasksMessage);
+      }
+    }
   }
 }
 
