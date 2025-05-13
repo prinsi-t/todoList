@@ -1,8 +1,3 @@
-/**
- * Panel Manager - Handles creation and management of task right panels
- */
-
-// Track panels by both list and task ID
 let activePanels = {};
 
 function createPanelForTask(task) {
@@ -15,7 +10,6 @@ function createPanelForTask(task) {
   const taskId = task._id;
   const uniquePanelId = `right-panel-${listName.toLowerCase().replace(/\s+/g, '-')}-${taskId}`;
   
-  // Check if panel already exists for this specific task
   let panel = document.getElementById(uniquePanelId);
   if (panel) {
     console.log(`Panel already exists for task: ${task.title} in list: ${listName}`);
@@ -24,13 +18,11 @@ function createPanelForTask(task) {
 
   console.log(`Creating new panel for task: ${task.title} in list: ${listName}`);
   
-  // Create a unique container for this list if it doesn't exist
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const containerIdForList = `right-panels-container-${listId}`;
   let listContainer = document.getElementById(containerIdForList);
   
   if (!listContainer) {
-    // Create a new container specifically for this list
     const mainContent = document.querySelector('.main-content') || document.querySelector('main');
     if (mainContent) {
       listContainer = document.createElement('div');
@@ -44,14 +36,12 @@ function createPanelForTask(task) {
     }
   }
 
-  // Create panel element with unique ID for this task
   panel = document.createElement('div');
   panel.id = uniquePanelId;
   panel.className = 'task-panel h-full flex flex-col hidden';
   panel.dataset.list = listName;
   panel.dataset.taskId = taskId;
 
-  // Add basic panel structure
   panel.innerHTML = `
     <div class="flex justify-between items-center mb-6">
       <div>
@@ -99,18 +89,21 @@ function createPanelForTask(task) {
     </div>
   `;
 
-  // Add panel to the list's container
   listContainer.appendChild(panel);
   console.log(`Added panel for task "${task.title}" to container for list "${listName}"`);
   
-  // Store in our panels tracker - using a nested object structure
   if (!activePanels[listName]) {
     activePanels[listName] = {};
   }
   activePanels[listName][taskId] = panel;
   
-  // Set up event listeners for this panel
   setupPanelEventListeners(panel, task);
+  
+  if (window.fileManager && window.fileManager.isInitialized) {
+    setTimeout(() => {
+      window.fileManager.setupTaskFileUpload(panel, taskId);
+    }, 100);
+  }
   
   return panel;
 }
@@ -136,7 +129,6 @@ function renderAttachments(task) {
     return '';
   }
   
-  // Filter attachments specific to this task
   const taskAttachments = task.attachments.filter(attachment => 
     attachment.taskId === task._id && attachment.list === task.list
   );
@@ -161,7 +153,6 @@ function setupPanelEventListeners(panel, task) {
   
   const taskId = task._id;
   
-  // Complete button
   const completeBtn = panel.querySelector(`#complete-btn-${taskId}`);
   if (completeBtn) {
     completeBtn.addEventListener('click', function() {
@@ -169,7 +160,6 @@ function setupPanelEventListeners(panel, task) {
     });
   }
   
-  // Delete button
   const deleteBtn = panel.querySelector('.delete-task-btn');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', function() {
@@ -179,7 +169,6 @@ function setupPanelEventListeners(panel, task) {
     });
   }
   
-  // Add subtask button
   const addSubtaskBtn = panel.querySelector('.add-subtask');
   if (addSubtaskBtn) {
     addSubtaskBtn.addEventListener('click', function() {
@@ -214,7 +203,6 @@ function setupPanelEventListeners(panel, task) {
       
       input.focus();
       
-      // Add event listeners for save and cancel buttons
       saveBtn.addEventListener('click', function() {
         if (!input.value.trim()) {
           subtaskContainer.remove();
@@ -228,16 +216,14 @@ function setupPanelEventListeners(panel, task) {
           completed: false
         };
         
-        // Find the task and add the subtask
-        const taskIndex = localTaskCache.findIndex(t => t._id === taskId);
+        const taskIndex = window.localTaskCache.findIndex(t => t._id === taskId);
         if (taskIndex !== -1) {
-          if (!localTaskCache[taskIndex].subtasks) {
-            localTaskCache[taskIndex].subtasks = [];
+          if (!window.localTaskCache[taskIndex].subtasks) {
+            window.localTaskCache[taskIndex].subtasks = [];
           }
-          localTaskCache[taskIndex].subtasks.push(newSubtask);
-          saveTaskCacheToLocalStorage();
+          window.localTaskCache[taskIndex].subtasks.push(newSubtask);
+          window.saveTaskCacheToLocalStorage();
           
-          // Replace the input with a regular subtask item
           subtaskContainer.innerHTML = '';
           subtaskContainer.className = 'flex items-center gap-2 mb-2';
           subtaskContainer.dataset.subtaskId = subtaskId;
@@ -257,12 +243,10 @@ function setupPanelEventListeners(panel, task) {
           subtaskContainer.appendChild(titleSpan);
           subtaskContainer.appendChild(deleteBtn);
           
-          // Add click event for the checkbox
           checkbox.addEventListener('click', function() {
             toggleSubtaskCompletion(taskId, subtaskId);
           });
           
-          // Add click event for the delete button
           deleteBtn.addEventListener('click', function() {
             deleteSubtask(taskId, subtaskId);
             subtaskContainer.remove();
@@ -273,7 +257,6 @@ function setupPanelEventListeners(panel, task) {
       cancelBtn.addEventListener('click', function() {
         subtaskContainer.remove();
         
-        // If no subtasks, add the empty state back
         if (subtasksList.children.length === 0) {
           subtasksList.innerHTML = '<div class="text-gray-500 text-sm py-2">No subtasks added yet.</div>';
         }
@@ -281,7 +264,6 @@ function setupPanelEventListeners(panel, task) {
     });
   }
   
-  // Existing subtask checkboxes
   panel.querySelectorAll('.subtasks-list .checkbox').forEach(checkbox => {
     checkbox.addEventListener('click', function() {
       const subtaskItem = this.closest('[data-subtask-id]');
@@ -290,7 +272,6 @@ function setupPanelEventListeners(panel, task) {
     });
   });
   
-  // Existing subtask delete buttons
   panel.querySelectorAll('.subtasks-list button').forEach(button => {
     button.addEventListener('click', function() {
       const subtaskItem = this.closest('[data-subtask-id]');
@@ -300,88 +281,19 @@ function setupPanelEventListeners(panel, task) {
     });
   });
   
-  // File upload
-  const fileInput = panel.querySelector(`#file-upload-${taskId}`);
-  if (fileInput) {
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file || !file.type.match('image.*')) return;
-      
-      if (!taskId) {
-        console.error('No current task selected for attachment');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        // Find the current task in the localTaskCache
-        const taskIndex = localTaskCache.findIndex(t => t._id === taskId);
-        if (taskIndex === -1) {
-          console.error('Task not found in cache');
-          return;
-        }
-        
-        const currentTask = localTaskCache[taskIndex];
-        
-        // Ensure the attachment is specific to this task and list
-        if (!currentTask.attachments) {
-          currentTask.attachments = [];
-        }
-        
-        // Add attachment to the specific task
-        const newAttachment = {
-          type: 'image',
-          url: e.target.result,
-          taskId: taskId,
-          list: currentTask.list
-        };
-        
-        currentTask.attachments.push(newAttachment);
-        
-        // Save updated task cache
-        saveTaskCacheToLocalStorage();
-        
-        // Add the attachment to the UI
-        const imagePreviewContainer = panel.querySelector('.image-preview-container');
-        const attachmentPreview = document.createElement('div');
-        attachmentPreview.className = 'relative attachment-preview';
-        attachmentPreview.dataset.url = newAttachment.url;
-        
-        attachmentPreview.innerHTML = `
-          <img src="${newAttachment.url}" class="w-32 h-32 object-cover rounded-md">
-          <button class="remove-attachment absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
-            <i class="fas fa-times text-xs"></i>
-          </button>
-        `;
-        
-        imagePreviewContainer.appendChild(attachmentPreview);
-        
-        // Add click event for remove button
-        const removeBtn = attachmentPreview.querySelector('.remove-attachment');
-        if (removeBtn) {
-          removeBtn.addEventListener('click', function() {
-            removeAttachment(taskId, newAttachment.url);
-            attachmentPreview.remove();
-          });
-        }
-      };
-      
-      reader.readAsDataURL(file);
-      fileInput.value = '';
-    });
-  }
-  
-  // Existing attachment remove buttons
   panel.querySelectorAll('.remove-attachment').forEach(button => {
     button.addEventListener('click', function() {
       const attachmentPreview = this.closest('.attachment-preview');
       const url = attachmentPreview.dataset.url;
-      removeAttachment(taskId, url);
+      if (window.fileManager && window.fileManager.removeAttachment) {
+        window.fileManager.removeAttachment(taskId, url);
+      } else {
+        removeAttachment(taskId, url);
+      }
       attachmentPreview.remove();
     });
   });
   
-  // Notes textarea
   const notesTextarea = panel.querySelector('.notes-textarea');
   if (notesTextarea) {
     notesTextarea.addEventListener('input', function() {
@@ -389,18 +301,16 @@ function setupPanelEventListeners(panel, task) {
       
       if (!taskId) return;
       
-      const taskIndex = localTaskCache.findIndex(t => t._id === taskId);
+      const taskIndex = window.localTaskCache.findIndex(t => t._id === taskId);
       if (taskIndex === -1) return;
       
-      localTaskCache[taskIndex].notes = this.value;
-      saveTaskCacheToLocalStorage();
+      window.localTaskCache[taskIndex].notes = this.value;
+      window.saveTaskCacheToLocalStorage();
     });
     
-    // Initial resize
     autoResizeTextarea(notesTextarea);
   }
   
-  // Apply blur effect if needed
   const isTaskBlurred = localStorage.getItem('isTaskBlurred') === 'true';
   const blurContent = panel.querySelector('.task-blur-content');
   
@@ -411,48 +321,48 @@ function setupPanelEventListeners(panel, task) {
 }
 
 function toggleSubtaskCompletion(taskId, subtaskId) {
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  const taskIndex = window.localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) return;
   
-  const task = localTaskCache[taskIndex];
+  const task = window.localTaskCache[taskIndex];
   if (!task.subtasks) return;
   
   const subtaskIndex = task.subtasks.findIndex(subtask => subtask.id === subtaskId);
   if (subtaskIndex === -1) return;
   
-  // Toggle completion status
   task.subtasks[subtaskIndex].completed = !task.subtasks[subtaskIndex].completed;
-  saveTaskCacheToLocalStorage();
+  window.saveTaskCacheToLocalStorage();
   
-  // Update UI in all panels for this task
   updateAllPanelsForTask(task);
 }
 
 function deleteSubtask(taskId, subtaskId) {
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  const taskIndex = window.localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) return;
   
-  const task = localTaskCache[taskIndex];
+  const task = window.localTaskCache[taskIndex];
   if (!task.subtasks) return;
   
-  // Remove the subtask
   task.subtasks = task.subtasks.filter(subtask => subtask.id !== subtaskId);
-  saveTaskCacheToLocalStorage();
+  window.saveTaskCacheToLocalStorage();
 }
 
 function removeAttachment(taskId, url) {
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  if (window.fileManager && window.fileManager.removeAttachment) {
+    return window.fileManager.removeAttachment(taskId, url);
+  }
+  
+  const taskIndex = window.localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) return;
   
-  const task = localTaskCache[taskIndex];
+  const task = window.localTaskCache[taskIndex];
   if (!task.attachments) return;
   
-  // Remove the attachment
   task.attachments = task.attachments.filter(attachment => 
     attachment.url !== url || attachment.taskId !== taskId
   );
   
-  saveTaskCacheToLocalStorage();
+  window.saveTaskCacheToLocalStorage();
 }
 
 function showPanelForTask(task) {
@@ -464,12 +374,10 @@ function showPanelForTask(task) {
   const listName = task.list;
   const taskId = task._id;
   
-  // Hide all list containers first
   document.querySelectorAll('.right-panels-container').forEach(container => {
     container.classList.add('hidden');
   });
   
-  // Show the container for this list
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const containerIdForList = `right-panels-container-${listId}`;
   const listContainer = document.getElementById(containerIdForList);
@@ -478,24 +386,20 @@ function showPanelForTask(task) {
     listContainer.classList.remove('hidden');
   } else {
     console.log(`Creating container for list: ${listName}`);
-    // The container will be created when the panel is created
   }
   
-  // Hide all panels in this container
   if (listContainer) {
     listContainer.querySelectorAll('.task-panel').forEach(panel => {
       panel.classList.add('hidden');
     });
   }
   
-  // Get or create the panel for this task
   const uniquePanelId = `right-panel-${listId}-${taskId}`;
   let panel = document.getElementById(uniquePanelId);
   
   if (!panel) {
     panel = createPanelForTask(task);
   } else {
-    // Update the panel with the latest task data
     updatePanelWithTask(panel, task);
   }
   
@@ -503,7 +407,6 @@ function showPanelForTask(task) {
     panel.classList.remove('hidden');
     console.log(`Showing panel for task: ${task.title} in list: ${listName}`);
     
-    // Store the current task ID for other functions
     window.currentTaskId = taskId;
   } else {
     console.error(`Failed to show panel for task: ${task.title} in list: ${listName}`);
@@ -518,20 +421,17 @@ function updatePanelWithTask(panel, task) {
   
   console.log(`Updating panel with task: ${task.title} (ID: ${task._id})`);
   
-  // Set title
   const titleElement = panel.querySelector('h2');
   if (titleElement) {
     titleElement.textContent = task.title || '';
   }
   
-  // Set notes
   const notesTextarea = panel.querySelector('.notes-textarea');
   if (notesTextarea) {
     notesTextarea.value = task.notes || '';
     autoResizeTextarea(notesTextarea);
   }
   
-  // Update complete button
   const completeBtn = panel.querySelector(`#complete-btn-${task._id}`);
   if (completeBtn) {
     if (task.completed) {
@@ -543,12 +443,10 @@ function updatePanelWithTask(panel, task) {
     }
   }
   
-  // Update subtasks
   const subtasksList = panel.querySelector('.subtasks-list');
   if (subtasksList) {
     subtasksList.innerHTML = renderSubtasks(task);
     
-    // Reattach event listeners to subtasks
     panel.querySelectorAll('.subtasks-list .checkbox').forEach(checkbox => {
       checkbox.addEventListener('click', function() {
         const subtaskItem = this.closest('[data-subtask-id]');
@@ -567,23 +465,54 @@ function updatePanelWithTask(panel, task) {
     });
   }
   
-  // Update attachments
   const imagePreviewContainer = panel.querySelector('.image-preview-container');
   if (imagePreviewContainer) {
-    imagePreviewContainer.innerHTML = renderAttachments(task);
+    if (window.fileManager && window.fileManager.loadAttachmentsForTask) {
+      window.fileManager.loadAttachmentsForTask(task._id)
+        .then(attachments => {
+          if (attachments && attachments.length > 0) {
+            const formattedAttachments = attachments.map(att => ({
+              type: 'image',
+              url: att.dataUrl || att.url,
+              taskId: task._id,
+              list: task.list
+            }));
+            
+            if (!task.attachments) {
+              task.attachments = [];
+            }
+            
+            formattedAttachments.forEach(attachment => {
+              const exists = task.attachments.some(att => 
+                att.url === attachment.url && att.taskId === attachment.taskId
+              );
+              
+              if (!exists) {
+                task.attachments.push(attachment);
+              }
+            });
+            
+            imagePreviewContainer.innerHTML = renderAttachments(task);
+            
+            attachRemoveListeners(panel, task._id);
+          } else {
+            
+            imagePreviewContainer.innerHTML = renderAttachments(task);
+            attachRemoveListeners(panel, task._id);
+          }
+        })
+        .catch(err => {
+          console.error('Error loading attachments:', err);
+          imagePreviewContainer.innerHTML = renderAttachments(task);
+          attachRemoveListeners(panel, task._id);
+        });
+    } else {
     
-    // Reattach event listeners to attachment remove buttons
-    panel.querySelectorAll('.remove-attachment').forEach(button => {
-      button.addEventListener('click', function() {
-        const attachmentPreview = this.closest('.attachment-preview');
-        const url = attachmentPreview.dataset.url;
-        removeAttachment(task._id, url);
-        attachmentPreview.remove();
-      });
-    });
+      imagePreviewContainer.innerHTML = renderAttachments(task);
+      attachRemoveListeners(panel, task._id);
+    }
   }
   
-  // Handle blur effect for completed tasks
   const isTaskBlurred = localStorage.getItem('isTaskBlurred') === 'true';
   const blurContent = panel.querySelector('.task-blur-content');
   
@@ -598,10 +527,24 @@ function updatePanelWithTask(panel, task) {
   }
 }
 
+function attachRemoveListeners(panel, taskId) {
+  panel.querySelectorAll('.remove-attachment').forEach(button => {
+    button.addEventListener('click', function() {
+      const attachmentPreview = this.closest('.attachment-preview');
+      const url = attachmentPreview.dataset.url;
+      if (window.fileManager && window.fileManager.removeAttachment) {
+        window.fileManager.removeAttachment(taskId, url);
+      } else {
+        removeAttachment(taskId, url);
+      }
+      attachmentPreview.remove();
+    });
+  });
+}
+
 function updateAllPanelsForTask(task) {
   if (!task || !task._id) return;
   
-  // Find all panels for this task across any container
   const taskPanels = document.querySelectorAll(`[data-task-id="${task._id}"]`);
   taskPanels.forEach(panel => {
     updatePanelWithTask(panel, task);
@@ -616,32 +559,28 @@ function autoResizeTextarea(textarea) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // No need to create containers on load - we'll create them on demand
-  console.log('Panel Manager initialized');
-  
-  // If there's an active task, show its panel
-  const activeTaskId = localStorage.getItem('activeTaskId');
+ 
+    const activeTaskId = localStorage.getItem('activeTaskId');
   if (activeTaskId) {
-    const task = localTaskCache.find(task => task._id === activeTaskId);
+    const task = window.localTaskCache.find(task => task._id === activeTaskId);
     if (task) {
       showPanelForTask(task);
     }
   }
 });
 
-// Define function for marking tasks complete
 window.markTaskComplete = function(taskId) {
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  const taskIndex = window.localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) return;
   
-  const task = localTaskCache[taskIndex];
+  const task = window.localTaskCache[taskIndex];
   task.completed = !task.completed;
-  saveTaskCacheToLocalStorage();
+  window.saveTaskCacheToLocalStorage();
   
   updateAllPanelsForTask(task);
 };
 
-// Export functions to window
 window.createPanelForTask = createPanelForTask;
 window.showPanelForTask = showPanelForTask;
 window.updatePanelWithTask = updatePanelWithTask;
+window.updateAllPanelsForTask = updateAllPanelsForTask; // Export this function for fileManager to use

@@ -171,19 +171,20 @@
               </div>
             </div>
 
-            <div class="mt-6">
-              <h3 class="text-sm text-gray-400 mb-2">ATTACHMENTS</h3>
-              <div
-                class="drop-zone border-2 border-dashed border-dark-border rounded-lg p-6 text-center cursor-pointer hover:border-gray-600 transition-colors duration-200"
-                data-list="Personal"
-              >
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-600 mb-2"></i>
-                <p class="text-sm text-gray-500">Click to add / drop your files here</p>
-                <p class="text-xs text-gray-600 mt-1">(Max 10 images)</p>
-              </div>
-              <div class="image-preview-container grid grid-cols-3 gap-3 mt-4"></div>
-            </div>
-          </div>
+    <div class="attachments-section mt-6">
+      <h3 class="text-lg font-medium text-gray-200 mb-2">ATTACHMENTS</h3>
+      
+      <div class="drop-zone border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:bg-dark-hover transition-colors" data-list="<%= activeList %>">
+        <div class="flex flex-col items-center justify-center">
+          <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+          <p class="text-gray-400">Click to add / drop your files here</p>
+          <p class="text-gray-500 text-xs mt-1">(Max 10 images)</p>
+        </div>
+      </div>
+  
+      <div class="image-preview-container mt-4 flex flex-wrap gap-2">
+      </div>
+    </div>
         </div>
       </div>
 
