@@ -1361,4 +1361,3 @@ window.markSelectedTaskComplete = function() {
     toggleTaskCompletion(taskId);
   }
 };
-
