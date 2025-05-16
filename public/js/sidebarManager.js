@@ -38,6 +38,10 @@ function fixSidebarNavigation() {
           highlightActiveList(listName);
 
           showPanelForList(listName, null);
+          
+          if (typeof window.updatePanelOnListChange === 'function') {
+            window.updatePanelOnListChange(listName);
+          }
 
           if (typeof window.filterTasks === 'function') {
             window.filterTasks(listName, false);
@@ -65,104 +69,126 @@ document.addEventListener('DOMContentLoaded', function() {
 });
   
 function fixAddTaskForm() {
-    console.log('Fixing add task form...');
-  
-    const addTaskForm = document.getElementById('addTaskForm');
-    if (!addTaskForm) {
-      console.error('Add task form not found');
+  console.log('Fixing add task form...');
+
+  const addTaskForm = document.getElementById('addTaskForm');
+  if (!addTaskForm) {
+    console.error('Add task form not found');
+    return;
+  }
+
+  const newForm = addTaskForm.cloneNode(true);
+  addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
+
+  newForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const input = document.getElementById('newTaskInput');
+    if (!input) {
+      console.error('Task input not found');
       return;
     }
-  
-    const newForm = addTaskForm.cloneNode(true);
-    addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
-  
-    newForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-  
-      const input = document.getElementById('newTaskInput');
-      if (!input) {
-        console.error('Task input not found');
-        return;
+
+    const taskText = input.value.trim();
+    if (!taskText) {
+      console.log('Empty task, ignoring');
+      return;
+    }
+
+    const activeList = localStorage.getItem('activeList') || 'Personal';
+
+    console.log('Adding task to list:', activeList);
+    console.log('Task text:', taskText);
+
+    const newTask = {
+      _id: 'local_' + Date.now(),
+      title: taskText,
+      list: activeList,
+      completed: false,
+      subtasks: [],
+      attachments: []
+    };
+
+    if (typeof window.localTaskCache === 'undefined') {
+      console.log('Creating new local task cache');
+      window.localTaskCache = [];
+    }
+
+    localTaskCache.push(newTask);
+
+    try {
+      localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
+      console.log('Task saved to localStorage cache');
+
+      updateTaskCount(activeList, 1);
+      
+      const rightPanelsContainer = document.getElementById('right-panels-container');
+      if (rightPanelsContainer) {
+        rightPanelsContainer.classList.remove('hidden');
+        console.log('Forced right panel container to be visible');
       }
-  
-      const taskText = input.value.trim();
-      if (!taskText) {
-        console.log('Empty task, ignoring');
-        return;
-      }
-  
-      const activeList = localStorage.getItem('activeList') || 'Personal';
-  
-      console.log('Adding task to list:', activeList);
-      console.log('Task text:', taskText);
-  
-      const newTask = {
-        _id: 'local_' + Date.now(),
-        title: taskText,
-        list: activeList,
-        completed: false,
-        subtasks: [],
-        attachments: []
-      };
-  
-      if (typeof window.localTaskCache === 'undefined') {
-        console.log('Creating new local task cache');
-        window.localTaskCache = [];
-      }
-  
-      localTaskCache.push(newTask);
-  
-      try {
-        localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-        console.log('Task saved to localStorage cache');
-  
-        updateTaskCount(activeList, 1);
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-  
-      const listId = activeList.toLowerCase().replace(/\s+/g, '-');
-      const panelId = `right-panel-${listId}`;
-      const panel = document.getElementById(panelId);
-  
-      if (panel) {
-        const titleElement = panel.querySelector('h2');
-        if (titleElement) {
-          titleElement.textContent = taskText;
-          console.log(`Directly updated panel title to: ${taskText}`);
-        }
-  
-        if (typeof updatePanelWithTask === 'function') {
-          updatePanelWithTask(panel, newTask);
-          console.log('Updated panel with new task using updatePanelWithTask');
-        }
-  
-        document.dispatchEvent(new CustomEvent('taskSelected', {
-          detail: { taskId: newTask._id, listName: activeList }
-        }));
-  
-        window.currentTaskId = newTask._id;
-  
-        localStorage.setItem('selectedTaskId', newTask._id);
-        localStorage.setItem('lastSelectedList', activeList);
-      }
-  
-      if (typeof window.refreshTaskList === 'function') {
-        refreshTaskList(activeList);
-        console.log('Task list refreshed');
-      } else if (typeof window.filterTasks === 'function') {
-        window.filterTasks(activeList, true);
-        console.log('Tasks filtered for current list');
+      
+      if (typeof window.showPanelForTask === 'function') {
+        console.log('Directly showing panel for new task:', newTask);
+        window.showPanelForTask(newTask);
       } else {
-        console.error('No refresh function found');
-        window.location.reload();
+        console.error('showPanelForTask function not available');
       }
-  
-      input.value = '';
-    });
-  
-    console.log('Add task form fixed!');
-  }
+      
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+
+    const listId = activeList.toLowerCase().replace(/\s+/g, '-');
+    const panelId = `right-panel-${listId}`;
+    const panel = document.getElementById(panelId);
+
+    if (panel) {
+      const titleElement = panel.querySelector('h2');
+      if (titleElement) {
+        titleElement.textContent = taskText;
+        console.log(`Directly updated panel title to: ${taskText}`);
+      }
+
+      if (typeof updatePanelWithTask === 'function') {
+        updatePanelWithTask(panel, newTask);
+        console.log('Updated panel with new task using updatePanelWithTask');
+      }
+
+      document.dispatchEvent(new CustomEvent('taskSelected', {
+        detail: { taskId: newTask._id, listName: activeList }
+      }));
+
+      window.currentTaskId = newTask._id;
+
+      localStorage.setItem('selectedTaskId', newTask._id);
+      localStorage.setItem('lastSelectedList', activeList);
+      
+      if (typeof window.updatePanelOnListChange === 'function') {
+        window.updatePanelOnListChange(activeList);
+      }
+      
+      document.dispatchEvent(new CustomEvent('taskAdded', {
+        detail: { task: newTask }
+      }));
+    }
+
+    if (typeof window.refreshTaskList === 'function') {
+      refreshTaskList(activeList);
+      console.log('Task list refreshed');
+    } else if (typeof window.filterTasks === 'function') {
+      window.filterTasks(activeList, true);
+      console.log('Tasks filtered for current list');
+    } else {
+      console.error('No refresh function found');
+      window.location.reload();
+    }
+
+    input.value = '';
+  });
+
+  console.log('Add task form fixed!');
+}
   
   function debugActiveList() {
     console.log('Current active list:', localStorage.getItem('activeList'));
@@ -224,8 +250,7 @@ function fixAddTaskForm() {
   
   window.updateTaskCount = updateTaskCount;
   
-
-  function highlightActiveList(activeList) {
+function highlightActiveList(activeList) {
     console.log('Highlighting active list:', activeList);
   
     const sidebarItems = document.querySelectorAll('.sidebar-item');
@@ -730,7 +755,6 @@ function addCustomStyles() {
 
 const panelData = {};
 
-
 let panelManagerInitialized = false;
 
 function initPanelManager() {
@@ -893,39 +917,33 @@ function showPanelForList(listName, selectedTaskId = null) {
 
   console.log(`Showing panel for list: ${listName}, selected task: ${selectedTaskId || 'none'}`);
 
-  // Update localStorage
   const currentActiveList = localStorage.getItem('activeList');
   if (currentActiveList !== listName) {
     localStorage.setItem('activeList', listName);
     console.log(`Setting activeList in localStorage to: ${listName} in showPanelForList`);
   }
 
-  // Hide all panels
   const panels = document.querySelectorAll('.right-panel');
   panels.forEach(panel => {
     panel.classList.add('hidden');
     panel.style.display = 'none';
   });
 
-  // Find the panel for this list
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
   
   let panel = document.getElementById(panelId);
   
-  // If panel doesn't exist, create it
   if (!panel) {
     console.log(`Panel for ${listName} doesn't exist, creating it`);
     panel = createPanelForList(listName);
   }
   
   if (panel) {
-    // Show the panel
     panel.classList.remove('hidden');
     panel.style.display = 'block';
     console.log(`Made panel visible: ${panelId}`);
 
-    // Update panel with task data if needed
     if (selectedTaskId) {
       const selectedTask = findTaskById(selectedTaskId);
       if (selectedTask && selectedTask.list === listName) {
@@ -937,7 +955,6 @@ function showPanelForList(listName, selectedTaskId = null) {
       updatePanelWithRecentTask(listName, panel);
     }
 
-    // Dispatch event for other components
     document.dispatchEvent(new CustomEvent('listChanged', {
       detail: { listName }
     }));
@@ -986,7 +1003,6 @@ document.addEventListener('listChanged', function(e) {
     }, 100);
   }
 });
-
 
 function findTaskById(taskId) {
   if (!taskId || !window.localTaskCache) return null;
@@ -1117,7 +1133,7 @@ function renderSubtasksForPanel(subtasksList, subtasks) {
   });
 }
 
-  function setupListSwitchListeners() {
+function setupListSwitchListeners() {
   const originalFilterTasks = window.filterTasks;
 
   if (typeof originalFilterTasks === 'function') {
@@ -1127,16 +1143,17 @@ function renderSubtasksForPanel(subtasksList, subtasks) {
       localStorage.setItem('activeList', listName);
       localStorage.setItem('lastSelectedList', listName);
       
-      // Call original function first
       originalFilterTasks(listName, preserveSelection);
 
-      // Then ensure the panel is shown
       const selectedTaskId = preserveSelection ? localStorage.getItem('selectedTaskId') : null;
       
-      // Brief timeout to let the task filtering complete
       setTimeout(() => {
         showPanelForList(listName, selectedTaskId);
         highlightActiveList(listName);
+        
+        if (typeof window.updatePanelOnListChange === 'function') {
+          window.updatePanelOnListChange(listName);
+        }
       }, 50);
     };
   }
@@ -1182,3 +1199,14 @@ function initializeWithCorrectList() {
 
 window.initializeWithCorrectList = initializeWithCorrectList;
 
+window.initializeWithCorrectList = initializeWithCorrectList;
+
+window.updatePanelOnListChange = function(listName) {
+  if (!listName) return;
+  
+  console.log(`Updating panel visibility for list: ${listName}`);
+  
+  if (typeof window.updateRightPanelVisibility === 'function') {
+    window.updateRightPanelVisibility(listName);
+  }
+};

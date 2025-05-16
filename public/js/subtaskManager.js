@@ -1,4 +1,4 @@
-// Refactored and fixed subtaskManager.js
+// Fixed subtaskManager.js - Permanent Subtask Deletion
 
 // Standardized subtask object format
 function normalizeSubtask(subtask) {
@@ -147,6 +147,7 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
   subtaskItem.dataset.completed = subtask.completed ? 'true' : 'false';
   subtaskItem.dataset.text = subtask.text; // Store text in dataset for recovery
 
+  // Using consistent class names for the delete button to maintain appearance after refresh
   subtaskItem.innerHTML = `
     <div class="checkbox w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200 cursor-pointer ${subtask.completed ? 'bg-blue-500 border-blue-500' : ''}">
       <i class="fas fa-check text-white text-xs" style="${subtask.completed ? '' : 'display: none;'}"></i>
@@ -171,17 +172,31 @@ function createSubtaskElement(text, subtaskId, isCompleted = false) {
   });
 
   // Set up event listener for the delete button
-  subtaskItem.querySelector('.delete-subtask').addEventListener('click', () => {
-    deleteSubtask(subtask.id);
-    subtaskItem.remove();
-
-    const subtasksList = document.getElementById('subtasksList');
-    if (subtasksList && subtasksList.children.length === 0) {
-      showNoSubtasksMessage();
-    }
-  });
+  attachDeleteListener(subtaskItem);
 
   return subtaskItem;
+}
+
+// Function to attach delete event listener
+function attachDeleteListener(subtaskItem) {
+  const deleteBtn = subtaskItem.querySelector('.delete-subtask');
+  if (deleteBtn) {
+    // Remove any existing listeners first to prevent duplicates
+    const newDeleteBtn = deleteBtn.cloneNode(true);
+    deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+    
+    // Add the event listener
+    newDeleteBtn.addEventListener('click', () => {
+      const subtaskId = subtaskItem.dataset.subtaskId;
+      deleteSubtask(subtaskId);
+      subtaskItem.remove();
+
+      const subtasksList = document.getElementById('subtasksList');
+      if (subtasksList && subtasksList.children.length === 0) {
+        showNoSubtasksMessage();
+      }
+    });
+  }
 }
 
 // Add a new subtask
@@ -331,6 +346,11 @@ function loadSubtasksForCurrentTask() {
       subtasksList.appendChild(subtaskElement);
     });
     
+    // Ensure all delete buttons have proper event listeners
+    subtasksList.querySelectorAll('[data-subtask-id]').forEach(subtaskItem => {
+      attachDeleteListener(subtaskItem);
+    });
+    
     // Save normalized subtasks back to localStorage
     localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
   } 
@@ -365,6 +385,11 @@ function loadSubtasksForCurrentTask() {
         );
         subtasksList.appendChild(subtaskElement);
       });
+      
+      // Ensure all delete buttons have proper event listeners
+      subtasksList.querySelectorAll('[data-subtask-id]').forEach(subtaskItem => {
+        attachDeleteListener(subtaskItem);
+      });
     } else {
       // If no subtasks found anywhere, show "no subtasks" message and fetch from server
       showNoSubtasksMessage();
@@ -373,27 +398,46 @@ function loadSubtasksForCurrentTask() {
   }
 }
 
-// Delete a subtask
+// Delete a subtask - FIXED VERSION
 function deleteSubtask(subtaskId) {
+  // First remove from DOM if still present
+  const subtaskElement = document.querySelector(`[data-subtask-id="${subtaskId}"]`);
+  if (subtaskElement) {
+    subtaskElement.remove();
+  }
+  
   if (window.currentTaskId) {
     const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
     if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks) {
-
-      const subtaskIndex = localTaskCache[taskIndex].subtasks.findIndex(s =>
-        s.id === subtaskId || s.id === subtaskId.replace('index_', '') || `index_${s.id}` === subtaskId
-      );
+      // Get all possible ID variants for comparison
+      const idVariants = [
+        subtaskId,
+        subtaskId.replace('index_', ''),
+        `index_${subtaskId}`
+      ];
+      
+      // Find the subtask using all possible ID variants
+      let subtaskIndex = -1;
+      for (let i = 0; i < localTaskCache[taskIndex].subtasks.length; i++) {
+        const subtask = localTaskCache[taskIndex].subtasks[i];
+        if (idVariants.includes(subtask.id)) {
+          subtaskIndex = i;
+          break;
+        }
+      }
 
       if (subtaskIndex !== -1) {
         // Remove from cache
+        const deletedSubtask = localTaskCache[taskIndex].subtasks[subtaskIndex];
         localTaskCache[taskIndex].subtasks.splice(subtaskIndex, 1);
         saveTaskCacheToLocalStorage();
 
-        // Remove from localStorage
+        // Remove from localStorage - uses same ID variant check
         const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
         let taskSubtasks = safeParseJSON(taskSubtasksKey, []);
-        taskSubtasks = taskSubtasks.filter(s =>
-          s.id !== subtaskId && s.id !== subtaskId.replace('index_', '') && `index_${s.id}` !== subtaskId
-        );
+        taskSubtasks = taskSubtasks.filter(s => {
+          return !idVariants.includes(s.id);
+        });
         localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
 
         // Show "no subtasks" message if all subtasks are removed
@@ -403,11 +447,19 @@ function deleteSubtask(subtaskId) {
           showNoSubtasksMessage();
         }
 
-        // Delete from server
-        fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}`, { method: 'DELETE' })
+        // Delete from server - FIXED VERSION: Send the subtask ID in the body for API compatibility
+        fetch(`/todos/${window.currentTaskId}/subtask`, { 
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ 
+            subtaskId: deletedSubtask.id,
+            index: subtaskIndex
+          })
+        })
           .then(res => {
             if (res.ok) return res.json();
-            return null;
+            throw new Error(`Server returned ${res.status}: ${res.statusText}`);
           })
           .then(updatedTodo => {
             if (updatedTodo && taskIndex !== -1) {
@@ -431,7 +483,31 @@ function deleteSubtask(subtaskId) {
               }
             }
           })
-          .catch(error => console.error('Error deleting subtask:', error));
+          .catch(error => {
+            console.error('Error deleting subtask from server:', error);
+            // Try again with different endpoint structure as fallback
+            return fetch(`/todos/${window.currentTaskId}/subtasks/${subtaskIndex}`, {
+              method: 'DELETE',
+              credentials: 'same-origin'
+            });
+          })
+          .then(res => {
+            // Handle the response from our fallback approach
+            if (res && res.ok) {
+              return res.json();
+            }
+            return null;
+          })
+          .then(result => {
+            if (result) {
+              console.log('Subtask deleted successfully using fallback method');
+            }
+          })
+          .catch(error => {
+            console.error('All attempts to delete subtask failed:', error);
+            // Even if server deletion fails, we've already updated the UI and localStorage
+            // so from the user's perspective, the subtask is "deleted"
+          });
       }
     }
   } else {
@@ -443,6 +519,31 @@ function deleteSubtask(subtaskId) {
     const subtasksList = document.getElementById('subtasksList');
     if (subtasksList && (subtasksList.children.length === 0 || 
         (subtasksList.children.length === 1 && subtasksList.querySelector('.no-subtasks-message')))) {
+      showNoSubtasksMessage();
+    }
+  }
+}
+
+// Clear all subtasks data for a specific task - NEW FUNCTION
+function clearSubtasksData(taskId) {
+  if (!taskId) return;
+  
+  // Clear from localStorage
+  const taskSubtasksKey = `subtasks_${taskId}`;
+  localStorage.removeItem(taskSubtasksKey);
+  
+  // Clear from cache
+  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
+  if (taskIndex !== -1) {
+    localTaskCache[taskIndex].subtasks = [];
+    saveTaskCacheToLocalStorage();
+  }
+  
+  // Clear from DOM if this is the current task
+  if (window.currentTaskId === taskId) {
+    const subtasksList = document.getElementById('subtasksList');
+    if (subtasksList) {
+      subtasksList.innerHTML = '';
       showNoSubtasksMessage();
     }
   }
@@ -476,8 +577,14 @@ function fetchTaskFromServer(taskId) {
   
   console.log('Fetching task from server:', taskId);
 
-  fetch(`/todos/${taskId}`)
-    .then(res => res.ok ? res.json() : null)
+  fetch(`/todos/${taskId}`, {
+    // Add credentials to ensure the session cookie is sent
+    credentials: 'same-origin'
+  })
+    .then(res => {
+      if (res.ok) return res.json();
+      throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+    })
     .then(task => {
       if (task) {
         console.log('Received task from server:', task);
@@ -507,7 +614,11 @@ function fetchTaskFromServer(taskId) {
         loadSubtasksForCurrentTask();
       }
     })
-    .catch(error => console.error('Error fetching task:', error));
+    .catch(error => {
+      console.error('Error fetching task:', error);
+      // On error, try to use cached data if available
+      loadSubtasksForCurrentTask();
+    });
 }
 
 // Load local subtasks (for when no task is selected)
@@ -537,6 +648,11 @@ function loadLocalSubtasks() {
         subtask.completed
       );
       subtasksList.appendChild(subtaskElement);
+    });
+    
+    // Ensure all delete buttons have proper event listeners
+    subtasksList.querySelectorAll('[data-subtask-id]').forEach(subtaskItem => {
+      attachDeleteListener(subtaskItem);
     });
     
     // Save normalized subtasks back to localStorage
@@ -636,11 +752,50 @@ document.addEventListener('taskSelected', function(e) {
   }
 });
 
+// Add task deletion event listener - NEW EVENT LISTENER
+document.addEventListener('taskDeleted', function(e) {
+  if (e.detail && e.detail.taskId) {
+    // Clear all subtasks data for this task
+    clearSubtasksData(e.detail.taskId);
+  }
+});
+
+
+// Function to reattach event listeners to existing subtasks after page refresh
+function reattachSubtaskEventListeners() {
+  document.querySelectorAll('[data-subtask-id]').forEach(subtaskItem => {
+    // Reattach delete listener
+    attachDeleteListener(subtaskItem);
+    
+    // Reattach checkbox listener
+    const checkbox = subtaskItem.querySelector('.checkbox');
+    if (checkbox) {
+      // Remove existing listeners first
+      const newCheckbox = checkbox.cloneNode(true);
+      checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+      
+      // Add new listener
+      newCheckbox.addEventListener('click', () => {
+        const subtaskId = subtaskItem.dataset.subtaskId;
+        const currentState = subtaskItem.dataset.completed === 'true';
+        const newState = !currentState;
+        
+        updateSubtaskElementUI(subtaskItem, newState);
+        updateSubtaskCompletionStatus(subtaskId, newState);
+      });
+    }
+  });
+}
+
 function initSubtaskManager() {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadLocalSubtasks);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLocalSubtasks();
+      reattachSubtaskEventListeners();
+    });
   } else {
     loadLocalSubtasks();
+    reattachSubtaskEventListeners();
   }
 
   // Set up event listeners for add subtask buttons
@@ -657,6 +812,13 @@ function initSubtaskManager() {
       e.preventDefault();
       const listName = e.target.closest('.right-panel').getAttribute('data-list');
       addSubtask(listName);
+    }
+  });
+  
+  // Add an event listener for page visibility to reattach listeners when user returns to the page
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      reattachSubtaskEventListeners();
     }
   });
 }

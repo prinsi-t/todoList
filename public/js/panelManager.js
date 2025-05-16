@@ -1,5 +1,233 @@
 let activePanels = {};
 
+function hasTasksInList(listName) {
+  if (!window.localTaskCache || !Array.isArray(window.localTaskCache)) {
+    console.log(`No task cache available for list: ${listName}`);
+    return false;
+  }
+  
+  console.log(`Checking tasks for list: ${listName}`, window.localTaskCache);
+  
+  const hasTasks = window.localTaskCache.some(task => 
+    task.list === listName && task.deleted !== true
+  );
+  
+  console.log(`List ${listName} has tasks: ${hasTasks}`);
+  return hasTasks;
+}
+
+function updateRightPanelVisibility(listName) {
+  if (!listName) return;
+  
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+  if (!rightPanelsContainer) {
+    console.error('Right panels container not found');
+    return;
+  }
+  
+  const hasAnyTasks = hasTasksInList(listName);
+  
+  console.log(`Checking visibility for ${listName}: has tasks = ${hasAnyTasks}`);
+  
+  if (hasAnyTasks) {
+    rightPanelsContainer.classList.remove('hidden');
+  } else {
+    rightPanelsContainer.classList.add('hidden');
+    
+    window.currentTaskId = null;
+    localStorage.removeItem('activeTaskId');
+  }
+}
+
+// function initializePanelVisibility() {
+//   const activeList = localStorage.getItem('activeList') || 'Personal';
+//   updateRightPanelVisibility(activeList);
+  
+//   document.addEventListener('taskAdded', function(e) {
+//     if (e.detail && e.detail.task) {
+//       console.log('Task added event detected, updating panel visibility');
+//       updateRightPanelVisibility(e.detail.task.list);
+//     }
+//   });
+  
+//   document.addEventListener('taskDeleted', function(e) {
+//     if (e.detail && e.detail.list) {
+//       console.log('Task deleted event detected, updating panel visibility');
+//       setTimeout(() => {
+//         updateRightPanelVisibility(e.detail.list);
+//       }, 100);
+//     }
+//   });
+  
+//   document.addEventListener('listChanged', function(e) {
+//     if (e.detail && e.detail.list) {
+//       console.log('List changed event detected, updating panel visibility');
+//       updateRightPanelVisibility(e.detail.list);
+//     }
+//   });
+// }
+function initializePanelVisibility() {
+  const activeList = localStorage.getItem('activeList') || 'Personal';
+  updateRightPanelVisibility(activeList);
+  
+  // Add event listener for task added
+  document.addEventListener('taskAdded', function(e) {
+    if (e.detail && e.detail.task) {
+      console.log('Task added event detected, updating panel visibility');
+      const task = e.detail.task;
+      updateRightPanelVisibility(task.list);
+      
+      // Show the panel for the new task
+      showPanelForTask(task);
+    }
+  });
+  
+  document.addEventListener('taskDeleted', function(e) {
+    if (e.detail && e.detail.list) {
+      console.log('Task deleted event detected, updating panel visibility');
+      setTimeout(() => {
+        updateRightPanelVisibility(e.detail.list);
+      }, 100);
+    }
+  });
+  
+  document.addEventListener('listChanged', function(e) {
+    if (e.detail && e.detail.list) {
+      console.log('List changed event detected, updating panel visibility');
+      updateRightPanelVisibility(e.detail.list);
+    }
+  });
+  
+  // Set up handler for add button clicks
+  setupTaskAddHandler();
+  
+  // Also watch for DOM changes to catch dynamically added Add buttons
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+        for (let i = 0; i < mutation.addedNodes.length; i++) {
+          const node = mutation.addedNodes[i];
+          if (node.nodeType === 1 && (node.matches && (node.matches('button.add') || node.matches('button[type="submit"]')))) {
+            setupTaskAddHandler();
+          }
+        }
+      }
+    });
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
+// function createPanelForTask(task) {
+//   if (!task || !task.list || !task._id) {
+//     console.error('Invalid task provided to createPanelForTask');
+//     return null;
+//   }
+
+//   const listName = task.list;
+//   const taskId = task._id;
+//   const uniquePanelId = `right-panel-${listName.toLowerCase().replace(/\s+/g, '-')}-${taskId}`;
+  
+//   let panel = document.getElementById(uniquePanelId);
+//   if (panel) {
+//     console.log(`Panel already exists for task: ${task.title} in list: ${listName}`);
+//     return panel;
+//   }
+
+//   console.log(`Creating new panel for task: ${task.title} in list: ${listName}`);
+  
+//   const listId = listName.toLowerCase().replace(/\s+/g, '-');
+//   const containerIdForList = `right-panels-container-${listId}`;
+//   let listContainer = document.getElementById(containerIdForList);
+  
+//   if (!listContainer) {
+//     const mainContent = document.querySelector('.main-content') || document.querySelector('main');
+//     if (mainContent) {
+//       listContainer = document.createElement('div');
+//       listContainer.id = containerIdForList;
+//       listContainer.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full right-panels-container hidden';
+//       mainContent.appendChild(listContainer);
+//       console.log(`Created new right panels container for list: ${listName}`);
+//     } else {
+//       console.error('Main content container not found, cannot create right panels container');
+//       return null;
+//     }
+//   }
+
+//   panel = document.createElement('div');
+//   panel.id = uniquePanelId;
+//   panel.className = 'task-panel h-full flex flex-col hidden';
+//   panel.dataset.list = listName;
+//   panel.dataset.taskId = taskId;
+
+//   panel.innerHTML = `
+//     <div class="flex justify-between items-center mb-6">
+//       <div>
+//         <h2 class="text-xl font-semibold text-gray-100 mb-1">${task.title || ''}</h2>
+//         <p class="text-gray-400">${listName}</p>
+//       </div>
+//       <div class="flex gap-3">
+//         <button id="complete-btn-${taskId}" class="bg-blue-500 text-white px-4 py-2 rounded-md">Mark as Complete</button>
+//         <button class="delete-task-btn bg-red-500/80 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors duration-150">
+//           <i class="fas fa-trash mr-1"></i> Delete
+//         </button>
+//       </div>
+//     </div>
+    
+//     <div class="task-blur-content flex-grow flex flex-col gap-6 overflow-y-auto">
+//       <div class="bg-dark-bg rounded-lg p-4">
+//         <h3 class="text-gray-200 font-medium mb-3">Notes</h3>
+//         <textarea class="notes-textarea w-full bg-dark-bg resize-none text-gray-300 focus:outline-none" rows="4" placeholder="Add notes here...">${task.notes || ''}</textarea>
+//       </div>
+      
+//       <div class="bg-dark-bg rounded-lg p-4">
+//         <div class="flex justify-between items-center mb-3">
+//           <h3 class="text-gray-200 font-medium">Subtasks</h3>
+//           <button class="add-subtask text-blue-400 hover:text-blue-300 text-sm flex items-center">
+//             <i class="fas fa-plus mr-1"></i> Add Subtask
+//           </button>
+//         </div>
+//         <div class="subtasks-list">
+//           ${renderSubtasks(task)}
+//         </div>
+//       </div>
+      
+//       <div class="bg-dark-bg rounded-lg p-4">
+//         <div class="flex justify-between items-center mb-3">
+//           <h3 class="text-gray-200 font-medium">Attachments</h3>
+//           <label for="file-upload-${taskId}" class="text-blue-400 hover:text-blue-300 text-sm cursor-pointer flex items-center">
+//             <i class="fas fa-paperclip mr-1"></i> Add File
+//           </label>
+//           <input id="file-upload-${taskId}" type="file" class="hidden" accept="image/*">
+//         </div>
+//         <div class="image-preview-container flex flex-wrap gap-3">
+//           ${renderAttachments(task)}
+//         </div>
+//       </div>
+//     </div>
+//   `;
+
+//   listContainer.appendChild(panel);
+//   console.log(`Added panel for task "${task.title}" to container for list "${listName}"`);
+  
+//   if (!activePanels[listName]) {
+//     activePanels[listName] = {};
+//   }
+//   activePanels[listName][taskId] = panel;
+  
+//   setupPanelEventListeners(panel, task);
+  
+//   if (window.fileManager && window.fileManager.isInitialized) {
+//     setTimeout(() => {
+//       window.fileManager.setupTaskFileUpload(panel, taskId);
+//     }, 100);
+//   }
+  
+//   return panel;
+// }
 function createPanelForTask(task) {
   if (!task || !task.list || !task._id) {
     console.error('Invalid task provided to createPanelForTask');
@@ -18,6 +246,12 @@ function createPanelForTask(task) {
 
   console.log(`Creating new panel for task: ${task.title} in list: ${listName}`);
   
+  // Make sure right panels container is visible first
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+  if (rightPanelsContainer) {
+    rightPanelsContainer.classList.remove('hidden');
+  }
+  
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const containerIdForList = `right-panels-container-${listId}`;
   let listContainer = document.getElementById(containerIdForList);
@@ -27,18 +261,21 @@ function createPanelForTask(task) {
     if (mainContent) {
       listContainer = document.createElement('div');
       listContainer.id = containerIdForList;
-      listContainer.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full right-panels-container hidden';
+      listContainer.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full right-panels-container';
       mainContent.appendChild(listContainer);
       console.log(`Created new right panels container for list: ${listName}`);
     } else {
       console.error('Main content container not found, cannot create right panels container');
       return null;
     }
+  } else {
+    // Make sure the list container is visible
+    listContainer.classList.remove('hidden');
   }
 
   panel = document.createElement('div');
   panel.id = uniquePanelId;
-  panel.className = 'task-panel h-full flex flex-col hidden';
+  panel.className = 'task-panel h-full flex flex-col';
   panel.dataset.list = listName;
   panel.dataset.taskId = taskId;
 
@@ -106,6 +343,57 @@ function createPanelForTask(task) {
   }
   
   return panel;
+}
+
+function setupTaskAddHandler() {
+  // This should be called after DOM is loaded 
+  const addButtons = document.querySelectorAll('button.add, button[type="submit"]');
+  
+  addButtons.forEach(button => {
+    // Remove any existing listeners first to prevent duplicates
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    
+    newButton.addEventListener('click', function(e) {
+      console.log('Add button clicked, setting up task panel handler');
+      
+      // Set a small timeout to let the task be added to the cache first
+      setTimeout(() => {
+        const activeList = localStorage.getItem('activeList') || 'Personal';
+        console.log(`Current active list: ${activeList}`);
+        
+        // Find the newly added task (usually the last one added to the active list)
+        if (window.localTaskCache && Array.isArray(window.localTaskCache)) {
+          const newTasks = window.localTaskCache.filter(task => 
+            task.list === activeList && !task.deleted && !task.completed
+          );
+          
+          if (newTasks.length > 0) {
+            // Sort by creation time if available, otherwise assume the last item is newest
+            const latestTask = newTasks.sort((a, b) => {
+              if (a.createdAt && b.createdAt) {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+              }
+              return 0;
+            })[0];
+            
+            console.log('Latest task found:', latestTask);
+            if (latestTask) {
+              // Show the panel for this task
+              showPanelForTask(latestTask);
+              
+              // Save this as the active task
+              window.currentTaskId = latestTask._id;
+              localStorage.setItem('activeTaskId', latestTask._id);
+              
+              // Update the panel visibility for this list
+              updateRightPanelVisibility(activeList);
+            }
+          }
+        }
+      }, 100); // Small delay to ensure task is saved before looking for it
+    });
+  });
 }
 
 function renderSubtasks(task) {
@@ -365,6 +653,58 @@ function removeAttachment(taskId, url) {
   window.saveTaskCacheToLocalStorage();
 }
 
+// function showPanelForTask(task) {
+//   if (!task || !task.list || !task._id) {
+//     console.error('Invalid task provided to showPanelForTask');
+//     return;
+//   }
+  
+//   const listName = task.list;
+//   const taskId = task._id;
+  
+//   const rightPanelsContainer = document.getElementById('right-panels-container');
+//   if (rightPanelsContainer) {
+//     rightPanelsContainer.classList.remove('hidden');
+//   }
+  
+//   document.querySelectorAll('.right-panels-container').forEach(container => {
+//     container.classList.add('hidden');
+//   });
+  
+//   const listId = listName.toLowerCase().replace(/\s+/g, '-');
+//   const containerIdForList = `right-panels-container-${listId}`;
+//   const listContainer = document.getElementById(containerIdForList);
+  
+//   if (listContainer) {
+//     listContainer.classList.remove('hidden');
+//   } else {
+//     console.log(`Creating container for list: ${listName}`);
+//   }
+  
+//   if (listContainer) {
+//     listContainer.querySelectorAll('.task-panel').forEach(panel => {
+//       panel.classList.add('hidden');
+//     });
+//   }
+  
+//   const uniquePanelId = `right-panel-${listId}-${taskId}`;
+//   let panel = document.getElementById(uniquePanelId);
+  
+//   if (!panel) {
+//     panel = createPanelForTask(task);
+//   } else {
+//     updatePanelWithTask(panel, task);
+//   }
+  
+//   if (panel) {
+//     panel.classList.remove('hidden');
+//     console.log(`Showing panel for task: ${task.title} in list: ${listName}`);
+    
+//     window.currentTaskId = taskId;
+//   } else {
+//     console.error(`Failed to show panel for task: ${task.title} in list: ${listName}`);
+//   }
+// }
 function showPanelForTask(task) {
   if (!task || !task.list || !task._id) {
     console.error('Invalid task provided to showPanelForTask');
@@ -374,6 +714,13 @@ function showPanelForTask(task) {
   const listName = task.list;
   const taskId = task._id;
   
+  // Make sure the right panels container is visible
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+  if (rightPanelsContainer) {
+    rightPanelsContainer.classList.remove('hidden');
+  }
+  
+  // Hide all containers first
   document.querySelectorAll('.right-panels-container').forEach(container => {
     container.classList.add('hidden');
   });
@@ -408,6 +755,7 @@ function showPanelForTask(task) {
     console.log(`Showing panel for task: ${task.title} in list: ${listName}`);
     
     window.currentTaskId = taskId;
+    localStorage.setItem('activeTaskId', taskId);
   } else {
     console.error(`Failed to show panel for task: ${task.title} in list: ${listName}`);
   }
@@ -558,16 +906,33 @@ function autoResizeTextarea(textarea) {
   textarea.style.height = (textarea.scrollHeight) + 'px';
 }
 
+// document.addEventListener('DOMContentLoaded', function() {
+//   const activeTaskId = localStorage.getItem('activeTaskId');
+//   if (activeTaskId) {
+//     const task = window.localTaskCache.find(task => task._id === activeTaskId);
+//     if (task) {
+//       showPanelForTask(task);
+//     }
+//   }
+  
+//   initializePanelVisibility();
+// });
 document.addEventListener('DOMContentLoaded', function() {
- 
-    const activeTaskId = localStorage.getItem('activeTaskId');
+  const activeTaskId = localStorage.getItem('activeTaskId');
   if (activeTaskId) {
     const task = window.localTaskCache.find(task => task._id === activeTaskId);
     if (task) {
       showPanelForTask(task);
     }
   }
+  
+  initializePanelVisibility();
+  setupTaskAddHandler();
 });
+
+window.hasTasksInList = hasTasksInList;
+window.updateRightPanelVisibility = updateRightPanelVisibility;
+window.initializePanelVisibility = initializePanelVisibility;
 
 window.markTaskComplete = function(taskId) {
   const taskIndex = window.localTaskCache.findIndex(task => task._id === taskId);
@@ -578,6 +943,14 @@ window.markTaskComplete = function(taskId) {
   window.saveTaskCacheToLocalStorage();
   
   updateAllPanelsForTask(task);
+};
+
+window.updateAllPanelsForTask = updateAllPanelsForTask; // Export this function for fileManager to use
+
+window.updatePanelOnListChange = function(listName) {
+  if (!listName) return;
+  console.log(`List changed to: ${listName}, updating panel visibility`);
+  updateRightPanelVisibility(listName);
 };
 
 window.createPanelForTask = createPanelForTask;
