@@ -166,6 +166,78 @@ async function loadTasksFromServer() {
   }
 }
 
+// Add this function after loadTasksFromServer function
+async function loadTasks() {
+  console.log('Loading tasks...');
+  
+  // First load from localStorage
+  loadTasksFromLocalStorage();
+  
+  // Skip server fetch if we're in local development mode
+  const isLocalMode = true; // Set this to true to work in local-only mode
+  
+  if (isLocalMode) {
+    console.log('Running in local-only mode, skipping server fetch');
+    updateAllTaskCounts();
+    const currentList = localStorage.getItem('activeList') || 'Personal';
+    filterTasks(currentList, true);
+    return;
+  }
+  
+  // Only try to fetch from server if not in local mode
+  try {
+    const response = await fetch('/todos/all');
+    if (response.ok) {
+      const serverTasks = await response.json();
+      
+      // Merge server tasks with local tasks
+      const localTaskMap = {};
+      localTaskCache.forEach(task => {
+        localTaskMap[task._id] = task;
+      });
+      
+      const mergedTasks = serverTasks.map(serverTask => {
+        const localTask = localTaskMap[serverTask._id];
+        if (localTask) {
+          serverTask.completed = localTask.completed;
+          if (localTask.subtasks && localTask.subtasks.length > 0) {
+            serverTask.subtasks = [...localTask.subtasks];
+          }
+          delete localTaskMap[serverTask._id];
+        }
+        return serverTask;
+      });
+      
+      // Add remaining local tasks
+      for (const taskId in localTaskMap) {
+        if (taskId.startsWith('local_')) {
+          mergedTasks.push(localTaskMap[taskId]);
+        }
+      }
+      
+      localTaskCache = mergedTasks;
+      saveTaskCacheToLocalStorage();
+    } else {
+      console.error('Failed to fetch tasks from server:', response.status);
+    }
+  } catch (error) {
+    console.error('Error loading tasks from server:', error);
+  }
+  
+  // Update UI regardless of server response
+  updateAllTaskCounts();
+  const currentList = localStorage.getItem('activeList') || 'Personal';
+  filterTasks(currentList, true);
+}
+
+// Make sure to expose the function to the window object
+window.loadTasks = loadTasks;
+
+// Then modify the loadTasksFromServer function to use loadTasks
+function loadTasksFromServer() {
+  loadTasks();
+}
+
 function setupAddTaskFormListener() {
   
   console.log('Skipping setupAddTaskFormListener in taskManager.js - handled by sidebarManager.js');
@@ -173,30 +245,30 @@ function setupAddTaskFormListener() {
 
 function handleAddTask(e) {
   e.preventDefault();
-
+  
   const input = document.getElementById('newTaskInput');
   if (!input) {
     console.error('Could not find newTaskInput element');
     return false;
   }
-
+  
   const title = input.value.trim();
   if (!title) {
     console.error('Task title is empty');
     return false;
   }
-
+  
   let currentList = localStorage.getItem('activeList');
-
+  
   console.log('Active list from localStorage:', currentList);
-
+  
   if (!currentList) {
     currentList = 'Personal';
     console.warn('No active list found, defaulting to Personal');
   }
-
+  
   console.log(`Adding task "${title}" to list: ${currentList}`);
-
+  
   const newTask = {
     _id: 'local_' + Date.now(),
     title: title,
@@ -205,74 +277,111 @@ function handleAddTask(e) {
     subtasks: [],
     attachments: []
   };
-
-  localTaskCache.push(newTask);
-  saveTaskCacheToLocalStorage();
-
-  updateAllTaskCounts();
-
-  const listId = currentList.toLowerCase().replace(/\s+/g, '-');
-  const panelId = `right-panel-${listId}`;
-  const panel = document.getElementById(panelId);
-
-  if (panel) {
-    
-    const titleElement = panel.querySelector('h2');
-    if (titleElement) {
-      titleElement.textContent = title;
-      console.log(`Directly updated panel title to: ${title}`);
-    }
-
-    updatePanelWithTask(panel, newTask);
-
-    document.dispatchEvent(new CustomEvent('taskSelected', {
-      detail: { taskId: newTask._id, listName: currentList }
-    }));
+  
+  // Add task to local cache
+  if (!window.localTaskCache) {
+    window.localTaskCache = [];
   }
-
-  window.currentTaskId = newTask._id;
-
+  window.localTaskCache.push(newTask);
+  window.saveTaskCacheToLocalStorage();
+  
+  // Update counts first
+  if (typeof updateAllTaskCounts === 'function') {
+    updateAllTaskCounts();
+  }
+  
+  // Find or create the main right panel container
+  const mainRightPanel = document.getElementById('right-panels-container');
+  if (!mainRightPanel) {
+    console.error('No right-panels-container found, creating one');
+    const mainContent = document.querySelector('.main-content') || document.querySelector('main');
+    if (mainContent) {
+      const newRightPanel = document.createElement('div');
+      newRightPanel.id = 'right-panels-container';
+      newRightPanel.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full';
+      mainContent.appendChild(newRightPanel);
+    }
+  }
+  
+  // Simulate a task click to trigger the panel
+  console.log('Dispatching task click event');
+  if (typeof window.showPanelForTask === 'function') {
+    // Make sure all panels are cleared
+    document.querySelectorAll('.task-panel').forEach(panel => {
+      panel.classList.add('hidden');
+    });
+    
+    // Force panels container to be visible with explicit style
+    const rightPanelsContainer = document.getElementById('right-panels-container');
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.remove('hidden');
+      rightPanelsContainer.style.display = 'block';
+      console.log('Forced right panels container to be visible');
+    }
+    
+    // Force a small delay to ensure DOM is ready
+    setTimeout(() => {
+      // Create the panel for our task
+      if (typeof window.createPanelForTask === 'function') {
+        const panel = window.createPanelForTask(newTask);
+        if (panel) {
+          console.log('Created panel for task:', newTask._id);
+        }
+      }
+      
+      // Show the panel for our task
+      console.log('Showing panel for task:', newTask._id);
+      window.showPanelForTask(newTask);
+      
+      // Force panel to be visible with explicit style
+      const listId = currentList.toLowerCase().replace(/\s+/g, '-');
+      const uniquePanelId = `right-panel-${listId}-${newTask._id}`;
+      const panel = document.getElementById(uniquePanelId);
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.style.display = 'flex';
+        console.log('Panel made visible:', uniquePanelId);
+      } else {
+        console.error('Could not find panel with ID:', uniquePanelId);
+      }
+      
+      // Update current task ID
+      window.currentTaskId = newTask._id;
+      localStorage.setItem('activeTaskId', newTask._id);
+    }, 100);
+  } else {
+    console.error('showPanelForTask function not available');
+  }
+  
+  // Notify any listeners that a task was added
+  document.dispatchEvent(new CustomEvent('taskAdded', {
+    detail: { task: newTask }
+  }));
+  
+  // Store selection in localStorage
   localStorage.setItem('selectedTaskId', newTask._id);
   localStorage.setItem('lastSelectedList', currentList);
-
-  filterTasks(currentList, true);
-
+  
+  // Refresh task list
+  if (typeof filterTasks === 'function') {
+    filterTasks(currentList, true);
+  }
+  
+  // Highlight the newly added task
   setTimeout(() => {
     const taskElements = document.querySelectorAll('.task-item');
-    let found = false;
-
     taskElements.forEach(el => {
       el.classList.remove('selected', 'bg-dark-hover');
-    });
-
-    taskElements.forEach(el => {
       if (el.dataset.taskId === newTask._id) {
         el.classList.add('selected', 'bg-dark-hover');
-        found = true;
-        console.log(`Highlighted new task: ${newTask.title} (ID: ${newTask._id})`);
+        console.log('Highlighted new task:', newTask._id);
       }
     });
-
-    if (!found) {
-      console.warn(`Could not find task element for new task ID: ${newTask._id} - refreshing task list`);
-     
-      refreshTaskList(currentList);
-
-      setTimeout(() => {
-        const taskElements = document.querySelectorAll('.task-item');
-        taskElements.forEach(el => {
-          if (el.dataset.taskId === newTask._id) {
-            el.classList.add('selected', 'bg-dark-hover');
-            console.log(`Highlighted new task after refresh: ${newTask.title}`);
-          }
-        });
-      }, 100);
-    }
-  }, 100);
-
+  }, 200);
+  
   console.log(`New task added and selected: ${newTask.title} (ID: ${newTask._id})`);
-  console.log(`Selected task ID saved to localStorage: ${localStorage.getItem('selectedTaskId')}`);
-
+  
+  // Clear input
   input.value = '';
   return false;
 }
