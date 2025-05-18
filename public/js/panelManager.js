@@ -14,7 +14,6 @@ function hasTasksInList(listName) {
   
   console.log(`List ${listName} has tasks: ${hasTasks}`);
   
-  // If no tasks, ensure the panel is hidden
   if (!hasTasks) {
     const rightPanelsContainer = document.getElementById('right-panels-container');
     if (rightPanelsContainer) {
@@ -38,12 +37,10 @@ function updateRightPanelVisibility(listName) {
   
   console.log(`Checking visibility for ${listName}: has tasks = ${hasAnyTasks}`);
   
-  // Hide all list-specific containers first
   document.querySelectorAll('[id^="right-panels-container-"]').forEach(container => {
     container.classList.add('hidden');
   });
   
-  // Get the list-specific container
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const containerIdForList = `right-panels-container-${listId}`;
   const listContainer = document.getElementById(containerIdForList);
@@ -52,23 +49,19 @@ function updateRightPanelVisibility(listName) {
     listContainer.classList.remove('hidden');
   }
   
-  // Check for active task and ensure it persists across list changes
   const activeTaskId = localStorage.getItem('activeTaskId');
   const activeTask = activeTaskId ? 
     window.localTaskCache.find(task => task._id === activeTaskId && !task.deleted) : 
     null;
   
-  // If there are tasks in the current list or an active task exists
   if (hasAnyTasks) {
     rightPanelsContainer.classList.remove('hidden');
     
-    // If active task exists and belongs to current list, show its panel
-    if (activeTask && activeTask.list === listName) {
+   if (activeTask && activeTask.list === listName) {
       setTimeout(() => {
         showPanelForTask(activeTask);
       }, 10);
     } else {
-      // Otherwise, find the first task in the current list and show its panel
       const firstTask = window.localTaskCache.find(task => 
         task.list === listName && !task.deleted
       );
@@ -504,7 +497,6 @@ function updateBlurEffect(panel, task) {
   if (blurContent) {
     if (task.completed && isTaskBlurred) {
       blurContent.classList.add('blurred');
-      // Use the class instead of inline styles for consistency
       if (completeBtn) {
         completeBtn.textContent = 'Mark as Incomplete';
         completeBtn.className = completeBtn.className.replace('bg-blue-500', 'bg-green-500');
@@ -578,7 +570,6 @@ function showPanelForTask(task) {
     rightPanelsContainer.classList.remove('hidden');
   }
   
-  // Hide all panels first
   document.querySelectorAll('.right-panels-container').forEach(container => {
     container.classList.add('hidden');
   });
@@ -612,7 +603,6 @@ function showPanelForTask(task) {
     panel.classList.remove('hidden');
     console.log(`Showing panel for task: ${task.title} in list: ${listName}`);
     
-    // Store the current task ID
     window.currentTaskId = taskId;
     localStorage.setItem('activeTaskId', taskId);
   } else {
@@ -644,7 +634,6 @@ function updatePanelWithTask(panel, task) {
     imagePreviewContainer.innerHTML = renderAttachments(task);
   }
   
-  // Apply blur effect based on task completion status
   const isTaskBlurred = localStorage.getItem('isTaskBlurred') === 'true';
   const blurContent = panel.querySelector('.task-blur-content');
   const completeBtn = panel.querySelector(`#complete-btn-${taskId}`) || panel.querySelector('.complete-btn');
@@ -718,13 +707,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Initialize panel visibility
   initializePanelVisibility();
   
-  // Setup task add handler
   setupTaskAddHandler();
   
-  // Remove existing listeners and add enhanced ones
   try {
     const oldListeners = window.getEventListeners ? window.getEventListeners(document) : null;
     if (oldListeners && oldListeners.listChanged) {
@@ -736,7 +722,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Could not remove old event listeners, will add new ones', e);
   }
   
-  // Add enhanced list change handler
   document.addEventListener('listChanged', enhancedListChangeHandler);
 });
 
