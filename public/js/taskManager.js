@@ -166,14 +166,11 @@ async function loadTasksFromServer() {
   }
 }
 
-// Add this function after loadTasksFromServer function
 async function loadTasks() {
   console.log('Loading tasks...');
   
-  // First load from localStorage
   loadTasksFromLocalStorage();
   
-  // Skip server fetch if we're in local development mode
   const isLocalMode = true; // Set this to true to work in local-only mode
   
   if (isLocalMode) {
@@ -184,13 +181,11 @@ async function loadTasks() {
     return;
   }
   
-  // Only try to fetch from server if not in local mode
   try {
     const response = await fetch('/todos/all');
     if (response.ok) {
       const serverTasks = await response.json();
       
-      // Merge server tasks with local tasks
       const localTaskMap = {};
       localTaskCache.forEach(task => {
         localTaskMap[task._id] = task;
@@ -208,7 +203,6 @@ async function loadTasks() {
         return serverTask;
       });
       
-      // Add remaining local tasks
       for (const taskId in localTaskMap) {
         if (taskId.startsWith('local_')) {
           mergedTasks.push(localTaskMap[taskId]);
@@ -224,16 +218,13 @@ async function loadTasks() {
     console.error('Error loading tasks from server:', error);
   }
   
-  // Update UI regardless of server response
   updateAllTaskCounts();
   const currentList = localStorage.getItem('activeList') || 'Personal';
   filterTasks(currentList, true);
 }
 
-// Make sure to expose the function to the window object
 window.loadTasks = loadTasks;
 
-// Then modify the loadTasksFromServer function to use loadTasks
 function loadTasksFromServer() {
   loadTasks();
 }
@@ -278,19 +269,16 @@ function handleAddTask(e) {
     attachments: []
   };
   
-  // Add task to local cache
   if (!window.localTaskCache) {
     window.localTaskCache = [];
   }
   window.localTaskCache.push(newTask);
   window.saveTaskCacheToLocalStorage();
   
-  // Update counts first
   if (typeof updateAllTaskCounts === 'function') {
     updateAllTaskCounts();
   }
   
-  // Find or create the main right panel container
   const mainRightPanel = document.getElementById('right-panels-container');
   if (!mainRightPanel) {
     console.error('No right-panels-container found, creating one');
@@ -303,15 +291,12 @@ function handleAddTask(e) {
     }
   }
   
-  // Simulate a task click to trigger the panel
   console.log('Dispatching task click event');
   if (typeof window.showPanelForTask === 'function') {
-    // Make sure all panels are cleared
     document.querySelectorAll('.task-panel').forEach(panel => {
       panel.classList.add('hidden');
     });
     
-    // Force panels container to be visible with explicit style
     const rightPanelsContainer = document.getElementById('right-panels-container');
     if (rightPanelsContainer) {
       rightPanelsContainer.classList.remove('hidden');
@@ -319,9 +304,7 @@ function handleAddTask(e) {
       console.log('Forced right panels container to be visible');
     }
     
-    // Force a small delay to ensure DOM is ready
     setTimeout(() => {
-      // Create the panel for our task
       if (typeof window.createPanelForTask === 'function') {
         const panel = window.createPanelForTask(newTask);
         if (panel) {
@@ -329,11 +312,9 @@ function handleAddTask(e) {
         }
       }
       
-      // Show the panel for our task
       console.log('Showing panel for task:', newTask._id);
       window.showPanelForTask(newTask);
       
-      // Force panel to be visible with explicit style
       const listId = currentList.toLowerCase().replace(/\s+/g, '-');
       const uniquePanelId = `right-panel-${listId}-${newTask._id}`;
       const panel = document.getElementById(uniquePanelId);
@@ -345,7 +326,6 @@ function handleAddTask(e) {
         console.error('Could not find panel with ID:', uniquePanelId);
       }
       
-      // Update current task ID
       window.currentTaskId = newTask._id;
       localStorage.setItem('activeTaskId', newTask._id);
     }, 100);
@@ -353,21 +333,17 @@ function handleAddTask(e) {
     console.error('showPanelForTask function not available');
   }
   
-  // Notify any listeners that a task was added
   document.dispatchEvent(new CustomEvent('taskAdded', {
     detail: { task: newTask }
   }));
   
-  // Store selection in localStorage
   localStorage.setItem('selectedTaskId', newTask._id);
   localStorage.setItem('lastSelectedList', currentList);
   
-  // Refresh task list
   if (typeof filterTasks === 'function') {
     filterTasks(currentList, true);
   }
   
-  // Highlight the newly added task
   setTimeout(() => {
     const taskElements = document.querySelectorAll('.task-item');
     taskElements.forEach(el => {
@@ -381,7 +357,6 @@ function handleAddTask(e) {
   
   console.log(`New task added and selected: ${newTask.title} (ID: ${newTask._id})`);
   
-  // Clear input
   input.value = '';
   return false;
 }
@@ -1072,103 +1047,10 @@ window.filterTasks = function(listName, preserveSelection = false) {
   }
 };
 
-// function updateAllTaskCounts() {
-//   console.log('Running updateAllTaskCounts...');
-//   const lists = ['Personal', 'Work', 'Grocery List'];
-//   const customLists = [...new Set(localTaskCache.map(task => task.list))].filter(list =>
-//     !lists.includes(list) && list
-//   );
-
-//   const allLists = [...lists, ...customLists];
-
-//   let totalTasks = 0;
-
-//   allLists.forEach(listName => {
-//     const listTasks = localTaskCache.filter(task => task.list === listName);
-//     const count = listTasks.length;
-//     totalTasks += count;
-
-//     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
-//     const countElement = document.getElementById(`count-${listSelector}`);
-
-//     if (countElement) {
-//       countElement.textContent = count;
-//       console.log(`Set count for ${listName} to ${count}`);
-//     } else {
-//       console.warn(`Count element for list "${listName}" not found, selector: count-${listSelector}`);
-
-//       let listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
-      
-//       if (!listItem) {
-//         const sidebarItems = document.querySelectorAll('.sidebar-item');
-//         for (const item of sidebarItems) {
-//           const textContent = item.textContent.trim();
-//           if (textContent.includes(listName)) {
-//             listItem = item;
-//             break;
-//           }
-//         }
-//       }
-
-//       if (listItem) {
-//         console.log(`Found list item for "${listName}"`);
-//         let countSpan = listItem.querySelector('.text-sm.text-gray-500');
-        
-//         if (!countSpan) {
-          
-//           countSpan = listItem.querySelector('span');
-//         }
-        
-//         if (countSpan) {
-         
-//           countSpan.textContent = count;
-//           countSpan.id = `count-${listSelector}`; 
-//           console.log(`Updated existing count span for "${listName}" to ${count}`);
-//         } else {
-       
-//           countSpan = document.createElement('span');
-//           countSpan.id = `count-${listSelector}`;
-//           countSpan.className = 'text-sm text-gray-500 ml-auto';
-//           listItem.appendChild(countSpan);
-//           countSpan.textContent = count;
-//           console.log(`Created new count span for "${listName}" with count ${count}`);
-//         }
-//       } else {
-       
-//         console.log(`Could not find list item for "${listName}" - creating count element in DOM`);
-        
-//         const sidebar = document.querySelector('.sidebar, #sidebar, nav, .sidebar-container');
-//         if (sidebar) {
-          
-//           const existingListItem = Array.from(sidebar.querySelectorAll('*')).find(el => 
-//             el.textContent.includes(listName)
-//           );
-          
-//           if (existingListItem) {
-        
-//             let countSpan = document.createElement('span');
-//             countSpan.id = `count-${listSelector}`;
-//             countSpan.className = 'text-sm text-gray-500 ml-auto';
-//             countSpan.textContent = count;
-//             existingListItem.appendChild(countSpan);
-//             console.log(`Added count span to existing element for "${listName}"`);
-//           }
-//         }
-//       }
-//     }
-//   });
-
-//   const allTasksCount = document.getElementById('allTasksCount');
-//   if (allTasksCount) {
-//     allTasksCount.textContent = totalTasks;
-//     console.log(`Set all tasks count to ${totalTasks}`);
-//   }
-// }
 function updateAllTaskCounts() {
   console.log('Running updateAllTaskCounts...');
   const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
   
-  // Collect all unique lists from task cache, including default and custom lists
   const customLists = [...new Set(localTaskCache.map(task => task.list))]
     .filter(list => list && !defaultLists.includes(list));
 
@@ -1184,21 +1066,17 @@ function updateAllTaskCounts() {
     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
     const countId = `count-${listSelector}`;
 
-    // Find the count element, first by ID, then by selector methods
     let countElement = document.getElementById(countId);
     
     if (!countElement) {
-      // Try finding in sidebar items
       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
       
       if (listItem) {
-        // Create count span if it doesn't exist
         countElement = document.createElement('span');
         countElement.id = countId;
         countElement.className = 'text-sm text-gray-500 ml-auto';
         listItem.appendChild(countElement);
       } else {
-        // Fallback: create a hidden count element
         countElement = document.createElement('span');
         countElement.id = countId;
         countElement.style.display = 'none';
@@ -1214,7 +1092,6 @@ function updateAllTaskCounts() {
     }
   });
 
-  // Update total tasks count
   const allTasksCount = document.getElementById('allTasksCount');
   if (allTasksCount) {
     allTasksCount.textContent = totalTasks.toString();
@@ -1222,38 +1099,6 @@ function updateAllTaskCounts() {
   }
 }
 
-// function ensureCountElementsExist() {
-//   const listsToCheck = ['jj', 'ff', 'k', 'nn'];
-  
-//   listsToCheck.forEach(listName => {
-//     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
-//     const countId = `count-${listSelector}`;
-    
-//     if (!document.getElementById(countId)) {
-//       console.log(`Creating missing count element for ${listName}`);
-      
-//       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
-      
-//       if (listItem) {
-        
-//         const countSpan = document.createElement('span');
-//         countSpan.id = countId;
-//         countSpan.className = 'text-sm text-gray-500 ml-auto';
-//         countSpan.textContent = '0'; // Default count
-//         listItem.appendChild(countSpan);
-//         console.log(`Created count element for ${listName}`);
-//       } else {
-  
-//         const hiddenCount = document.createElement('span');
-//         hiddenCount.id = countId;
-//         hiddenCount.style.display = 'none';
-//         hiddenCount.textContent = '0';
-//         document.body.appendChild(hiddenCount);
-//         console.log(`Created hidden count element for ${listName}`);
-//       }
-//     }
-//   });
-// }
 function ensureCountElementsExist() {
   const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
   
@@ -1261,13 +1106,10 @@ function ensureCountElementsExist() {
     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
     const countId = `count-${listSelector}`;
     
-    // Check if count element exists
     if (!document.getElementById(countId)) {
-      // Find the corresponding sidebar item
       const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
       
       if (listItem) {
-        // Create and append count span
         const countSpan = document.createElement('span');
         countSpan.id = countId;
         countSpan.className = 'text-sm text-gray-500 ml-auto';
@@ -1275,7 +1117,6 @@ function ensureCountElementsExist() {
         listItem.appendChild(countSpan);
         console.log(`Created count element for ${listName}`);
       } else {
-        // Fallback: create a hidden count element
         const hiddenCount = document.createElement('span');
         hiddenCount.id = countId;
         hiddenCount.style.display = 'none';
@@ -1286,7 +1127,6 @@ function ensureCountElementsExist() {
     }
   });
 
-  // Handle custom lists
   try {
     const customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
     
@@ -1470,3 +1310,4 @@ window.markSelectedTaskComplete = function() {
     toggleTaskCompletion(taskId);
   }
 };
+

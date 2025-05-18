@@ -1,13 +1,32 @@
-// Persistent Panel Fix - Consolidated solution
-// This script ensures the right panel stays visible when switching between lists
-// and properly handles task visibility across list changes
-
-// Store a reference to the original functions we'll be enhancing
 const originalUpdateRightPanelVisibility = window.updateRightPanelVisibility;
 const originalShowPanelForTask = window.showPanelForTask;
 
-// Enhanced version of updateRightPanelVisibility
-function enhancedUpdateRightPanelVisibility(listName) {
+// Additional function to check on load and handle initialization
+function checkEmptyListsOnLoad() {
+  console.log('Checking for empty lists on load...');
+  
+  const lists = [...new Set(window.localTaskCache.map(task => task.list))];
+  lists.forEach(listName => {
+    const hasAnyTasks = hasTasksInList(listName);
+    if (!hasAnyTasks) {
+      console.log(`List ${listName} is empty, hiding panel`);
+      const rightPanelsContainer = document.getElementById('right-panels-container');
+      if (rightPanelsContainer) {
+        rightPanelsContainer.classList.add('hidden');
+      }
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    installPersistentPanelFix();
+    setTimeout(checkEmptyListsOnLoad, 200); // Give time for task cache to load
+  });
+} else {
+  installPersistentPanelFix();
+  setTimeout(checkEmptyListsOnLoad, 200); // Give time for task cache to load
+}function enhancedUpdateRightPanelVisibility(listName) {
   if (!listName) return;
   
   const rightPanelsContainer = document.getElementById('right-panels-container');
@@ -16,10 +35,8 @@ function enhancedUpdateRightPanelVisibility(listName) {
     return;
   }
   
-  // Check if the current list has any tasks
   const hasTasksInCurrentList = hasTasksInList(listName);
   
-  // Always check if there's an active task (regardless of which list it belongs to)
   const activeTaskId = localStorage.getItem('activeTaskId');
   const activeTask = activeTaskId ? 
     window.localTaskCache.find(task => task._id === activeTaskId && !task.deleted) : 
@@ -27,12 +44,17 @@ function enhancedUpdateRightPanelVisibility(listName) {
   
   console.log(`Checking visibility for ${listName}: has tasks = ${hasTasksInCurrentList}, active task = ${activeTask ? activeTask._id : 'none'}`);
   
-  // Hide all list-specific containers first
   document.querySelectorAll('[id^="right-panels-container-"]').forEach(container => {
     container.classList.add('hidden');
   });
   
-  // Show the container for the current list if it exists
+  if (!hasTasksInCurrentList) {
+    rightPanelsContainer.classList.add('hidden');
+    window.currentTaskId = null;
+    localStorage.removeItem('activeTaskId');
+    return;
+  }
+  
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const containerIdForList = `right-panels-container-${listId}`;
   const listContainer = document.getElementById(containerIdForList);
@@ -41,20 +63,14 @@ function enhancedUpdateRightPanelVisibility(listName) {
     listContainer.classList.remove('hidden');
   }
   
-  // CRITICAL FIX: We keep the right panel visible in these cases:
-  // 1. Current list has tasks
-  // 2. There's an active task from any list
-  if (hasTasksInCurrentList || activeTask) {
+  if (hasTasksInCurrentList) {
     rightPanelsContainer.classList.remove('hidden');
     
-    // If we have an active task, make sure its panel is displayed
-    if (activeTask) {
-      // Short timeout to ensure DOM is ready
+    if (activeTask && activeTask.list === listName) {
       setTimeout(() => {
         showPanelForTask(activeTask);
       }, 10);
-    } else if (hasTasksInCurrentList) {
-      // No active task but current list has tasks - show the first task
+    } else {
       const firstTask = window.localTaskCache.find(task => 
         task.list === listName && !task.deleted
       );
@@ -62,21 +78,20 @@ function enhancedUpdateRightPanelVisibility(listName) {
       if (firstTask) {
         setTimeout(() => {
           showPanelForTask(firstTask);
-          // Save this as the new active task
           window.currentTaskId = firstTask._id;
           localStorage.setItem('activeTaskId', firstTask._id);
         }, 10);
+      } else {
+        rightPanelsContainer.classList.add('hidden');
       }
     }
   } else {
-    // Only hide if there are truly no tasks at all and no active task
     rightPanelsContainer.classList.add('hidden');
     window.currentTaskId = null;
     localStorage.removeItem('activeTaskId');
   }
 }
 
-// Enhanced showPanelForTask to ensure panels remain visible
 function enhancedShowPanelForTask(task) {
   if (!task || !task.list || !task._id) {
     console.error('Invalid task provided to showPanelForTask');
@@ -85,21 +100,17 @@ function enhancedShowPanelForTask(task) {
   
   console.log(`Enhanced showPanelForTask called for: ${task.title} (ID: ${task._id})`);
   
-  // Always ensure the right panels container is visible when showing a task
   const rightPanelsContainer = document.getElementById('right-panels-container');
   if (rightPanelsContainer) {
     rightPanelsContainer.classList.remove('hidden');
   }
   
-  // Continue with original function logic
   const listName = task.list;
   const taskId = task._id;
   
-  // Save this as the active task
   window.currentTaskId = taskId;
   localStorage.setItem('activeTaskId', taskId);
   
-  // Hide all containers first
   document.querySelectorAll('.right-panels-container').forEach(container => {
     container.classList.add('hidden');
   });
@@ -139,33 +150,92 @@ function enhancedShowPanelForTask(task) {
   }
 }
 
-// Enhanced list change handler
 function enhancedListChangeHandler(e) {
   if (e.detail && e.detail.list) {
     const listName = e.detail.list;
     console.log('List changed event detected, updating panel visibility for:', listName);
     
-    // Store the current list name for persistence
+    const previousList = localStorage.getItem('activeList');
     localStorage.setItem('activeList', listName);
     
-    // Update panel visibility for the new list using our enhanced function
-    enhancedUpdateRightPanelVisibility(listName);
+    // Store the current active task before switching lists
+    const activeTaskId = localStorage.getItem('activeTaskId');
+    const activeTask = activeTaskId ? 
+      window.localTaskCache.find(task => task._id === activeTaskId && !task.deleted) : 
+      null;
+    
+    // Check if the active task belongs to the previous list
+    if (activeTask && activeTask.list === previousList) {
+      // Remember this task ID for when we return to this list
+      localStorage.setItem(`lastActiveTask_${previousList}`, activeTaskId);
+    }
+    
+    // Check if we have a remembered task for the new list
+    const rememberedTaskId = localStorage.getItem(`lastActiveTask_${listName}`);
+    const rememberedTask = rememberedTaskId ? 
+      window.localTaskCache.find(task => task._id === rememberedTaskId && !task.deleted && task.list === listName) : 
+      null;
+    
+    // Force the right panels container to be visible if there are tasks
+    const hasTasksInCurrentList = hasTasksInList(listName);
+    const rightPanelsContainer = document.getElementById('right-panels-container');
+    
+    if (hasTasksInCurrentList && rightPanelsContainer) {
+      // Force remove hidden class
+      rightPanelsContainer.classList.remove('hidden');
+      
+      // Also ensure all list-specific containers are properly set
+      document.querySelectorAll('[id^="right-panels-container-"]').forEach(container => {
+        if (container.id.includes(listName.toLowerCase().replace(/\s+/g, '-'))) {
+          container.classList.remove('hidden');
+        } else {
+          container.classList.add('hidden');
+        }
+      });
+    }
+    
+    if (rememberedTask) {
+      // We have a remembered task for this list, use it
+      window.currentTaskId = rememberedTask._id;
+      localStorage.setItem('activeTaskId', rememberedTask._id);
+      
+      // Force the panel container to be visible
+      if (rightPanelsContainer) {
+        rightPanelsContainer.classList.remove('hidden');
+      }
+      
+      // Use a longer timeout to ensure DOM is fully ready
+      setTimeout(() => {
+        // Call the original showPanelForTask directly to avoid any issues
+        originalShowPanelForTask(rememberedTask);
+        
+        // Double-check visibility after a short delay
+        setTimeout(() => {
+          if (hasTasksInCurrentList && rightPanelsContainer) {
+            rightPanelsContainer.classList.remove('hidden');
+          }
+        }, 100);
+      }, 100);
+    } else {
+      // No remembered task, use the standard behavior
+      enhancedUpdateRightPanelVisibility(listName);
+    }
   }
 }
-
-// Task Added event handler - ensure panel is shown immediately
+// ... existing code ...
 function enhancedTaskAddedHandler(e) {
   if (e.detail && e.detail.task) {
     const task = e.detail.task;
     console.log('Task added event detected:', task);
     
-    // Ensure the right panel is visible
     const rightPanelsContainer = document.getElementById('right-panels-container');
     if (rightPanelsContainer) {
       rightPanelsContainer.classList.remove('hidden');
     }
     
-    // Show the panel for this new task
+    // Store this task as the active task for its list
+    localStorage.setItem(`lastActiveTask_${task.list}`, task._id);
+    
     setTimeout(() => {
       window.currentTaskId = task._id;
       localStorage.setItem('activeTaskId', task._id);
@@ -173,19 +243,15 @@ function enhancedTaskAddedHandler(e) {
     }, 50);
   }
 }
+// ... existing code ...
 
-// Install the fix by replacing the original functions
 function installPersistentPanelFix() {
   console.log('Installing persistent panel fix...');
   
-  // Replace updateRightPanelVisibility with our enhanced version
   window.updateRightPanelVisibility = enhancedUpdateRightPanelVisibility;
   
-  // Replace showPanelForTask with our enhanced version
   window.showPanelForTask = enhancedShowPanelForTask;
   
-  // Remove any existing event listeners for list changes and task additions
-  // (Only if browser supports this - otherwise we'll create new ones)
   try {
     const oldListeners = window.getEventListeners ? window.getEventListeners(document) : null;
     if (oldListeners) {
@@ -204,21 +270,18 @@ function installPersistentPanelFix() {
     console.log('Could not remove old event listeners, will add new ones', e);
   }
   
-  // Add our enhanced event handlers
   document.addEventListener('listChanged', enhancedListChangeHandler);
   document.addEventListener('taskAdded', enhancedTaskAddedHandler);
   
-  // Force an initial update based on the active list
   const activeList = localStorage.getItem('activeList') || 'Personal';
   enhancedUpdateRightPanelVisibility(activeList);
   
   console.log('Persistent panel fix successfully installed!');
 }
 
-// Run the fix when the page is loaded
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', installPersistentPanelFix);
 } else {
-  // Document already loaded, install immediately
   installPersistentPanelFix();
 }
+

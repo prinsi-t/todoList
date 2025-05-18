@@ -28,27 +28,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    .subtask-item {
-      position: relative;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-    }
-
-    .subtask-item:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .subtask-item .delete-subtask-btn {
-      opacity: 0;
-      transition: opacity 0.2s ease, color 0.2s ease;
-    }
-
-    .subtask-item:hover .delete-subtask-btn {
-      opacity: 1;
-    }
-  </style>
 </head>
 <body class="h-screen flex">
   <div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
@@ -114,26 +93,29 @@
 
       <div id="taskList" class="space-y-1">
         <% tasks.forEach(task => { %>
-          <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
-            <div class="checkbox <%= task.completed ? 'checked' : '' %> w-5 h-5 border-2 border-dark-border rounded-full flex items-center justify-center transition-colors duration-200">
-              <% if (task.completed) { %>
-                <i class="fas fa-check text-white text-xs"></i>
-              <% } %>
+          <!-- Replace the existing task-item div with this improved version using Tailwind -->
+            <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-start gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
+              <div class="checkbox <%= task.completed ? 'checked' : '' %> w-5 h-5 border-2 border-dark-border rounded-full flex-shrink-0 flex items-center justify-center transition-colors duration-200">
+                <% if (task.completed) { %>
+                  <i class="fas fa-check text-white text-xs"></i>
+                <% } %>
+              </div>
+              <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm break-words overflow-wrap-normal">
+                <%= task.title %>
+              </span>
             </div>
-            <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm"><%= task.title %></span>
-          </div>
         <% }) %>
       </div>
-    </div>
+      </div>
+      </div>
 
-  </div>
-
-  <!-- Modified right panel container with hidden class by default -->
   <div id="right-panels-container" class="flex-1 min-w-[800px] hidden">
     <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-2xl font-bold mb-1"></h2>
+          <h2 class="text-xl font-semibold text-gray-100 mb-1 break-words overflow-wrap-normal max-w-full">
+            ${task.title || ''}
+          </h2>
           <div class="text-sm text-gray-400">Personal</div>
         </div>
         <button
@@ -146,7 +128,6 @@
 
       <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
         <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-          <!-- Rest of the content remains the same -->
             <div>
               <h3 class="text-sm text-gray-400 mb-2">NOTES</h3>
               <textarea

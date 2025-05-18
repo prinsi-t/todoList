@@ -423,6 +423,110 @@ function clearExistingCustomLists() {
   });
 }
   
+  // function addNewList(listName, saveToStorage = true) {
+  //   console.log('Adding new list:', listName);
+  
+  //   const existingItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
+  //   if (existingItem) {
+  //     console.log(`List ${listName} already exists in the sidebar, not adding again`);
+  //     return;
+  //   }
+  
+  //   const sidebarContainer = document.querySelector('.sidebar-items');
+  //   if (!sidebarContainer) {
+  //     console.error('Sidebar container not found');
+  //     return;
+  //   }
+  
+  //   const newListItem = document.createElement('a');
+  //   newListItem.href = '#';
+  //   newListItem.className = 'sidebar-item flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-dark-hover';
+  //   newListItem.setAttribute('data-list', listName);
+  
+  //   const isCustomList = !isDefaultList(listName);
+  
+  //   let listHTML = `
+  //     <i class="fas fa-folder text-green-400"></i>
+  //     <span class="flex-grow">${listName}</span>
+  //     <span id="count-${listName.toLowerCase().replace(/\s+/g, '-')}" class="text-sm text-gray-500">0</span>
+  //   `;
+  
+  //   if (isCustomList) {
+  //     listHTML += `
+  //       <button class="delete-list-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-1" title="Delete list">
+  //         <i class="fas fa-trash-alt"></i>
+  //       </button>
+  //     `;
+  //   }
+  
+  //   newListItem.innerHTML = listHTML;
+  
+  //   newListItem.classList.add('group');
+  
+  //   newListItem.addEventListener('click', (e) => {
+  //     if (e.target.closest('.delete-list-btn')) {
+  //       e.preventDefault();
+  //       e.stopPropagation();
+  
+  //       deleteList(listName);
+  //       return;
+  //     }
+  
+  //     console.log(`Custom list clicked: ${listName}`);
+  //     localStorage.setItem('activeList', listName);
+  //     console.log(`Set active list in localStorage to: ${listName} (from custom list click)`);
+  
+  //     localStorage.removeItem('selectedTaskId');
+  
+  //     if (typeof window.filterTasks === 'function') {
+  //       window.filterTasks(listName, false);
+  //     }
+  //     highlightActiveList(listName);
+  //   });
+  
+  //   sidebarContainer.appendChild(newListItem);
+  
+  //   if (isCustomList && saveToStorage) {
+  //     saveCustomListToLocalStorage(listName);
+  //   }
+    
+  //   console.log(`Creating right panel for new list: ${listName}`);
+    
+  //   const panel = createPanelForList(listName);
+    
+  //   if (!panel) {
+  //     console.error('Failed to create panel for new list');
+  //     return;
+  //   }
+    
+  //   if (saveToStorage) {
+  //     const allPanels = document.querySelectorAll('.right-panel');
+  //     allPanels.forEach(p => {
+  //       if (p.id !== 'right-panel-template') {
+  //         p.classList.add('hidden');
+  //         p.style.display = 'none';
+  //       }
+  //     });
+      
+  //     panel.classList.remove('hidden');
+  //     panel.style.display = 'block';
+      
+  //     console.log(`Panel for ${listName} is now visible`);
+      
+  //     localStorage.setItem('activeList', listName);
+  //     highlightActiveList(listName);
+      
+  //     clearPanel(panel, listName);
+      
+  //     document.dispatchEvent(new CustomEvent('listChanged', {
+  //       detail: { listName }
+  //     }));
+      
+  //     if (typeof window.filterTasks === 'function') {
+  //       window.filterTasks(listName, false);
+  //     }
+  //   }
+  // }
   function addNewList(listName, saveToStorage = true) {
     console.log('Adding new list:', listName);
   
@@ -445,21 +549,39 @@ function clearExistingCustomLists() {
   
     const isCustomList = !isDefaultList(listName);
   
-    let listHTML = `
-      <i class="fas fa-folder text-green-400"></i>
-      <span class="flex-grow">${listName}</span>
-      <span id="count-${listName.toLowerCase().replace(/\s+/g, '-')}" class="text-sm text-gray-500">0</span>
-    `;
+    // Create separate elements for better control
+    const iconElement = document.createElement('i');
+    iconElement.className = 'fas fa-folder text-green-400';
+    newListItem.appendChild(iconElement);
+    
+    const textElement = document.createElement('span');
+    textElement.className = 'flex-grow';
+    textElement.textContent = listName;
+    newListItem.appendChild(textElement);
+    
+    const countElement = document.createElement('span');
+    countElement.id = `count-${listName.toLowerCase().replace(/\s+/g, '-')}`;
+    countElement.className = 'text-sm text-gray-500';
+    countElement.textContent = '0';
+    newListItem.appendChild(countElement);
   
     if (isCustomList) {
-      listHTML += `
-        <button class="delete-list-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-1" title="Delete list">
-          <i class="fas fa-trash-alt"></i>
-        </button>
-      `;
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-list-btn text-gray-400 hover:text-red-500 transition-opacity duration-200';
+      deleteButton.title = 'Delete list';
+      
+      const deleteIcon = document.createElement('i');
+      deleteIcon.className = 'fas fa-trash-alt';
+      deleteButton.appendChild(deleteIcon);
+      
+      newListItem.appendChild(deleteButton);
+      
+      deleteButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteList(listName);
+      });
     }
-  
-    newListItem.innerHTML = listHTML;
   
     newListItem.classList.add('group');
   
@@ -467,8 +589,6 @@ function clearExistingCustomLists() {
       if (e.target.closest('.delete-list-btn')) {
         e.preventDefault();
         e.stopPropagation();
-  
-        deleteList(listName);
         return;
       }
   
@@ -527,14 +647,7 @@ function clearExistingCustomLists() {
       }
     }
   }
-  
-  function confirmDeleteList(listName) {
-    const confirmation = confirm(`Are you sure you want to delete the list "${listName}" and all its tasks?`);
-    if (confirmation) {
-      deleteList(listName);
-    }
-  }
-  
+ 
   function deleteList(listName) {
     const customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
     const updatedLists = customLists.filter(list => list !== listName);
@@ -628,96 +741,193 @@ function updateDefaultListItems() {
     });
   }
   
-function addCustomStyles() {
-    console.log('Adding custom styles for sidebar items');
+// function addCustomStyles() {
+//     console.log('Adding custom styles for sidebar items');
     
-    const existingStyle = document.getElementById('todo-app-custom-styles');
-    if (existingStyle) {
-      console.log('Removing existing custom styles');
-      existingStyle.remove();
-    }
+//     const existingStyle = document.getElementById('todo-app-custom-styles');
+//     if (existingStyle) {
+//       console.log('Removing existing custom styles');
+//       existingStyle.remove();
+//     }
   
-    const styleElement = document.createElement('style');
-    styleElement.id = 'todo-app-custom-styles';
-    styleElement.textContent = `
-      .sidebar-item .delete-list-btn {
-        opacity: 0;
-        transition: opacity 0.2s ease, color 0.2s ease;
-      }
+//     const styleElement = document.createElement('style');
+//     styleElement.id = 'todo-app-custom-styles';
+//     styleElement.textContent = `
+//       .sidebar-item .delete-list-btn {
+//         opacity: 0;
+//         transition: opacity 0.2s ease, color 0.2s ease;
+//       }
   
-      .sidebar-item:hover .delete-list-btn {
-        opacity: 1;
-      }
+//       .sidebar-item:hover .delete-list-btn {
+//         opacity: 1;
+//       }
       
-      /* Enhanced styling for active list */
-      .sidebar-item.active-list {
-        position: relative;
-        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
-        background-color: #1e293b !important;
-        transform: translateX(2px);
-        transition: all 0.3s ease !important;
-      }
+//       .sidebar-item.active-list {
+//         position: relative;
+//         box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
+//         background-color: #1e293b !important;
+//         transform: translateX(2px);
+//         transition: all 0.3s ease !important;
+//       }
       
-      .sidebar-item.border-l-4 {
-        border-left-width: 4px !important;
-        border-left-color: #3b82f6 !important;
-      }
+//       .sidebar-item.border-l-4 {
+//         border-left-width: 4px !important;
+//         border-left-color: #3b82f6 !important;
+//       }
       
-      /* Subtle pulse animation for the active list */
-      @keyframes subtle-pulse {
-        0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-        50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
-        100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-      }
+//       @keyframes subtle-pulse {
+//         0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+//         50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
+//         100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+//       }
       
-      .sidebar-item.active-list {
-        animation: subtle-pulse 3s infinite;
-      }
+//       .sidebar-item.active-list {
+//         animation: subtle-pulse 3s infinite;
+//       }
       
-      /* Make sure the active list text is white */
-      .sidebar-item.text-white span.flex-grow {
-        color: white !important;
-        font-weight: 600 !important;
-      }
+//       .sidebar-item.text-white span.flex-grow {
+//         color: white !important;
+//         font-weight: 600 !important;
+//       }
       
-      /* Default list specific styling */
-      .sidebar-item[data-list="Personal"].active-list i {
-        color: #60a5fa !important; /* Blue for Personal */
-      }
+//       .sidebar-item[data-list="Personal"].active-list i {
+//         color: #60a5fa !important; /* Blue for Personal */
+//       }
       
-      .sidebar-item[data-list="Work"].active-list i {
-        color: #f97316 !important; /* Orange for Work */
-      }
+//       .sidebar-item[data-list="Work"].active-list i {
+//         color: #f97316 !important; /* Orange for Work */
+//       }
       
-      .sidebar-item[data-list="Grocery List"].active-list i {
-        color: #10b981 !important; /* Green for Grocery */
-      }
+//       .sidebar-item[data-list="Grocery List"].active-list i {
+//         color: #10b981 !important; /* Green for Grocery */
+//       }
       
-      /* Custom list specific styling */
-      .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
-        color: #8b5cf6 !important; /* Purple for custom lists */
-      }
+//       .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
+//         color: #8b5cf6 !important; /* Purple for custom lists */
+//       }
       
-      /* Transition effects */
-      .sidebar-item {
-        transition: all 0.2s ease-in-out;
-        position: relative;
-        overflow: hidden;
-      }
+//       .sidebar-item {
+//         transition: all 0.2s ease-in-out;
+//         position: relative;
+//         overflow: hidden;
+//       }
       
-      /* Remove hover styles that were conflicting with active state */
-      .sidebar-item:hover:not(.active-list) {
-        background-color: transparent !important; 
-        transform: none;
-      }
+//       .sidebar-item:hover:not(.active-list) {
+//         background-color: transparent !important; 
+//         transform: none;
+//       }
       
-      .sidebar-item:hover:not(.active-list)::after {
-        display: none;
-      }
-    `;
-    document.head.appendChild(styleElement);
-    console.log('Custom styles added successfully for sidebar items');
+//       .sidebar-item:hover:not(.active-list)::after {
+//         display: none;
+//       }
+//     `;
+//     document.head.appendChild(styleElement);
+//     console.log('Custom styles added successfully for sidebar items');
+//   }
+
+function addCustomStyles() {
+  console.log('Adding custom styles for sidebar items');
+  
+  const existingStyle = document.getElementById('todo-app-custom-styles');
+  if (existingStyle) {
+    console.log('Removing existing custom styles');
+    existingStyle.remove();
   }
+
+  const styleElement = document.createElement('style');
+  styleElement.id = 'todo-app-custom-styles';
+  styleElement.textContent = `
+    .sidebar-item {
+      transition: all 0.2s ease-in-out;
+      position: relative;
+      overflow: visible !important; /* Changed from hidden to visible */
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .sidebar-item .delete-list-btn {
+      opacity: 0;
+      transition: opacity 0.2s ease, color 0.2s ease;
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+    }
+
+    .sidebar-item:hover .delete-list-btn {
+      opacity: 1;
+    }
+    
+    .sidebar-item span.flex-grow {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100% - 60px); /* Make space for count and delete button */
+    }
+    
+    .sidebar-item .text-sm.text-gray-500 {
+      margin-left: auto;
+      margin-right: 24px; /* Make space for delete button */
+    }
+    
+    .sidebar-item.active-list {
+      position: relative;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
+      background-color: #1e293b !important;
+      transform: translateX(2px);
+      transition: all 0.3s ease !important;
+    }
+    
+    .sidebar-item.border-l-4 {
+      border-left-width: 4px !important;
+      border-left-color: #3b82f6 !important;
+    }
+    
+    @keyframes subtle-pulse {
+      0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+      50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
+      100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+    }
+    
+    .sidebar-item.active-list {
+      animation: subtle-pulse 3s infinite;
+    }
+    
+    .sidebar-item.text-white span.flex-grow {
+      color: white !important;
+      font-weight: 600 !important;
+    }
+    
+    .sidebar-item[data-list="Personal"].active-list i {
+      color: #60a5fa !important; /* Blue for Personal */
+    }
+    
+    .sidebar-item[data-list="Work"].active-list i {
+      color: #f97316 !important; /* Orange for Work */
+    }
+    
+    .sidebar-item[data-list="Grocery List"].active-list i {
+      color: #10b981 !important; /* Green for Grocery */
+    }
+    
+    .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
+      color: #8b5cf6 !important; /* Purple for custom lists */
+    }
+    
+    .sidebar-item:hover:not(.active-list) {
+      background-color: transparent !important; 
+      transform: none;
+    }
+    
+    .sidebar-item:hover:not(.active-list)::after {
+      display: none;
+    }
+  `;
+  document.head.appendChild(styleElement);
+  console.log('Custom styles added successfully for sidebar items');
+}
   
   addCustomStyles();
 

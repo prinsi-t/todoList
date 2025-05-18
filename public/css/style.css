@@ -3,7 +3,6 @@ body {
     color: #fff;
   }
 
-  /* Scrollbar customization */
   #imagePreviewContainer {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -48,7 +47,7 @@ body {
     scrollbar-color: rgba(55, 65, 81, 0.2) transparent;
   }
 
-  /* Blurred panel style - only applied when task is completed */
+  
   .blurred-panel {
     opacity: 0.6;
     filter: blur(1px);
@@ -60,7 +59,6 @@ body {
     z-index: 5;
   }
 
-  /* Styles for task items */
   .task-item {
     position: relative;
   }
@@ -216,34 +214,10 @@ body {
     @apply border-blue-500;
   }
 
-  .task-blur-content {
-    transition: filter 0.3s ease;
-  }
 
-  .task-blur-content.blurred {
-    filter: blur(5px) brightness(0.8) !important;
-    opacity: 0.5 !important;
-    pointer-events: none !important;
-    transition: all 0.4s ease;
-  }
-
-  /* Modal styles */
-#addListModal {
-  z-index: 1000;
-}
 
 #addListModal .bg-dark-secondary {
   animation: fadeIn 0.3s ease-in-out;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 

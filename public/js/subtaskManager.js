@@ -1,5 +1,9 @@
 // Fixed subtaskManager.js - Permanent Subtask Deletion
 
+function isLocalTaskId(taskId) {
+  return taskId && (taskId.startsWith('local_') || taskId.indexOf('_') > -1);
+}
+
 // Standardized subtask object format
 function normalizeSubtask(subtask) {
   if (!subtask) return null;
@@ -316,12 +320,100 @@ function addSubtask(listName) {
 }
 
 // Load subtasks for current task
+// function loadSubtasksForCurrentTask() {
+//   const subtasksList = document.getElementById('subtasksList');
+//   if (!subtasksList || !window.currentTaskId) return;
+
+//   // Clear the existing subtasks list
+//   subtasksList.innerHTML = '';
+
+//   // First try to load subtasks from localStorage
+//   const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
+//   let taskSubtasks = safeParseJSON(taskSubtasksKey, []);
+  
+//   // Filter and normalize subtasks
+//   taskSubtasks = taskSubtasks
+//     .map(subtask => normalizeSubtask(subtask))
+//     .filter(subtask => subtask !== null);
+  
+//   if (taskSubtasks.length > 0) {
+//     console.log('Loading subtasks from localStorage:', taskSubtasks);
+//     hideNoSubtasksMessage();
+    
+//     // Create and append subtask elements
+//     taskSubtasks.forEach(subtask => {
+//       const subtaskElement = createSubtaskElement(
+//         subtask.text,
+//         subtask.id,
+//         subtask.completed
+//       );
+//       subtasksList.appendChild(subtaskElement);
+//     });
+    
+//     // Ensure all delete buttons have proper event listeners
+//     subtasksList.querySelectorAll('[data-subtask-id]').forEach(subtaskItem => {
+//       attachDeleteListener(subtaskItem);
+//     });
+    
+//     // Save normalized subtasks back to localStorage
+//     localStorage.setItem(taskSubtasksKey, JSON.stringify(taskSubtasks));
+//   } 
+//   // If no subtasks in localStorage, try to get them from the cache
+//   else {
+//     const taskIndex = localTaskCache.findIndex(task => task._id === window.currentTaskId);
+    
+//     if (taskIndex !== -1 && localTaskCache[taskIndex].subtasks && 
+//         Array.isArray(localTaskCache[taskIndex].subtasks) && 
+//         localTaskCache[taskIndex].subtasks.length > 0) {
+      
+//       hideNoSubtasksMessage();
+      
+//       // Normalize subtasks from cache
+//       const normalizedSubtasks = localTaskCache[taskIndex].subtasks
+//         .map(subtask => normalizeSubtask(subtask))
+//         .filter(subtask => subtask !== null);
+      
+//       // Update the cache with normalized subtasks
+//       localTaskCache[taskIndex].subtasks = normalizedSubtasks;
+//       saveTaskCacheToLocalStorage();
+      
+//       // Store normalized subtasks in localStorage
+//       localStorage.setItem(taskSubtasksKey, JSON.stringify(normalizedSubtasks));
+      
+//       // Create and append subtask elements
+//       normalizedSubtasks.forEach(subtask => {
+//         const subtaskElement = createSubtaskElement(
+//           subtask.text,
+//           subtask.id,
+//           subtask.completed
+//         );
+//         subtasksList.appendChild(subtaskElement);
+//       });
+      
+//       // Ensure all delete buttons have proper event listeners
+//       subtasksList.querySelectorAll('[data-subtask-id]').forEach(subtaskItem => {
+//         attachDeleteListener(subtaskItem);
+//       });
+//     } else {
+//       // If no subtasks found anywhere, show "no subtasks" message and fetch from server
+//       showNoSubtasksMessage();
+//       fetchTaskFromServer(window.currentTaskId);
+//     }
+//   }
+// }
 function loadSubtasksForCurrentTask() {
   const subtasksList = document.getElementById('subtasksList');
   if (!subtasksList || !window.currentTaskId) return;
 
   // Clear the existing subtasks list
   subtasksList.innerHTML = '';
+
+  // Check if this is a local task
+  if (isLocalTaskId(window.currentTaskId)) {
+    console.log('Loading local subtasks for task:', window.currentTaskId);
+    loadLocalSubtasks();
+    return;
+  }
 
   // First try to load subtasks from localStorage
   const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
@@ -393,7 +485,11 @@ function loadSubtasksForCurrentTask() {
     } else {
       // If no subtasks found anywhere, show "no subtasks" message and fetch from server
       showNoSubtasksMessage();
-      fetchTaskFromServer(window.currentTaskId);
+      
+      // Only fetch from server if this is a server-side task
+      if (!isLocalTaskId(window.currentTaskId)) {
+        fetchTaskFromServer(window.currentTaskId);
+      }
     }
   }
 }
@@ -571,9 +667,66 @@ function updateTaskSubtasksInLocalStorage(task) {
   console.log('Verified stored subtasks:', JSON.parse(localStorage.getItem(taskSubtasksKey) || '[]'));
 }
 
-// Fetch task from server
+// // Fetch task from server
+// function fetchTaskFromServer(taskId) {
+//   if (!taskId) return;
+  
+//   console.log('Fetching task from server:', taskId);
+
+//   fetch(`/todos/${taskId}`, {
+//     // Add credentials to ensure the session cookie is sent
+//     credentials: 'same-origin'
+//   })
+//     .then(res => {
+//       if (res.ok) return res.json();
+//       throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+//     })
+//     .then(task => {
+//       if (task) {
+//         console.log('Received task from server:', task);
+        
+//         // Normalize subtasks from server
+//         if (task.subtasks && Array.isArray(task.subtasks)) {
+//           task.subtasks = task.subtasks
+//             .map(subtask => normalizeSubtask(subtask))
+//             .filter(s => s !== null);
+//         } else {
+//           task.subtasks = [];
+//         }
+        
+//         // Update cache
+//         const existingIndex = localTaskCache.findIndex(t => t._id === task._id);
+//         if (existingIndex !== -1) {
+//           localTaskCache[existingIndex] = task;
+//         } else {
+//           localTaskCache.push(task);
+//         }
+//         saveTaskCacheToLocalStorage();
+
+//         // Update localStorage
+//         updateTaskSubtasksInLocalStorage(task);
+        
+//         // Reload subtasks
+//         loadSubtasksForCurrentTask();
+//       }
+//     })
+//     .catch(error => {
+//       console.error('Error fetching task:', error);
+//       // On error, try to use cached data if available
+//       loadSubtasksForCurrentTask();
+//     });
+// }
+// Modified fetchTaskFromServer function to handle local tasks properly
 function fetchTaskFromServer(taskId) {
   if (!taskId) return;
+  
+  // Skip server fetch for tasks with IDs starting with "local_"
+  if (taskId.startsWith('local_')) {
+    console.log('Skipping server fetch for local task:', taskId);
+    // Just use cached data for local tasks
+    loadSubtasksForCurrentTask();
+    return;
+  }
   
   console.log('Fetching task from server:', taskId);
 
@@ -724,9 +877,40 @@ function hideNoSubtasksMessage(panel) {
 }
 
 // Event listeners
+// document.addEventListener('taskSelected', function(e) {
+//   if (e.detail && e.detail.taskId) {
+//     window.currentTaskId = e.detail.taskId;
+    
+//     // Find the task in cache
+//     const task = localTaskCache.find(t => t._id === e.detail.taskId);
+//     if (task) {
+//       // Normalize subtasks
+//       if (task.subtasks && Array.isArray(task.subtasks)) {
+//         task.subtasks = task.subtasks
+//           .map(subtask => normalizeSubtask(subtask))
+//           .filter(s => s !== null);
+        
+//         // Update cache
+//         const taskIndex = localTaskCache.findIndex(t => t._id === e.detail.taskId);
+//         if (taskIndex !== -1) {
+//           localTaskCache[taskIndex] = task;
+//           saveTaskCacheToLocalStorage();
+//           updateTaskSubtasksInLocalStorage(task);
+//         }
+//       }
+//     }
+    
+//     // Load subtasks
+//     loadSubtasksForCurrentTask();
+//   }
+// });
+// Additional validation for event listener to prevent errors with local tasks
 document.addEventListener('taskSelected', function(e) {
   if (e.detail && e.detail.taskId) {
     window.currentTaskId = e.detail.taskId;
+    
+    // Check if this is a local task ID
+    const isLocalTask = e.detail.taskId.startsWith('local_');
     
     // Find the task in cache
     const task = localTaskCache.find(t => t._id === e.detail.taskId);
@@ -747,8 +931,12 @@ document.addEventListener('taskSelected', function(e) {
       }
     }
     
-    // Load subtasks
-    loadSubtasksForCurrentTask();
+    // Load subtasks - local tasks should only use local storage
+    if (isLocalTask) {
+      loadLocalSubtasks();
+    } else {
+      loadSubtasksForCurrentTask();
+    }
   }
 });
 
