@@ -9,6 +9,23 @@ function hasTasksInList(listName) {
     task.list === listName && task.deleted !== true 
   ); 
   
+  // Debug logging to help diagnose issues
+  console.log(`Tasks in list ${listName}:`, tasksInList.length, 
+    tasksInList.map(t => ({ id: t._id, title: t.title })));
+  
+  // Only check for active task if there are actual tasks in the list
+  if (tasksInList.length > 0) {
+    const activeTaskId = localStorage.getItem('activeTaskId');
+    if (activeTaskId) {
+      const activeTask = window.localTaskCache.find(task => task._id === activeTaskId);
+      if (activeTask && activeTask.list === listName) {
+        console.log(`Found active task in ${listName}: ${activeTask.title}`);
+        return true;
+      }
+    }
+  }
+  
+  // ONLY return true if there are actual tasks in the list
   return tasksInList.length > 0; 
 }
 
@@ -22,26 +39,37 @@ function updateRightPanelVisibility(listName) {
     return;
   }
   
-  const hasTasksInCurrentList = hasTasksInList(listName);
+  // IMPORTANT FIX: Strict check for tasks in the list
+  const tasksInList = window.localTaskCache ? 
+    window.localTaskCache.filter(task => 
+      task.list === listName && task.deleted !== true
+    ) : [];
   
-  const activeTaskId = localStorage.getItem('activeTaskId');
-  const activeTask = activeTaskId ? 
-    window.localTaskCache.find(task => task._id === activeTaskId && !task.deleted) : 
-    null;
+  const hasTasksInCurrentList = tasksInList.length > 0;
   
-  console.log(`Checking visibility for ${listName}: has tasks = ${hasTasksInCurrentList}, active task = ${activeTask ? activeTask._id : 'none'}`);
+  console.log(`Strict checking visibility for ${listName}: has tasks = ${hasTasksInCurrentList}, count = ${tasksInList.length}`);
   
   // Hide all list-specific containers
   document.querySelectorAll('[id^="right-panels-container-"]').forEach(container => {
     container.classList.add('hidden');
   });
   
-  if (!hasTasksInCurrentList) {
+  // Check for visible tasks in the DOM
+  const taskElements = document.querySelectorAll(`.task-item[data-list="${listName}"]`);
+  const hasVisibleTasks = taskElements.length > 0;
+  
+  // IMPORTANT: Only show panel if there are actual tasks
+  if (!hasTasksInCurrentList && !hasVisibleTasks) {
+    console.log(`No tasks found for ${listName}, hiding panel`);
     rightPanelsContainer.classList.add('hidden');
-    window.currentTaskId = null;
-    localStorage.removeItem('activeTaskId');
+    rightPanelsContainer.style.display = 'none'; // ADDED: Force display none
     return;
   }
+  
+  // Show panel container only if there are tasks
+  console.log(`Tasks found for ${listName}, showing panel`);
+  rightPanelsContainer.classList.remove('hidden');
+  rightPanelsContainer.style.display = 'block';
   
   // Show container for current list
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
@@ -53,31 +81,25 @@ function updateRightPanelVisibility(listName) {
   }
   
   if (hasTasksInCurrentList) {
-    rightPanelsContainer.classList.remove('hidden');
-    
+    const activeTaskId = localStorage.getItem('activeTaskId');
+    const activeTask = activeTaskId ? 
+      window.localTaskCache.find(task => task._id === activeTaskId && !task.deleted) : 
+      null;
+      
     if (activeTask && activeTask.list === listName) {
       setTimeout(() => {
         showPanelForTask(activeTask);
       }, 10);
     } else {
-      const firstTask = window.localTaskCache.find(task => 
-        task.list === listName && !task.deleted
-      );
-      
+      const firstTask = tasksInList[0];
       if (firstTask) {
         setTimeout(() => {
           showPanelForTask(firstTask);
           window.currentTaskId = firstTask._id;
           localStorage.setItem('activeTaskId', firstTask._id);
         }, 10);
-      } else {
-        rightPanelsContainer.classList.add('hidden');
       }
     }
-  } else {
-    rightPanelsContainer.classList.add('hidden');
-    window.currentTaskId = null;
-    localStorage.removeItem('activeTaskId');
   }
 }
 
@@ -93,6 +115,7 @@ function showPanelForTask(task) {
   const rightPanelsContainer = document.getElementById('right-panels-container');
   if (rightPanelsContainer) {
     rightPanelsContainer.classList.remove('hidden');
+    rightPanelsContainer.style.display = 'block'; // IMPORTANT FIX: Ensure display is set to block
   }
   
   const listName = task.list;
@@ -100,6 +123,7 @@ function showPanelForTask(task) {
   
   window.currentTaskId = taskId;
   localStorage.setItem('activeTaskId', taskId);
+  localStorage.setItem('lastSelectedList', listName); // IMPORTANT FIX: Track the last selected list
   
   document.querySelectorAll('.right-panels-container').forEach(container => {
     container.classList.add('hidden');
@@ -216,13 +240,6 @@ function handleListChange(e) {
             showPanelForTask(firstTask);
           }
         }
-        
-        // Double-check panel visibility
-        setTimeout(() => {
-          if (rightPanelsContainer) {
-            rightPanelsContainer.classList.remove('hidden');
-          }
-        }, 50);
       }, 10);
     } else {
       // No tasks in this list, hide the panel
@@ -234,6 +251,7 @@ function handleListChange(e) {
 }
 
 // Handle task addition
+// Handle task addition
 function handleTaskAdded(e) {
   if (e.detail && e.detail.task) {
     const task = e.detail.task;
@@ -244,13 +262,23 @@ function handleTaskAdded(e) {
       rightPanelsContainer.classList.remove('hidden');
     }
     
+    // Store this task as the last active task for its list
     localStorage.setItem(`lastActiveTask_${task.list}`, task._id);
     
-    setTimeout(() => {
-      window.currentTaskId = task._id;
-      localStorage.setItem('activeTaskId', task._id);
-      showPanelForTask(task);
-    }, 50);
+    // Set as current active task
+    window.currentTaskId = task._id;
+    localStorage.setItem('activeTaskId', task._id);
+    
+    // Show the panel for this task
+    showPanelForTask(task);
+    
+    // Ensure the task is still visible after list changes
+    const taskData = JSON.stringify({
+      id: task._id,
+      list: task.list,
+      title: task.title
+    });
+    localStorage.setItem('recentlyAddedTask', taskData);
   }
 }
 
@@ -360,6 +388,14 @@ function initializePanelSystem() {
   window.updateRightPanelVisibility = updateRightPanelVisibility;
   window.showPanelForTask = showPanelForTask;
   
+  // IMPORTANT FIX: Hide the panel container by default - more aggressively
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+  if (rightPanelsContainer) {
+    rightPanelsContainer.classList.add('hidden');
+    rightPanelsContainer.style.display = 'none'; // ADDED: Force display none
+    console.log('Forced right panels container to be hidden on initialization');
+  }
+  
   // Remove any existing event listeners
   try {
     const oldListeners = window.getEventListeners ? window.getEventListeners(document) : null;
@@ -383,16 +419,43 @@ function initializePanelSystem() {
   
   // Initialize with current active list
   const activeList = localStorage.getItem('activeList') || 'Personal';
-  updateRightPanelVisibility(activeList);
   
-  // Check for active task
-  const activeTaskId = localStorage.getItem('activeTaskId');
-  if (activeTaskId && window.localTaskCache) {
-    const task = window.localTaskCache.find(task => task._id === activeTaskId);
-    if (task) {
-      showPanelForTask(task);
+  // IMPORTANT FIX: Only show panel if there are actual tasks
+  if (window.localTaskCache && Array.isArray(window.localTaskCache)) {
+    const tasksInActiveList = window.localTaskCache.filter(task => 
+      task.list === activeList && task.deleted !== true
+    );
+    
+    if (tasksInActiveList.length > 0) {
+      updateRightPanelVisibility(activeList);
+      
+      // Check for active task
+      const activeTaskId = localStorage.getItem('activeTaskId');
+      if (activeTaskId) {
+        const task = window.localTaskCache.find(task => task._id === activeTaskId);
+        if (task) {
+          showPanelForTask(task);
+        }
+      }
+    } else {
+      console.log('No tasks in active list, keeping panel hidden');
+      // ADDED: Force hide panel again
+      if (rightPanelsContainer) {
+        rightPanelsContainer.classList.add('hidden');
+        rightPanelsContainer.style.display = 'none';
+      }
+    }
+  } else {
+    console.log('No task cache available, keeping panel hidden');
+    // ADDED: Force hide panel again
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.add('hidden');
+      rightPanelsContainer.style.display = 'none';
     }
   }
+  
+  // ADDED: Force check for empty lists immediately
+  checkEmptyListsOnLoad();
   
   // Patch addTask function
   patchAddTaskFunction();
