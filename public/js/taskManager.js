@@ -921,7 +921,19 @@ function deleteTask(taskId) {
       setSelectedTaskUI(recentTask);
       window.currentTaskId = recentTask._id;
       localStorage.setItem('selectedTaskId', recentTask._id);
-    } else {
+    
+      setTimeout(() => {
+        const taskElements = document.querySelectorAll('.task-item');
+        taskElements.forEach(el => {
+          el.classList.remove('selected', 'bg-dark-hover');
+          if (el.dataset.taskId === recentTask._id) {
+            el.classList.add('selected', 'bg-dark-hover');
+            console.log(`✅ Highlighted fallback task: ${recentTask.title}`);
+          }
+        });
+      }, 50);
+    }
+     else {
       window.currentTaskId = null;
       localStorage.removeItem('selectedTaskId');
     }
