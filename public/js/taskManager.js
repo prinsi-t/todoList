@@ -868,93 +868,84 @@ function deleteTask(taskId) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
   if (taskIndex === -1) return;
 
-  const listName = localTaskCache[taskIndex].list;
-  console.log(`Deleting task ${taskId} from list ${listName}`);
+  const task = localTaskCache[taskIndex];
+  const listName = task.list;
+  const listId = listName.toLowerCase().replace(/\s+/g, '-');
 
-  const taskList = listName;
+  console.log(`🗑️ Deleting task ${taskId} from list "${listName}"`);
+  const isCurrentlySelectedTask = (window.currentTaskId === taskId);
 
+  // ✅ Remove task from cache
   localTaskCache.splice(taskIndex, 1);
   saveTaskCacheToLocalStorage();
 
+  // ✅ Remove task element from DOM with animation
   const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
   if (taskElement) {
     taskElement.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
       taskElement.remove();
 
-      const currentList = localStorage.getItem('activeList') || 'Personal';
-      if (currentList === taskList) {
-        const remainingTasks = document.querySelectorAll('.task-item');
-        if (remainingTasks.length === 0) {
-          const taskList = document.getElementById('taskList');
-          if (taskList) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'text-center py-6 text-gray-500';
-            emptyState.textContent = `No tasks in ${currentList} list yet. Add one above!`;
-            taskList.appendChild(emptyState);
-          }
+      // 🔄 Optional empty state UI
+      const remainingTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
+      if (remainingTasks.length === 0) {
+        const taskListContainer = document.getElementById('taskList');
+        if (taskListContainer) {
+          const emptyState = document.createElement('div');
+          emptyState.className = 'text-center py-6 text-gray-500';
+          emptyState.textContent = `No tasks in ${listName} list yet. Add one above!`;
+          taskListContainer.appendChild(emptyState);
         }
       }
     }, 200);
   }
 
-  console.log(`About to decrease count for ${taskList} by 1`);
-
-  const listSelector = taskList.toLowerCase().replace(/\s+/g, '-');
-  const countElement = document.getElementById(`count-${listSelector}`);
+  // ✅ Update sidebar task count
+  const countElement = document.getElementById(`count-${listId}`);
   if (countElement) {
-    let count = parseInt(countElement.textContent) || 0;
-    count = Math.max(0, count - 1);
-    countElement.textContent = count;
-    console.log(`Updated count for ${taskList} to ${count}`);
-  } else {
-    console.warn(`Count element for "${taskList}" not found: count-${listSelector}`);
+    const updatedCount = localTaskCache.filter(t => t.list === listName && !t.deleted).length;
+    countElement.textContent = updatedCount;
   }
 
   const allTasksCount = document.getElementById('allTasksCount');
   if (allTasksCount) {
-    let total = parseInt(allTasksCount.textContent) || 0;
-    total = Math.max(0, total - 1);
-    allTasksCount.textContent = total;
-    console.log(`Updated total count to ${total}`);
+    const allVisibleTasks = localTaskCache.filter(t => !t.deleted).length;
+    allTasksCount.textContent = allVisibleTasks;
   }
 
-  if (window.currentTaskId === taskId) {
-    
-    const recentTask = findMostRecentTask(taskList);
-    if (recentTask) {
+  // ✅ If the deleted task was selected
+  if (isCurrentlySelectedTask) {
+    const sameListTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
+    if (sameListTasks.length > 0) {
+      const recentTask = sameListTasks[sameListTasks.length - 1];
       setSelectedTaskUI(recentTask);
+      window.currentTaskId = recentTask._id;
       localStorage.setItem('selectedTaskId', recentTask._id);
-
-      const taskElements = document.querySelectorAll('.task-item');
-      taskElements.forEach(el => {
-        el.classList.remove('selected', 'bg-dark-hover');
-        if (el.dataset.taskId === recentTask._id) {
-          el.classList.add('selected', 'bg-dark-hover');
-        }
-      });
     } else {
-     
-      resetRightPanel(true);
       window.currentTaskId = null;
+      localStorage.removeItem('selectedTaskId');
     }
   }
 
-  if (taskId.startsWith('local_')) {
-    console.log(`Skipping server delete for local task: ${taskId}`);
-    return;
-  }
+  // ✅ Let the panel system handle cleanup (very important)
+  document.dispatchEvent(new CustomEvent('taskDeleted', {
+    detail: {
+      taskId: taskId,
+      list: listName
+    }
+  }));
 
-  try {
-    fetch(`/todos/${taskId}`, {
-      method: 'DELETE'
-    }).catch(error => {
-      console.error('Error deleting task:', error);
-    });
-  } catch (error) {
-    console.error('Error making network request:', error);
+  // ✅ Optionally sync with server
+  if (!taskId.startsWith('local_')) {
+    try {
+      fetch(`/todos/${taskId}`, { method: 'DELETE' }).catch(console.error);
+    } catch (error) {
+      console.error('Error deleting from server:', error);
+    }
   }
 }
+
+
 
 window.filterTasks = function(listName, preserveSelection = false) {
   console.log('Filtering tasks for list:', listName);

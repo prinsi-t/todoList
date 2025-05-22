@@ -27,73 +27,70 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 </head>
+
 <body class="h-screen flex">
-  <div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
-    <div class="flex items-center gap-3 mb-6 px-2">
-      <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-        <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
+  <!-- ✅ Added wrapper for panelManager.js compatibility -->
+  <div class="main-content flex w-full h-full">
+    <!-- Sidebar -->
+    <div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
+      <div class="flex items-center gap-3 mb-6 px-2">
+        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+          <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
+        </div>
+        <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
       </div>
-      <span class="font-medium truncate"><%= user.email.split('@')[0] %></span>
+
+      <div class="ml-5 mt-2">
+        <div class="flex items-center justify-between text-lg text-gray-300 px-4 mb-4">
+          <span>My Lists</span>
+        </div>
+
+        <div class="sidebar-items flex flex-col gap-2 mb-6">
+          <a href="#" onclick="filterTasks('Personal')" class="sidebar-item" data-list="Personal">
+            <i class="fas fa-user text-purple-400"></i>
+            <span class="flex-grow">Personal</span>
+            <span id="count-personal" class="text-sm text-gray-500">0</span>
+          </a>
+          <a href="#" onclick="filterTasks('Work')" class="sidebar-item" data-list="Work">
+            <i class="fas fa-briefcase text-orange-400"></i>
+            <span class="flex-grow">Work</span>
+            <span id="count-work" class="text-sm text-gray-500">0</span>
+          </a>
+          <a href="#" onclick="filterTasks('Grocery List')" class="sidebar-item" data-list="Grocery List">
+            <i class="fas fa-shopping-cart text-cyan-400"></i>
+            <span class="flex-grow">Grocery List</span>
+            <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div class="ml-5 mt-2">
-      <div class="flex items-center justify-between text-lg text-gray-300 px-4 mb-4">
-        <span>My Lists</span>
-      </div>
+    <!-- Main Content and Right Panel -->
+    <div class="flex-1 flex">
+      <!-- Task List -->
+      <div class="w-96 border-r border-dark-border p-4">
+        <div class="flex items-center mb-4">
+          <h1 class="text-xl font-bold flex-grow">Personal tasks</h1>
+        </div>
 
-      <div class="sidebar-items flex flex-col gap-2 mb-6">
-        <a href="#" onclick="filterTasks('Personal')" class="sidebar-item" data-list="Personal">
-          <i class="fas fa-user text-purple-400"></i>
-          <span class="flex-grow">Personal</span>
-          <span id="count-personal" class="text-sm text-gray-500">0</span>
-        </a>
-        <a href="#" onclick="filterTasks('Work')" class="sidebar-item" data-list="Work">
-          <i class="fas fa-briefcase text-orange-400"></i>
-          <span class="flex-grow">Work</span>
-          <span id="count-work" class="text-sm text-gray-500">0</span>
-        </a>
-        <a href="#" onclick="filterTasks('Grocery List')" class="sidebar-item" data-list="Grocery List">
-          <i class="fas fa-shopping-cart text-cyan-400"></i>
-          <span class="flex-grow">Grocery List</span>
-          <span id="count-grocery-list" class="text-sm text-gray-500">0</span>
-        </a>
-      </div>
-    </div>
-  </div>
+        <div class="mb-4">
+          <form id="addTaskForm" class="flex gap-2">
+            <input
+              type="text"
+              name="title"
+              id="newTaskInput"
+              placeholder="Add a task..."
+              class="flex-1 bg-dark-hover text-white px-4 py-2 rounded-lg border border-dark-border focus:outline-none focus:border-blue-500"
+              required
+            >
+            <input type="hidden" name="category" id="taskCategory" value="Personal">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Add</button>
+          </form>
+        </div>
 
-  <div class="flex-1 flex">
-    <div class="w-96 border-r border-dark-border p-4">
-      <div class="flex items-center mb-4">
-        <h1 class="text-xl font-bold flex-grow">Personal tasks</h1>
-      </div>
-
-      <div class="mb-4">
-        <form id="addTaskForm" class="flex gap-2">
-          <input
-            type="text"
-            name="title"
-            id="newTaskInput"
-            placeholder="Add a task..."
-            class="flex-1 bg-dark-hover text-white px-4 py-2 rounded-lg border border-dark-border focus:outline-none focus:border-blue-500"
-            required
-          >
-          <input
-            type="hidden"
-            name="category"
-            id="taskCategory"
-            value="Personal"
-          >
-          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-            Add
-          </button>
-        </form>
-      </div>
-
-      <div id="taskList" class="space-y-1">
-        <% tasks.forEach(task => { %>
-          <!-- Replace the existing task-item div with this improved version using Tailwind -->
+        <div id="taskList" class="space-y-1">
+          <% tasks.forEach(task => { %>
             <div class="task-item group px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-start gap-3 transition-all duration-200 hover:bg-dark-hover" data-task-id="<%= task._id %>" data-list="<%= task.list %>">
               <div class="checkbox <%= task.completed ? 'checked' : '' %> w-5 h-5 border-2 border-dark-border rounded-full flex-shrink-0 flex items-center justify-center transition-colors duration-200">
                 <% if (task.completed) { %>
@@ -104,85 +101,78 @@
                 <%= task.title %>
               </span>
             </div>
-        <% }) %>
-      </div>
-      </div>
-      </div>
-
-  <div id="right-panels-container" class="flex-1 min-w-[800px] hidden">
-    <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h2 class="text-2xl font-semibold text-gray-100 mb-1 break-words overflow-wrap-normal max-w-full">
-            ${task.title || ''}
-          </h2>
-          <div class="text-sm text-gray-400">Personal</div>
+          <% }) %>
         </div>
-        <button
-          class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition"
-          onclick="markSelectedTaskComplete('Personal')"
-        >
-          Mark as Complete
-        </button>
       </div>
 
-      <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-        <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
+      <!-- Right Panel Container -->
+      <div id="right-panels-container" class="flex-1 min-w-[800px] hidden">
+        <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal">
+          <div class="flex items-center justify-between mb-6">
             <div>
-              <h3 class="text-lg text-gray-400 mb-2">NOTES</h3>
-              <textarea
-                placeholder="Insert your notes here"
-                class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
-                rows="4"
-              ></textarea>
+              <h2 class="text-2xl font-semibold text-gray-100 mb-1 break-words overflow-wrap-normal max-w-full">
+                ${task.title || ''}
+              </h2>
+              <div class="text-sm text-gray-400">Personal</div>
             </div>
+            <button class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition" onclick="markSelectedTaskComplete('Personal')">
+              Mark as Complete
+            </button>
+          </div>
 
-            <div class="subtasks-section">
-              <h3 class="text-lg text-gray-400 mb-2">SUBTASKS</h3>
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  type="text"
-                  class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
-                  placeholder="Add a new subtask..."
-                >
-                <button
-                  class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
-                  data-list="Personal"
-                >
-                  Add
-                </button>
+          <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
+            <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
+              <div>
+                <h3 class="text-lg text-gray-400 mb-2">NOTES</h3>
+                <textarea
+                  placeholder="Insert your notes here"
+                  class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
+                  rows="4"
+                ></textarea>
               </div>
-              <div id="subtasksList"  class="subtasks-list space-y-1">
+
+              <div class="subtasks-section">
+                <h3 class="text-lg text-gray-400 mb-2">SUBTASKS</h3>
+                <div class="flex items-center gap-2 mb-4">
+                  <input
+                    type="text"
+                    class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
+                    placeholder="Add a new subtask..."
+                  >
+                  <button class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200" data-list="Personal">
+                    Add
+                  </button>
+                </div>
+                <div id="subtasksList" class="subtasks-list space-y-1"></div>
+              </div>
+
+              <div class="attachments-section mt-6">
+                <h3 class="text-lg font-medium text-gray-400 mb-2">ATTACHMENTS</h3>
+                <div class="drop-zone border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:bg-dark-hover transition-colors" data-list="<%= activeList %>">
+                  <div class="flex flex-col items-center justify-center">
+                    <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                    <p class="text-gray-400">Click to add / drop your files here</p>
+                    <p class="text-gray-500 text-xs mt-1">(Max 10 images)</p>
+                  </div>
+                </div>
+                <div class="image-preview-container mt-4 flex flex-wrap gap-2"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </div> <!-- End of right-panels-container -->
+    </div> <!-- End of main flex content -->
+  </div> <!-- ✅ End of .main-content wrapper -->
 
-    <div class="attachments-section mt-6">
-      <h3 class="text-lg font-medium text-gray-400 mb-2">ATTACHMENTS</h3>
-      
-      <div class="drop-zone border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:bg-dark-hover transition-colors" data-list="<%= activeList %>">
-        <div class="flex flex-col items-center justify-center">
-          <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
-          <p class="text-gray-400">Click to add / drop your files here</p>
-          <p class="text-gray-500 text-xs mt-1">(Max 10 images)</p>
-        </div>
-      </div>
-  
-      <div class="image-preview-container mt-4 flex flex-wrap gap-2">
-      </div>
-    </div>
-        </div>
-      </div>
-     
+  <!-- Scripts -->
   <script src="/js/sidebarManager.js"></script>
   <script src="/js/taskManager.js"></script>
   <script src="/js/panelManager.js"></script>
-  <script src="/js/panelFix.js"></script>
   <script src="/js/subtaskManager.js"></script>
   <script src="/js/uiUpdater.js"></script>
   <script src="/js/serverCommunicator.js"></script>
   <script src="/js/fileManager.js"></script>
   <script src="/js/init.js"></script>
   <script src="/js/notesManager.js"></script>
-
 </body>
 </html>
