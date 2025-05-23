@@ -106,9 +106,11 @@ async function loadTasksFromServer() {
       saveTaskCacheToLocalStorage();
       updateAllTaskCounts();
 
-      const currentList = localStorage.getItem('activeList') || 'Personal';
+      // Get the current active list - maintain consistency with sidebarManager
+      const currentList = localStorage.getItem('activeList') || localStorage.getItem('lastSelectedList') || 'Personal';
       console.log(`Using active list from localStorage: ${currentList}`);
 
+      // Don't change the active list - just filter and display
       filterTasks(currentList, true);
 
       const recentTask = findMostRecentTask(currentList);
@@ -118,7 +120,7 @@ async function loadTasksFromServer() {
         setSelectedTaskUI(recentTask);
 
         localStorage.setItem('selectedTaskId', recentTask._id);
-        localStorage.setItem('lastSelectedList', currentList);
+        // Don't override lastSelectedList here - preserve what user had selected
 
         setTimeout(() => {
           const taskElements = document.querySelectorAll('.task-item');
@@ -161,7 +163,11 @@ async function loadTasksFromServer() {
   } catch (error) {
     console.error('Error loading tasks from server:', error);
     updateAllTaskCounts();
-    const currentList = document.querySelector('h1')?.textContent.replace(' tasks', '') || 'Personal';
+    
+    // FIXED: Don't try to get list from DOM, use localStorage consistently
+    const currentList = localStorage.getItem('activeList') || localStorage.getItem('lastSelectedList') || 'Personal';
+    console.log(`Error case - using active list from localStorage: ${currentList}`);
+    
     filterTasks(currentList);
   }
 }

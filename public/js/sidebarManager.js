@@ -1,3 +1,4 @@
+
 function fixSidebarNavigation() {
   const sidebarItems = document.querySelectorAll('.sidebar-item');
 
@@ -423,110 +424,7 @@ function clearExistingCustomLists() {
   });
 }
   
-  // function addNewList(listName, saveToStorage = true) {
-  //   console.log('Adding new list:', listName);
-  
-  //   const existingItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
-  //   if (existingItem) {
-  //     console.log(`List ${listName} already exists in the sidebar, not adding again`);
-  //     return;
-  //   }
-  
-  //   const sidebarContainer = document.querySelector('.sidebar-items');
-  //   if (!sidebarContainer) {
-  //     console.error('Sidebar container not found');
-  //     return;
-  //   }
-  
-  //   const newListItem = document.createElement('a');
-  //   newListItem.href = '#';
-  //   newListItem.className = 'sidebar-item flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-dark-hover';
-  //   newListItem.setAttribute('data-list', listName);
-  
-  //   const isCustomList = !isDefaultList(listName);
-  
-  //   let listHTML = `
-  //     <i class="fas fa-folder text-green-400"></i>
-  //     <span class="flex-grow">${listName}</span>
-  //     <span id="count-${listName.toLowerCase().replace(/\s+/g, '-')}" class="text-sm text-gray-500">0</span>
-  //   `;
-  
-  //   if (isCustomList) {
-  //     listHTML += `
-  //       <button class="delete-list-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-1" title="Delete list">
-  //         <i class="fas fa-trash-alt"></i>
-  //       </button>
-  //     `;
-  //   }
-  
-  //   newListItem.innerHTML = listHTML;
-  
-  //   newListItem.classList.add('group');
-  
-  //   newListItem.addEventListener('click', (e) => {
-  //     if (e.target.closest('.delete-list-btn')) {
-  //       e.preventDefault();
-  //       e.stopPropagation();
-  
-  //       deleteList(listName);
-  //       return;
-  //     }
-  
-  //     console.log(`Custom list clicked: ${listName}`);
-  //     localStorage.setItem('activeList', listName);
-  //     console.log(`Set active list in localStorage to: ${listName} (from custom list click)`);
-  
-  //     localStorage.removeItem('selectedTaskId');
-  
-  //     if (typeof window.filterTasks === 'function') {
-  //       window.filterTasks(listName, false);
-  //     }
-  //     highlightActiveList(listName);
-  //   });
-  
-  //   sidebarContainer.appendChild(newListItem);
-  
-  //   if (isCustomList && saveToStorage) {
-  //     saveCustomListToLocalStorage(listName);
-  //   }
-    
-  //   console.log(`Creating right panel for new list: ${listName}`);
-    
-  //   const panel = createPanelForList(listName);
-    
-  //   if (!panel) {
-  //     console.error('Failed to create panel for new list');
-  //     return;
-  //   }
-    
-  //   if (saveToStorage) {
-  //     const allPanels = document.querySelectorAll('.right-panel');
-  //     allPanels.forEach(p => {
-  //       if (p.id !== 'right-panel-template') {
-  //         p.classList.add('hidden');
-  //         p.style.display = 'none';
-  //       }
-  //     });
-      
-  //     panel.classList.remove('hidden');
-  //     panel.style.display = 'block';
-      
-  //     console.log(`Panel for ${listName} is now visible`);
-      
-  //     localStorage.setItem('activeList', listName);
-  //     highlightActiveList(listName);
-      
-  //     clearPanel(panel, listName);
-      
-  //     document.dispatchEvent(new CustomEvent('listChanged', {
-  //       detail: { listName }
-  //     }));
-      
-  //     if (typeof window.filterTasks === 'function') {
-  //       window.filterTasks(listName, false);
-  //     }
-  //   }
-  // }
+
   function addNewList(listName, saveToStorage = true) {
     console.log('Adding new list:', listName);
   
@@ -741,90 +639,6 @@ function updateDefaultListItems() {
     });
   }
   
-// function addCustomStyles() {
-//     console.log('Adding custom styles for sidebar items');
-    
-//     const existingStyle = document.getElementById('todo-app-custom-styles');
-//     if (existingStyle) {
-//       console.log('Removing existing custom styles');
-//       existingStyle.remove();
-//     }
-  
-//     const styleElement = document.createElement('style');
-//     styleElement.id = 'todo-app-custom-styles';
-//     styleElement.textContent = `
-//       .sidebar-item .delete-list-btn {
-//         opacity: 0;
-//         transition: opacity 0.2s ease, color 0.2s ease;
-//       }
-  
-//       .sidebar-item:hover .delete-list-btn {
-//         opacity: 1;
-//       }
-      
-//       .sidebar-item.active-list {
-//         position: relative;
-//         box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
-//         background-color: #1e293b !important;
-//         transform: translateX(2px);
-//         transition: all 0.3s ease !important;
-//       }
-      
-//       .sidebar-item.border-l-4 {
-//         border-left-width: 4px !important;
-//         border-left-color: #3b82f6 !important;
-//       }
-      
-//       @keyframes subtle-pulse {
-//         0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-//         50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
-//         100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-//       }
-      
-//       .sidebar-item.active-list {
-//         animation: subtle-pulse 3s infinite;
-//       }
-      
-//       .sidebar-item.text-white span.flex-grow {
-//         color: white !important;
-//         font-weight: 600 !important;
-//       }
-      
-//       .sidebar-item[data-list="Personal"].active-list i {
-//         color: #60a5fa !important; /* Blue for Personal */
-//       }
-      
-//       .sidebar-item[data-list="Work"].active-list i {
-//         color: #f97316 !important; /* Orange for Work */
-//       }
-      
-//       .sidebar-item[data-list="Grocery List"].active-list i {
-//         color: #10b981 !important; /* Green for Grocery */
-//       }
-      
-//       .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
-//         color: #8b5cf6 !important; /* Purple for custom lists */
-//       }
-      
-//       .sidebar-item {
-//         transition: all 0.2s ease-in-out;
-//         position: relative;
-//         overflow: hidden;
-//       }
-      
-//       .sidebar-item:hover:not(.active-list) {
-//         background-color: transparent !important; 
-//         transform: none;
-//       }
-      
-//       .sidebar-item:hover:not(.active-list)::after {
-//         display: none;
-//       }
-//     `;
-//     document.head.appendChild(styleElement);
-//     console.log('Custom styles added successfully for sidebar items');
-//   }
-
 function addCustomStyles() {
   console.log('Adding custom styles for sidebar items');
   
@@ -997,17 +811,19 @@ function initPanelManager() {
         window.filterTasks(activeList, true); 
       }
     } else {
-      localStorage.setItem('activeList', 'Personal');
-      console.log('No active list found, setting to Personal as default');
-      showPanelForList('Personal', selectedTaskId);
-      
-      if (typeof window.highlightActiveList === 'function') {
-        window.highlightActiveList('Personal');
-      }
-      
-      if (typeof window.filterTasks === 'function') {
-        window.filterTasks('Personal', true);
-      }
+      const defaultList = 'Personal'; // or choose any default
+localStorage.setItem('activeList', defaultList);
+console.log(`No active list found, setting to default: ${defaultList}`);
+showPanelForList(defaultList, selectedTaskId);
+
+if (typeof window.highlightActiveList === 'function') {
+  window.highlightActiveList(defaultList);
+}
+
+if (typeof window.filterTasks === 'function') {
+  window.filterTasks(defaultList, true);
+}
+
     }
   }, 300);
 }
@@ -1185,34 +1001,42 @@ document.addEventListener('DOMContentLoaded', function() {
     setupAddListButton();
     loadCustomListsFromLocalStorage();
 
-    const isFromLogin = document.referrer.includes('/login') || document.referrer.includes('/register');
+    // Get the current active list WITHOUT changing it
+    const activeList = localStorage.getItem('activeList') || 'Personal';
 
-    if (isFromLogin) {
-      localStorage.setItem('activeList', 'Personal');
-      console.log('Coming from login, setting active list to Personal in sidebar');
-      localStorage.removeItem('selectedTaskId');
-    }
+    console.log('DOMContentLoaded - Using existing active list:', activeList);
     
-    const activeList = localStorage.getItem('activeList')|| 'Personal';
-    console.log('DOMContentLoaded - Highlighting active list:', activeList);
-    highlightActiveList(activeList);
-    
+    // Only highlight, don't call any functions that might change the active list
     if (activeList && typeof highlightActiveList === 'function') {
       highlightActiveList(activeList);
     }
-    
+
     setTimeout(initPanelManager, 200);
   }, 300);
 });
 
 document.addEventListener('listChanged', function(e) {
   if (e.detail && e.detail.listName) {
-    setTimeout(() => {
-      console.log('listChanged event - Highlighting active list:', e.detail.listName);
-      highlightActiveList(e.detail.listName);
-    }, 100);
+    const currentActiveList = localStorage.getItem('activeList');
+    const newList = e.detail.listName;
+
+    if (newList !== currentActiveList) {
+      // Update active list in storage and highlight
+      localStorage.setItem('activeList', newList);
+
+      setTimeout(() => {
+        console.log('listChanged event - Highlighting active list:', newList);
+        highlightActiveList(newList);
+      }, 100);
+    } else {
+      // Already active, no need to re-highlight or reset panel
+      console.log('listChanged event - List already active:', newList);
+    }
   }
 });
+
+
+
 
 function findTaskById(taskId) {
   if (!taskId || !window.localTaskCache) return null;
@@ -1371,12 +1195,11 @@ function setupListSwitchListeners() {
 
 function initializeWithCorrectList() {
   console.log('Initializing with correct list...');
-  
+
   const isFromLogin = document.referrer.includes('/login') || document.referrer.includes('/register');
-  
+
   if (isFromLogin) {
-    
-    console.log('Coming from login, using Personal list');
+    console.log('Coming from login, forcing Personal list');
     localStorage.setItem('activeList', 'Personal');
     localStorage.setItem('lastSelectedList', 'Personal');
     if (typeof window.filterTasks === 'function') {
@@ -1385,29 +1208,32 @@ function initializeWithCorrectList() {
     highlightActiveList('Personal');
     return;
   }
-  
+
   const lastSelectedList = localStorage.getItem('lastSelectedList');
   const activeList = localStorage.getItem('activeList');
-  
+
+  // Use lastSelectedList or activeList or default to Personal, but ONLY set localStorage if empty
   const listToLoad = lastSelectedList || activeList || 'Personal';
-  
-  console.log(`Initializing with list: ${listToLoad} (from ${lastSelectedList ? 'lastSelectedList' : activeList ? 'activeList' : 'default'})`);
-  
-  localStorage.setItem('activeList', listToLoad);
-  localStorage.setItem('lastSelectedList', listToLoad);
-  
+
+  console.log(`Initializing with list: ${listToLoad}`);
+
+  if (!activeList) {
+    localStorage.setItem('activeList', listToLoad);
+  }
+  if (!lastSelectedList) {
+    localStorage.setItem('lastSelectedList', listToLoad);
+  }
+
   if (typeof window.filterTasks === 'function') {
     window.filterTasks(listToLoad, true);
   }
-  
+
   highlightActiveList(listToLoad);
-  
+
   setTimeout(() => {
     highlightActiveList(listToLoad);
   }, 500);
 }
-
-window.initializeWithCorrectList = initializeWithCorrectList;
 
 window.initializeWithCorrectList = initializeWithCorrectList;
 
