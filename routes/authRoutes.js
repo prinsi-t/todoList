@@ -93,6 +93,7 @@ router.get('/logout', (req, res) => {
     if (err) return res.redirect('/');
     res.redirect('/login');
   });
+  
 });
 
 export default router;
