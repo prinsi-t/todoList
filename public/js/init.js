@@ -57,10 +57,11 @@ function initApp() {
   const isFromLogin = document.referrer.includes('/login') || document.referrer.includes('/register');
 
   // If we're coming from login, set active list to Personal
-  if (isFromLogin) {
-    console.log('Coming from login, setting active list to Personal');
+  if (isFromLogin && !localStorage.getItem('activeList')) {
+    console.log('Coming from login with no active list, setting to Personal');
     localStorage.setItem('activeList', 'Personal');
   }
+  
 
   // Get the active list from localStorage
   const activeList = localStorage.getItem('activeList') || 'Personal';
@@ -71,21 +72,23 @@ function initApp() {
 
   // If we're coming from login, make sure we show the Personal list
   if (isFromLogin) {
-    console.log('Coming from login, ensuring Personal list is shown');
+    const currentList = localStorage.getItem('activeList') || 'Personal';
+    console.log(`Coming from login, showing list: ${currentList}`);
     setTimeout(() => {
       if (typeof filterTasks === 'function') {
-        filterTasks('Personal', false);
+        filterTasks(currentList, false);
       }
-
+  
       if (typeof highlightActiveList === 'function') {
-        highlightActiveList('Personal');
+        highlightActiveList(currentList);
       }
-
+  
       if (typeof showPanelForList === 'function') {
-        showPanelForList('Personal');
+        showPanelForList(currentList);
       }
     }, 500);
   }
+  
 
   // Load subtasks and set up file upload
   loadLocalSubtasks();
