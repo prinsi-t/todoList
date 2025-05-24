@@ -316,7 +316,7 @@ function findOrCreateFileInput(taskPanel, taskId) {
     const label = document.createElement('label');
     label.setAttribute('for', `file-upload-${taskId}`);
     label.className = 'cursor-pointer text-blue-500 hover:underline';
-    label.innerText = 'Add Image';
+    //label.innerText = 'Add Image';
     
     fileInput = document.createElement('input');
     fileInput.type = 'file';
