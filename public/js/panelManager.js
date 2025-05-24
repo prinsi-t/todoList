@@ -1,34 +1,34 @@
+// panelManager.js (final production-safe patch with restored logic)
 (function () {
-  function hasTasksInList(listName) {
-    if (!window.localTaskCache || !Array.isArray(window.localTaskCache)) return false;
-
-    return window.localTaskCache.some(task => task && task.list === listName && !task.deleted);
-  }
-
-  function refreshTaskCache() {
-    try {
-      const cached = localStorage.getItem('taskCache');
-      window.localTaskCache = cached ? JSON.parse(cached) : [];
-
-      if (Array.isArray(window.localTaskCache)) {
-        window.localTaskCache = window.localTaskCache.filter(task => task && !task.deleted);
+  function ensureRightPanelContainerExists() {
+    let container = document.getElementById('right-panels-container');
+    if (!container) {
+      const mainContent = document.querySelector('main') || document.querySelector('.main-content') || document.body;
+      if (mainContent) {
+        container = document.createElement('div');
+        container.id = 'right-panels-container';
+        container.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full';
+        container.classList.add('hidden');
+        mainContent.appendChild(container);
+        console.log('✅ [panelManager] Created missing right-panels-container');
+      } else {
+        console.warn('⚠️ [panelManager] Could not find container to attach right-panels-container');
+        return null;
       }
-    } catch (e) {
-      console.error('Failed to refresh task cache', e);
-      window.localTaskCache = [];
     }
+    return container;
   }
 
   function updateRightPanelVisibility(listName) {
-    if (!listName) return;
-    const rightPanelsContainer = document.getElementById('right-panels-container');
-    if (!rightPanelsContainer) return;
+    const rightPanelsContainer = ensureRightPanelContainerExists();
+    if (!rightPanelsContainer || !listName) return;
 
-    const hasTasks = hasTasksInList(listName);
+    const hasTasks = window.localTaskCache?.some(t => t.list === listName && !t.deleted);
     const listId = listName.toLowerCase().replace(/\s+/g, '-');
     const containerIdForList = `right-panels-container-${listId}`;
     const listContainer = document.getElementById(containerIdForList);
 
+    // Hide all list containers
     document.querySelectorAll('[id^="right-panels-container-"]').forEach(c => {
       c.classList.add('hidden');
     });
@@ -60,36 +60,29 @@
   }
 
   function showPanelForTask(task) {
-    if (!task || !task.list || !task._id || task.deleted) return;
+    if (!task || !task._id || task.deleted) return;
 
-    const rightPanelsContainer = document.getElementById('right-panels-container');
-    if (rightPanelsContainer) {
-      rightPanelsContainer.classList.remove('hidden');
-    }
+    const rightPanelsContainer = ensureRightPanelContainerExists();
+    if (!rightPanelsContainer) return;
+
+    rightPanelsContainer.classList.remove('hidden');
 
     const listId = task.list.toLowerCase().replace(/\s+/g, '-');
-    const containerIdForList = `right-panels-container-${listId}`;
-    const listContainer = document.getElementById(containerIdForList);
+    const panelId = `right-panel-${listId}-${task._id}`;
+    let panel = document.getElementById(panelId);
 
-    if (listContainer) {
-      listContainer.classList.remove('hidden');
-      listContainer.querySelectorAll('.task-panel').forEach(p => p.classList.add('hidden'));
-    }
-
-    const uniquePanelId = `right-panel-${listId}-${task._id}`;
-    let panel = document.getElementById(uniquePanelId);
-
-    if (!panel && window.createPanelForTask) {
+    if (!panel && typeof window.createPanelForTask === 'function') {
       panel = window.createPanelForTask(task);
-    } else if (panel && window.updatePanelWithTask) {
-      window.updatePanelWithTask(panel, task);
     }
 
     if (panel) {
+      document.querySelectorAll('.task-panel').forEach(p => p.classList.add('hidden'));
       panel.classList.remove('hidden');
       panel.style.display = 'block';
-      window.currentTaskId = task._id;
       localStorage.setItem('activeTaskId', task._id);
+      window.currentTaskId = task._id;
+    } else {
+      console.warn(`⚠️ [panelManager] Could not find or create panel for task ID: ${task._id}`);
     }
   }
 
@@ -97,25 +90,37 @@
     const taskId = e.detail?.taskId;
     const listName = e.detail?.list;
     if (!taskId || !listName) return;
-
+  
     const listId = listName.toLowerCase().replace(/\s+/g, '-');
     const panelId = `right-panel-${listId}-${taskId}`;
     const panel = document.getElementById(panelId);
     if (panel) panel.remove();
-
+  
     refreshTaskCache();
-    const remaining = window.localTaskCache.filter(t => t.list === listName && !t.deleted);
-    if (remaining.length === 0) {
+  
+    const remaining = window.localTaskCache?.filter(t => t.list === listName && !t.deleted);
+    const listContainer = document.getElementById(`right-panels-container-${listId}`);
+  
+    if (!remaining || remaining.length === 0) {
+      if (listContainer) listContainer.classList.add('hidden');
       updateRightPanelVisibility(listName);
-      return;
-    }
-
-    const fallback = remaining[remaining.length - 1];
-    if (fallback) {
-      setTimeout(() => showPanelForTask(fallback), 10);
+    } else {
+      const fallback = remaining[remaining.length - 1];
+      if (fallback) setTimeout(() => showPanelForTask(fallback), 10);
     }
   }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('taskAdded', handleTaskAdded);
+    document.addEventListener('taskDeleted', handleTaskDeleted);
 
+    const activeList = localStorage.getItem('activeList') || 'Personal';
+    updateRightPanelVisibility(activeList);
+  });
+
+  window.updateRightPanelVisibility = updateRightPanelVisibility;
+  window.showPanelForTask = showPanelForTask;
+  
   function handleTaskAdded(e) {
     const task = e.detail?.task;
     if (!task) return;
@@ -125,31 +130,14 @@
     setTimeout(() => showPanelForTask(task), 50);
   }
 
-  function handleListChange(e) {
-    const list = e.detail?.list;
-    if (!list) return;
-
-    localStorage.setItem('activeList', list);
-    refreshTaskCache();
-    updateRightPanelVisibility(list);
+  function refreshTaskCache() {
+    try {
+      const cached = localStorage.getItem('taskCache');
+      window.localTaskCache = cached ? JSON.parse(cached) : [];
+      window.localTaskCache = window.localTaskCache.filter(t => t && !t.deleted);
+    } catch (e) {
+      console.error('Failed to refresh task cache:', e);
+      window.localTaskCache = [];
+    }
   }
-
-  function initializePanelVisibility() {
-    const activeList = localStorage.getItem('activeList') || 'Personal';
-    updateRightPanelVisibility(activeList);
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    initializePanelVisibility();
-
-    document.addEventListener('taskAdded', handleTaskAdded);
-    document.addEventListener('taskDeleted', handleTaskDeleted);
-    document.addEventListener('listChanged', handleListChange);
-  });
-
-  window.hasTasksInList = hasTasksInList;
-  window.refreshTaskCache = refreshTaskCache;
-  window.updateRightPanelVisibility = updateRightPanelVisibility;
-  window.showPanelForTask = showPanelForTask;
 })();
-
