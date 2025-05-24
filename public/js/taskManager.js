@@ -947,11 +947,9 @@ function deleteTask(taskId) {
 
   // ✅ Let the panel system handle cleanup (very important)
   document.dispatchEvent(new CustomEvent('taskDeleted', {
-    detail: {
-      taskId: taskId,
-      list: listName
-    }
+    detail: { taskId, list: task.list }
   }));
+  
 
   // ✅ Optionally sync with server
   if (!taskId.startsWith('local_')) {

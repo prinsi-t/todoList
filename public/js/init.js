@@ -53,13 +53,27 @@ localStorage.setItem = function(key, value) {
 };
 
 // Wrap showPanelForList to track calls (debugging aid)
-if (typeof showPanelForList === 'function') {
-  const originalShowPanelForList = showPanelForList;
-  showPanelForList = function(listName) {
-    console.log(`[UI] showPanelForList called with: "${listName}"`, new Error().stack);
-    return originalShowPanelForList.call(this, listName);
-  };
+function wrapShowPanelForListOnceDefined() {
+  const maxRetries = 10;
+  let retries = 0;
+
+  const interval = setInterval(() => {
+    if (typeof showPanelForList === 'function') {
+      const original = showPanelForList;
+      showPanelForList = function (listName) {
+        console.log(`[UI] showPanelForList called with: "${listName}"`, new Error().stack);
+        return original.call(this, listName);
+      };
+      clearInterval(interval);
+    } else if (++retries >= maxRetries) {
+      clearInterval(interval);
+      console.warn('showPanelForList not defined after waiting, skipping wrap');
+    }
+  }, 200);
 }
+
+wrapShowPanelForListOnceDefined();
+
 
 async function initApp() {
   loadLocalTaskCache();
