@@ -5,6 +5,20 @@
 
 let db;
 
+function waitForDBReady(retries = 10) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const check = () => {
+      if (db) return resolve();
+      attempts++;
+      if (attempts > retries) return reject(new Error('IndexedDB not ready'));
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
+
 function openDatabase() {
   const request = indexedDB.open('taskAttachmentsDB', 2);
 
@@ -86,15 +100,35 @@ function saveAttachmentToDB(taskId, file) {
     const fileName = file.name || `attachment_${Date.now()}`;
     const fileHash = generateSimpleHash(file.url.substring(0, 1000) + fileName);
     
+    let taskList = '';
+    if (window.localTaskCache && Array.isArray(window.localTaskCache)) {
+      const task = window.localTaskCache.find(t => t._id === taskId);
+      if (task) {
+        taskList = task.list || '';
+      } else {
+        console.warn(`[saveAttachmentToDB] Task ${taskId} not found in localTaskCache`);
+      }
+    } else {
+      console.warn('[saveAttachmentToDB] localTaskCache is not ready');
+    }
+    
+    // fallback to activeList or unknown
+    if (!taskList) {
+      taskList = localStorage.getItem('activeList') || 'unknown';
+    }
+    
     const attachment = { 
       taskId: taskId, 
       name: fileName, 
       type: 'image',
       url: file.url, 
       fileHash: fileHash,
-      list: getCurrentTaskList(taskId), 
+      list: taskList,
       date: new Date().toISOString()
     };
+    
+    console.log(`[saveAttachmentToDB] Saving file "${fileName}" for task ${taskId} under list "${taskList}"`);
+    
     
     const request = objectStore.put(attachment);
 
@@ -163,62 +197,82 @@ function deleteAttachmentFromDB(taskId, url) {
 }
 
 function handleTaskFiles(files, taskId) {
-  if (!files || files.length === 0 || !taskId) {
-    console.error('No files to handle or missing taskId');
-    return Promise.resolve([]);
-  }
-  
-  console.log(`Handling ${files.length} files for task ${taskId}`);
-  
-  const maxFiles = 10;
-  return loadAttachmentsForTask(taskId).then(existingAttachments => {
-    const currentCount = existingAttachments.length;
-    if (currentCount >= maxFiles) {
-      alert(`Maximum number of attachments (${maxFiles}) reached for this task`);
-      return [];
+  return new Promise(async (resolve, reject) => {
+    if (!files || files.length === 0 || !taskId) {
+      reject(new Error('No files or task ID provided'));
+      return;
     }
-    
-    const filesToProcess = Array.from(files).slice(0, maxFiles - currentCount);
-    const processPromises = [];
-    
-    filesToProcess.forEach(file => {
+
+    console.log(`Processing ${files.length} files for task ${taskId}`);
+
+    try {
+      await waitForDBReady();  // 🧠 Ensure DB is ready before anything
+    } catch (err) {
+      console.error('IndexedDB not ready in time:', err);
+      return reject(err);
+    }
+
+    const attachments = [];
+    let processedCount = 0;
+
+    Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) {
-        console.log('Skipping non-image file:', file.name);
+        processedCount++;
+        console.warn(`Skipping non-image file: ${file.name}`);
+        if (processedCount === files.length) {
+          updateAttachmentUI(taskId);
+          resolve(attachments);
+        }
         return;
       }
-      
-      const filePromise = new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          saveAttachmentToDB(taskId, file, e.target.result)
-            .then(attachment => resolve(attachment))
-            .catch(err => reject(err));
+
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        const attachment = {
+          name: file.name,
+          type: 'image',
+          url: e.target.result,
+          size: file.size,
+          lastModified: file.lastModified
         };
-        
-        reader.onerror = function(err) {
-          console.error('Error reading file:', err);
-          reject(err);
-        };
-        
-        reader.readAsDataURL(file);
-      });
-      
-      processPromises.push(filePromise);
+
+        saveAttachmentToDB(taskId, attachment)
+          .then(() => {
+            attachments.push(attachment);
+            processedCount++;
+
+            if (processedCount === files.length) {
+              updateAttachmentUI(taskId);
+              resolve(attachments);
+            }
+          })
+          .catch(err => {
+            console.error(`Error saving attachment ${file.name}:`, err);
+            processedCount++;
+
+            if (processedCount === files.length) {
+              updateAttachmentUI(taskId);
+              resolve(attachments);
+            }
+          });
+      };
+
+      reader.onerror = function () {
+        console.error(`Error reading file ${file.name}`);
+        processedCount++;
+
+        if (processedCount === files.length) {
+          updateAttachmentUI(taskId);
+          resolve(attachments);
+        }
+      };
+
+      reader.readAsDataURL(file);
     });
-    
-    return Promise.all(processPromises);
-  })
-  .then(newAttachments => {
-    if (newAttachments.length > 0) {
-      updateTaskWithAttachments(taskId, newAttachments, 'add');
-    }
-    return newAttachments;
-  })
-  .catch(error => {
-    console.error('Error processing files:', error);
-    return [];
   });
 }
+
 
 function updateTaskWithAttachments(taskId, attachments, action = 'add') {
   if (!window.localTaskCache) {
@@ -313,10 +367,7 @@ function findOrCreateFileInput(taskPanel, taskId) {
     const uploadContainer = document.createElement('div');
     uploadContainer.className = 'flex items-center my-2';
     
-    const label = document.createElement('label');
-    label.setAttribute('for', `file-upload-${taskId}`);
-    label.className = 'cursor-pointer text-blue-500 hover:underline';
-    //label.innerText = 'Add Image';
+   
     
     fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -324,7 +375,7 @@ function findOrCreateFileInput(taskPanel, taskId) {
     fileInput.className = 'hidden';
     fileInput.accept = 'image/*';
     
-    uploadContainer.appendChild(label);
+  
     uploadContainer.appendChild(fileInput);
     
     const imageContainer = taskPanel.querySelector('.image-preview-container');
@@ -387,74 +438,6 @@ function setupFileInputHandler(fileInput, taskId) {
   console.log(`File input handler set up for task ${taskId}`);
 }
 
-// Modify the handleTaskFiles function to update the UI after saving
-function handleTaskFiles(files, taskId) {
-  return new Promise((resolve, reject) => {
-    if (!files || files.length === 0 || !taskId) {
-      reject(new Error('No files or task ID provided'));
-      return;
-    }
-
-    console.log(`Processing ${files.length} files for task ${taskId}`);
-    
-    const attachments = [];
-    let processedCount = 0;
-    
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) {
-        processedCount++;
-        console.warn(`Skipping non-image file: ${file.name}`);
-        if (processedCount === files.length) {
-          resolve(attachments);
-        }
-        return;
-      }
-      
-      const reader = new FileReader();
-      
-      reader.onload = function(e) {
-        const attachment = {
-          name: file.name,
-          type: 'image',
-          url: e.target.result,
-          size: file.size,
-          lastModified: file.lastModified
-        };
-        
-        saveAttachmentToDB(taskId, attachment)
-          .then(() => {
-            attachments.push(attachment);
-            processedCount++;
-            
-            if (processedCount === files.length) {
-              // Update the UI immediately after all files are processed
-              updateAttachmentUI(taskId);
-              resolve(attachments);
-            }
-          })
-          .catch(err => {
-            console.error(`Error saving attachment ${file.name}:`, err);
-            processedCount++;
-            
-            if (processedCount === files.length) {
-              resolve(attachments);
-            }
-          });
-      };
-      
-      reader.onerror = function() {
-        console.error(`Error reading file ${file.name}`);
-        processedCount++;
-        
-        if (processedCount === files.length) {
-          resolve(attachments);
-        }
-      };
-      
-      reader.readAsDataURL(file);
-    });
-  });
-}
 
 
 function removeAttachment(taskId, url) {
@@ -695,7 +678,7 @@ function listenForTaskSelection() {
       const taskId = taskItem.getAttribute('data-task-id');
       if (taskId) {
         console.log(`Task selected: ${taskId}`);
-        // Load attachments for this task after a short delay to ensure panels are updated
+        localStorage.setItem('selectedTaskId', taskId); // ✅ ADD THIS
         setTimeout(() => {
           updateAttachmentUI(taskId);
         }, 300);
@@ -703,13 +686,33 @@ function listenForTaskSelection() {
     }
   });
   
-  // Also listen for the custom taskSelected event if it exists
-  document.addEventListener('taskSelected', function(e) {
+  
+  document.addEventListener('taskSelected', function (e) {
     if (e.detail && e.detail.taskId) {
-      console.log(`Task selected event received: ${e.detail.taskId}`);
-      updateAttachmentUI(e.detail.taskId);
+      const taskId = e.detail.taskId;
+      console.log(`Task selected event received: ${taskId}`);
+      localStorage.setItem('selectedTaskId', taskId);
+      updateAttachmentUI(taskId);
+  
+      setTimeout(() => {
+        const panel = document.querySelector(`.right-panel[data-current-task-id="${taskId}"]`) ||
+                      document.querySelector(`.task-panel[data-task-id="${taskId}"]`);
+  
+        if (panel) {
+          console.log(`[taskSelected] Setting up file upload for task panel ${taskId}`);
+          setupTaskFileUpload(panel, taskId);
+  
+          // ✅ Fix: Add drop zone if needed and rewire handlers
+          if (typeof ensureDropZonesExist === 'function') ensureDropZonesExist();
+          if (typeof setupDropZones === 'function') setupDropZones();
+        } else {
+          console.warn(`[taskSelected] Panel for task ${taskId} not found`);
+        }
+      }, 200);
     }
   });
+  
+  
 }
 
 
@@ -851,40 +854,52 @@ function setupMutationObserver() {
   let debounceTimer;
   const observer = new MutationObserver(function(mutations) {
     clearTimeout(debounceTimer);
-    
+
     debounceTimer = setTimeout(() => {
       let newPanelsFound = false;
       let newFileInputsFound = false;
-      
+      let newListPanelsDetected = false;
+
       mutations.forEach(function(mutation) {
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) { // Element node
-              if (node.classList && node.classList.contains('task-panel')) {
-                newPanelsFound = true;
-              } else if (node.querySelectorAll) {
-                const panels = node.querySelectorAll('.task-panel');
-                if (panels.length > 0) {
-                  newPanelsFound = true;
+            if (node.nodeType !== 1) return;
+
+            const isPanel = node.classList?.contains('task-panel') || node.querySelector?.('.task-panel');
+            const isRightPanel = node.classList?.contains('right-panel') || node.querySelector?.('.right-panel');
+
+            if (isPanel) {
+              console.log('[Observer] New task panel detected');
+              newPanelsFound = true;
+            }
+
+            if (isRightPanel) {
+              const panels = node.classList.contains('right-panel') ? [node] : node.querySelectorAll('.right-panel');
+              panels.forEach(panel => {
+                const listName = panel.getAttribute('data-list');
+                if (listName && !panel.querySelector('.drop-zone')) {
+                  console.log(`[Observer] Right panel for new list "${listName}" detected without drop zone`);
+                  newListPanelsDetected = true;
                 }
-                
-                const fileInputs = node.querySelectorAll('input[type="file"][id^="file-upload-"]');
-                if (fileInputs.length > 0) {
-                  newFileInputsFound = true;
-                }
-              }
+              });
+            }
+
+            const inputs = node.querySelectorAll?.('input[type="file"][id^="file-upload-"]') || [];
+            if (inputs.length > 0) {
+              console.log('[Observer] New file inputs detected:', inputs.length);
+              newFileInputsFound = true;
             }
           });
         }
       });
-      
+
       if (newPanelsFound) {
-        console.log('New panels detected, applying fixes');
+        console.log('[Observer] Applying fixes to new task panels');
         applyFixToExistingPanels();
       }
-      
+
       if (newFileInputsFound) {
-        console.log('New file inputs detected, setting up handlers');
+        console.log('[Observer] Binding new file input handlers');
         const fileInputs = document.querySelectorAll('input[type="file"][id^="file-upload-"]');
         fileInputs.forEach(input => {
           if (input.dataset.hasUploadHandler !== 'true') {
@@ -895,11 +910,19 @@ function setupMutationObserver() {
           }
         });
       }
-    }, 300); 
+
+      if (newListPanelsDetected) {
+        console.log('[Observer] Ensuring drop zones exist for new list panels');
+        if (window.fileUploadFix) {
+          window.fileUploadFix.fix();  // Add drop zones + input handlers
+        }
+      }
+    }, 300);
   });
-  
+
   observer.observe(document.body, { childList: true, subtree: true });
 }
+
 
 function setupTaskItemClickHandler() {
   if (window._taskItemClickHandler) {
