@@ -3,13 +3,13 @@
   function ensureRightPanelContainerExists() {
     const container = document.getElementById('right-panels-container');
     if (container) return container;
-  
+
     const mainContent = document.querySelector('main') || document.querySelector('.main-content') || document.body;
     if (!mainContent) {
       console.warn('⚠️ [panelManager] Could not find container to attach right-panels-container');
       return null;
     }
-  
+
     const newContainer = document.createElement('div');
     newContainer.id = 'right-panels-container';
     newContainer.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full hidden';
@@ -17,7 +17,6 @@
     console.log('✅ [panelManager] Created missing right-panels-container');
     return newContainer;
   }
-  
 
   function updateRightPanelVisibility(listName) {
     const rightPanelsContainer = ensureRightPanelContainerExists();
@@ -28,7 +27,6 @@
     const containerIdForList = `right-panels-container-${listId}`;
     const listContainer = document.getElementById(containerIdForList);
 
-    // Hide all list containers
     document.querySelectorAll('[id^="right-panels-container-"]').forEach(c => {
       c.classList.add('hidden');
     });
@@ -71,8 +69,10 @@
     const panelId = `right-panel-${listId}-${task._id}`;
     let panel = document.getElementById(panelId);
 
-    if (!panel && typeof window.createPanelForTask === 'function') {
-      panel = window.createPanelForTask(task);
+    // 🔧 Fallback: if task-specific panel doesn't exist, try static per-list panel
+    if (!panel) {
+      const fallbackPanelId = `right-panel-${listId}`;
+      panel = document.getElementById(fallbackPanelId);
     }
 
     if (panel) {
@@ -82,7 +82,7 @@
       localStorage.setItem('activeTaskId', task._id);
       window.currentTaskId = task._id;
     } else {
-      console.warn(`⚠️ [panelManager] Could not find or create panel for task ID: ${task._id}`);
+      console.warn(`⚠️ [panelManager] Could not find panel for task ID: ${task._id} or fallback`);
     }
   }
 
@@ -90,26 +90,26 @@
     const taskId = e.detail?.taskId;
     const listName = e.detail?.list;
     if (!taskId || !listName) return;
-  
+
     const listId = listName.toLowerCase().replace(/\s+/g, '-');
     const panelId = `right-panel-${listId}-${taskId}`;
     const panel = document.getElementById(panelId);
-  
+
     if (panel) {
       panel.remove();
       console.log(`✅ [panelManager] Removed panel for deleted task: ${taskId}`);
     }
-  
+
     refreshTaskCache();
-  
+
     const selectedId = localStorage.getItem('selectedTaskId');
     const isSelectedTask = selectedId === taskId;
-  
+
     const rightPanelsContainer = document.getElementById('right-panels-container');
     const listContainer = document.getElementById(`right-panels-container-${listId}`);
-  
+
     const remainingTasks = window.localTaskCache.filter(t => t.list === listName && !t.deleted);
-  
+
     if (isSelectedTask) {
       if (remainingTasks.length > 0) {
         const fallback = remainingTasks[0];
@@ -122,17 +122,14 @@
         localStorage.removeItem('selectedTaskId');
         localStorage.removeItem('activeTaskId');
         window.currentTaskId = null;
-  
+
         if (listContainer) listContainer.classList.add('hidden');
         if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
         console.log(`✅ Cleared panel container for empty list: ${listName}`);
       }
     }
   }
-  
-  
-  
-  
+
   function waitForMainContent(maxRetries = 20, intervalMs = 100) {
     return new Promise((resolve, reject) => {
       let attempts = 0;
@@ -148,13 +145,13 @@
       }, intervalMs);
     });
   }
-  
+
   document.addEventListener('DOMContentLoaded', () => {
     waitForMainContent()
       .then(() => {
         document.addEventListener('taskAdded', handleTaskAdded);
         document.addEventListener('taskDeleted', handleTaskDeleted);
-  
+
         const activeList = localStorage.getItem('activeList') || 'Personal';
         updateRightPanelVisibility(activeList);
       })
@@ -162,11 +159,10 @@
         console.warn('⚠️ [panelManager] Initialization skipped:', err.message);
       });
   });
-  
 
   window.updateRightPanelVisibility = updateRightPanelVisibility;
   window.showPanelForTask = showPanelForTask;
-  
+
   function handleTaskAdded(e) {
     const task = e.detail?.task;
     if (!task) return;
@@ -187,3 +183,4 @@
     }
   }
 })();
+  

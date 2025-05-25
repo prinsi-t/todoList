@@ -20,7 +20,6 @@ function loadLocalTaskCache() {
   }
 }
 
-// Check if this is a fresh login or a page refresh
 function isNewLogin() {
   const sessionId = localStorage.getItem('sessionId');
   const newSessionId = Math.random().toString(36).substring(2, 15);
@@ -43,7 +42,6 @@ function isNewLogin() {
   return false;
 }
 
-// Wrap localStorage.setItem to track activeList changes (debugging aid)
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = function(key, value) {
   if (key === 'activeList') {
@@ -52,7 +50,6 @@ localStorage.setItem = function(key, value) {
   return originalSetItem.apply(this, arguments);
 };
 
-// Wrap showPanelForList to track calls (debugging aid)
 function wrapShowPanelForListOnceDefined() {
   const maxRetries = 10;
   let retries = 0;
@@ -62,8 +59,37 @@ function wrapShowPanelForListOnceDefined() {
       const original = showPanelForList;
       showPanelForList = function (listName) {
         console.log(`[UI] showPanelForList called with: "${listName}"`, new Error().stack);
+      
+        const listId = listName.toLowerCase().replace(/\s+/g, '-');
+        const panelId = `right-panel-${listId}`;
+        const panel = document.getElementById(panelId);
+        const rightPanelsContainer = document.getElementById('right-panels-container');
+      
+        if (rightPanelsContainer && panel) {
+          const recentTask = findMostRecentTask(listName);
+      
+          if (recentTask) {
+            rightPanelsContainer.classList.remove('hidden');
+            panel.classList.remove('hidden');
+            console.log(`✅ Showing panel for list: ${listName}`);
+      
+            setSelectedTaskUI(recentTask);
+            if (typeof showPanelForTask === 'function') {
+              showPanelForTask(recentTask);
+            }
+          } else {
+            // Hide panel and container if no tasks in the list
+            panel.classList.add('hidden');
+            rightPanelsContainer.classList.add('hidden');
+            console.warn(`No task found to show in panel for list: ${listName} - hiding panel`);
+          }
+        } else {
+          console.warn(`[UI] Cannot show panel for list: ${listName} — panel or container missing`);
+        }
+      
         return original.call(this, listName);
       };
+      
       clearInterval(interval);
     } else if (++retries >= maxRetries) {
       clearInterval(interval);
@@ -74,6 +100,12 @@ function wrapShowPanelForListOnceDefined() {
 
 wrapShowPanelForListOnceDefined();
 
+if (typeof window.createPanelForTask !== 'function') {
+  window.createPanelForTask = function (task) {
+    console.warn('⚠️ Dummy createPanelForTask called. Define your real implementation.');
+    return null;
+  };
+}
 
 async function initApp() {
   loadLocalTaskCache();
@@ -87,12 +119,9 @@ async function initApp() {
     localStorage.removeItem('selectedTaskId');
   }
 
-  // Load tasks from server
   await loadTasksFromServer();
 
-  // Load subtasks and notes (await if these are async)
   if (typeof loadLocalSubtasks === 'function') {
-    // If loadLocalSubtasks is async, await it; else just call
     const subtasksResult = loadLocalSubtasks();
     if (subtasksResult instanceof Promise) await subtasksResult;
   }
@@ -104,11 +133,9 @@ async function initApp() {
     if (notesResult instanceof Promise) await notesResult;
   }
 
-  // After all loading is done, enforce activeList again from localStorage
   const currentList = localStorage.getItem('activeList') || 'Personal';
   console.log('Final activeList after all loads:', currentList);
 
-  // Update UI with currentList
   if (typeof filterTasks === 'function') filterTasks(currentList, false);
   if (typeof highlightActiveList === 'function') highlightActiveList(currentList);
   if (typeof showPanelForList === 'function') showPanelForList(currentList);
@@ -124,7 +151,6 @@ async function initApp() {
 function saveTaskCacheToLocalStorage() {
   try {
     localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-    console.log(`Task cache saved to localStorage: ${localTaskCache.length} tasks`);
   } catch (error) {
     console.error('Error saving task cache to localStorage:', error);
   }
@@ -135,7 +161,6 @@ function setEventListeners() {
 
   const completeBtn = document.getElementById('complete-btn');
   if (completeBtn) {
-    // Remove old listeners by replacing the node
     const newBtn = completeBtn.cloneNode(true);
     completeBtn.parentNode.replaceChild(newBtn, completeBtn);
 
@@ -147,7 +172,6 @@ function setEventListeners() {
     console.error('❌ Complete button not found');
   }
 
-  // Skip addTaskForm event listener here as handled elsewhere
   console.log('Skipping addTaskForm event listener in init.js - handled by sidebarManager.js');
 
   const addSubtaskBtn = document.getElementById('addSubtaskBtn');
