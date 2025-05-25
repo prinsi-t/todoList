@@ -1,23 +1,23 @@
 // panelManager.js (final production-safe patch with restored logic)
 (function () {
   function ensureRightPanelContainerExists() {
-    let container = document.getElementById('right-panels-container');
-    if (!container) {
-      const mainContent = document.querySelector('main') || document.querySelector('.main-content') || document.body;
-      if (mainContent) {
-        container = document.createElement('div');
-        container.id = 'right-panels-container';
-        container.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full';
-        container.classList.add('hidden');
-        mainContent.appendChild(container);
-        console.log('✅ [panelManager] Created missing right-panels-container');
-      } else {
-        console.warn('⚠️ [panelManager] Could not find container to attach right-panels-container');
-        return null;
-      }
+    const container = document.getElementById('right-panels-container');
+    if (container) return container;
+  
+    const mainContent = document.querySelector('main') || document.querySelector('.main-content') || document.body;
+    if (!mainContent) {
+      console.warn('⚠️ [panelManager] Could not find container to attach right-panels-container');
+      return null;
     }
-    return container;
+  
+    const newContainer = document.createElement('div');
+    newContainer.id = 'right-panels-container';
+    newContainer.className = 'flex-1 bg-dark-accent rounded-lg p-6 h-full hidden';
+    mainContent.appendChild(newContainer);
+    console.log('✅ [panelManager] Created missing right-panels-container');
+    return newContainer;
   }
+  
 
   function updateRightPanelVisibility(listName) {
     const rightPanelsContainer = ensureRightPanelContainerExists();
@@ -94,29 +94,68 @@
     const listId = listName.toLowerCase().replace(/\s+/g, '-');
     const panelId = `right-panel-${listId}-${taskId}`;
     const panel = document.getElementById(panelId);
-    if (panel) panel.remove();
+  
+    if (panel) {
+      panel.remove();
+      console.log(`✅ Removed panel for deleted task: ${taskId}`);
+    }
   
     refreshTaskCache();
   
-    const remaining = window.localTaskCache?.filter(t => t.list === listName && !t.deleted);
+    const remaining = window.localTaskCache.filter(t => t.list === listName && !t.deleted);
+    const rightPanelsContainer = document.getElementById('right-panels-container');
     const listContainer = document.getElementById(`right-panels-container-${listId}`);
   
-    if (!remaining || remaining.length === 0) {
-      if (listContainer) listContainer.classList.add('hidden');
-      updateRightPanelVisibility(listName);
-    } else {
-      const fallback = remaining[remaining.length - 1];
-      if (fallback) setTimeout(() => showPanelForTask(fallback), 10);
+    // Check if deleted task was active
+    const selectedTaskId = localStorage.getItem('selectedTaskId');
+    if (selectedTaskId === taskId) {
+      if (remaining.length > 0) {
+        const fallback = remaining[0];
+        setTimeout(() => showPanelForTask(fallback), 10);
+        localStorage.setItem('selectedTaskId', fallback._id);
+        window.currentTaskId = fallback._id;
+      } else {
+        localStorage.removeItem('selectedTaskId');
+        window.currentTaskId = null;
+  
+        if (listContainer) listContainer.classList.add('hidden');
+        if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
+      }
     }
   }
   
+  
+  
+  function waitForMainContent(maxRetries = 20, intervalMs = 100) {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        const mainContent = document.querySelector('.main-content') || document.querySelector('main') || document.body;
+        if (mainContent) {
+          clearInterval(interval);
+          resolve(mainContent);
+        } else if (++attempts >= maxRetries) {
+          clearInterval(interval);
+          reject(new Error('Main content container not found after waiting'));
+        }
+      }, intervalMs);
+    });
+  }
+  
   document.addEventListener('DOMContentLoaded', () => {
-    document.addEventListener('taskAdded', handleTaskAdded);
-    document.addEventListener('taskDeleted', handleTaskDeleted);
-
-    const activeList = localStorage.getItem('activeList') || 'Personal';
-    updateRightPanelVisibility(activeList);
+    waitForMainContent()
+      .then(() => {
+        document.addEventListener('taskAdded', handleTaskAdded);
+        document.addEventListener('taskDeleted', handleTaskDeleted);
+  
+        const activeList = localStorage.getItem('activeList') || 'Personal';
+        updateRightPanelVisibility(activeList);
+      })
+      .catch(err => {
+        console.warn('⚠️ [panelManager] Initialization skipped:', err.message);
+      });
   });
+  
 
   window.updateRightPanelVisibility = updateRightPanelVisibility;
   window.showPanelForTask = showPanelForTask;
