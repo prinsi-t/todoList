@@ -97,32 +97,39 @@
   
     if (panel) {
       panel.remove();
-      console.log(`✅ Removed panel for deleted task: ${taskId}`);
+      console.log(`✅ [panelManager] Removed panel for deleted task: ${taskId}`);
     }
   
     refreshTaskCache();
   
-    const remaining = window.localTaskCache.filter(t => t.list === listName && !t.deleted);
+    const selectedId = localStorage.getItem('selectedTaskId');
+    const isSelectedTask = selectedId === taskId;
+  
     const rightPanelsContainer = document.getElementById('right-panels-container');
     const listContainer = document.getElementById(`right-panels-container-${listId}`);
   
-    // Check if deleted task was active
-    const selectedTaskId = localStorage.getItem('selectedTaskId');
-    if (selectedTaskId === taskId) {
-      if (remaining.length > 0) {
-        const fallback = remaining[0];
-        setTimeout(() => showPanelForTask(fallback), 10);
-        localStorage.setItem('selectedTaskId', fallback._id);
-        window.currentTaskId = fallback._id;
+    const remainingTasks = window.localTaskCache.filter(t => t.list === listName && !t.deleted);
+  
+    if (isSelectedTask) {
+      if (remainingTasks.length > 0) {
+        const fallback = remainingTasks[0];
+        setTimeout(() => {
+          showPanelForTask(fallback);
+          localStorage.setItem('selectedTaskId', fallback._id);
+          window.currentTaskId = fallback._id;
+        }, 10);
       } else {
         localStorage.removeItem('selectedTaskId');
+        localStorage.removeItem('activeTaskId');
         window.currentTaskId = null;
   
         if (listContainer) listContainer.classList.add('hidden');
         if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
+        console.log(`✅ Cleared panel container for empty list: ${listName}`);
       }
     }
   }
+  
   
   
   
