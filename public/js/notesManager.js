@@ -81,7 +81,7 @@ function loadNotesForTask(taskId) {
     return;
   }
 
-  console.log(`Loading notes for task: ${taskId}`);
+  //console.log(`Loading notes for task: ${taskId}`);
 
   const task = localTaskCache.find(t => t._id === taskId);
   if (!task) {
@@ -110,7 +110,7 @@ function loadNotesForTask(taskId) {
   }
 
   if (task.notes !== undefined) {
-    console.log(`Found notes in task object for ${taskId}: "${task.notes ? task.notes.substring(0, 20) + '...' : 'empty'}"`);
+    //console.log(`Found notes in task object for ${taskId}: "${task.notes ? task.notes.substring(0, 20) + '...' : 'empty'}"`);
     notesTextarea.value = task.notes || '';
     return;
   }
@@ -139,7 +139,7 @@ function loadNotesForList(listName) {
     return;
   }
 
-  console.log(`Loading notes for list: ${listName}`);
+  //console.log(`Loading notes for list: ${listName}`);
 
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;

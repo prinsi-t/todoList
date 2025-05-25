@@ -902,71 +902,71 @@ function deleteTask(taskId) {
 
 window.filterTasks = function(listName, preserveSelection = false) {
   console.log('Filtering tasks for list:', listName);
-
+  
   localStorage.setItem('activeList', listName);
-  console.log(`Set active list in localStorage to: ${listName}`);
-
+  
+  // Update UI elements synchronously
   const titleElement = document.querySelector('h1');
   if (titleElement) {
     titleElement.textContent = `${listName} tasks`;
   }
-
+  
   const taskCategory = document.getElementById('taskCategory');
   if (taskCategory) {
     taskCategory.value = listName;
   }
-
+  
   const newTaskInput = document.getElementById('newTaskInput');
   if (newTaskInput) {
     newTaskInput.value = '';
   }
-
+  
+  // Handle list highlighting
   if (typeof window.highlightActiveList === 'function') {
     window.highlightActiveList(listName);
   } else {
     highlightActiveList(listName);
   }
-
+  
+  // Refresh task list
   refreshTaskList(listName);
-
+  
+  // Update panel visibility
   if (typeof showPanelForList === 'function') {
     showPanelForList(listName);
   }
-
+  
   if (!preserveSelection) {
-
     const recentTask = findMostRecentTask(listName);
-
+    
     if (recentTask) {
       console.log(`Found most recent task in ${listName}: ${recentTask.title} (ID: ${recentTask._id})`);
-
+      
       setSelectedTaskUI(recentTask);
-
+      
       localStorage.setItem('selectedTaskId', recentTask._id);
       localStorage.setItem('lastSelectedList', listName);
-
-      setTimeout(() => {
+      
+      // Use requestAnimationFrame for smooth visual updates
+      requestAnimationFrame(() => {
         const taskElements = document.querySelectorAll('.task-item');
         let found = false;
-
+        
         taskElements.forEach(el => {
           el.classList.remove('selected', 'bg-dark-hover');
-        });
-
-        taskElements.forEach(el => {
           if (el.dataset.taskId === recentTask._id) {
             el.classList.add('selected', 'bg-dark-hover');
             found = true;
             console.log(`Highlighted task: ${recentTask.title} (ID: ${recentTask._id})`);
           }
         });
-
+        
         if (!found) {
           console.warn(`Could not find task element for ID: ${recentTask._id} - refreshing task list`);
-       
           refreshTaskList(listName);
-
-          setTimeout(() => {
+          
+          // Try highlighting again after refresh
+          requestAnimationFrame(() => {
             const taskElements = document.querySelectorAll('.task-item');
             taskElements.forEach(el => {
               if (el.dataset.taskId === recentTask._id) {
@@ -974,16 +974,16 @@ window.filterTasks = function(listName, preserveSelection = false) {
                 console.log(`Highlighted task after refresh: ${recentTask.title}`);
               }
             });
-          }, 100);
+          });
         }
-      }, 100);
+      });
     } else {
       console.log(`No tasks found in ${listName} list`);
-
+      
       const listId = listName.toLowerCase().replace(/\s+/g, '-');
       const panelId = `right-panel-${listId}`;
       const panel = document.getElementById(panelId);
-
+      
       if (panel && typeof clearPanel === 'function') {
         clearPanel(panel, listName);
       }
@@ -1190,6 +1190,10 @@ function resetRightPanel(forceReset = false) {
       blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
     }
   }
+
+  if (typeof setupDropZones === 'function') {
+    setupDropZones();
+  }
 }
 
 function findMostRecentTask(listName) {
@@ -1254,4 +1258,3 @@ window.markSelectedTaskComplete = function() {
     toggleTaskCompletion(taskId);
   }
 };
-
