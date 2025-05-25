@@ -884,26 +884,24 @@ function deleteTask(taskId) {
   localTaskCache.splice(taskIndex, 1);
   saveTaskCacheToLocalStorage();
 
-  // Update count in UI
+  // Update UI count
   updateTaskCount(list, -1);
 
-  // Remove task element from DOM
+  // Remove from UI
   const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
   if (taskElement) taskElement.remove();
 
-  // Refresh task list view
-  refreshTaskList(list);
-
-  // ✅ Dispatch deletion so panelManager removes the corresponding panel
+  // Dispatch event so panelManager can remove the panel
   document.dispatchEvent(new CustomEvent('taskDeleted', {
     detail: { taskId, list }
   }));
 
-  // If the deleted task was selected, update selection
-  const selectedId = localStorage.getItem('selectedTaskId');
-  if (selectedId === taskId) {
-    const fallback = localTaskCache.find(t => t.list === list && !t.deleted);
-    if (fallback) {
+  // If the deleted task was selected, handle fallback logic
+  const selectedTaskId = localStorage.getItem('selectedTaskId');
+  if (selectedTaskId === taskId) {
+    const remainingTasks = localTaskCache.filter(t => t.list === list && !t.deleted);
+    if (remainingTasks.length > 0) {
+      const fallback = remainingTasks[0];
       setSelectedTaskUI(fallback);
       localStorage.setItem('selectedTaskId', fallback._id);
 
@@ -919,10 +917,12 @@ function deleteTask(taskId) {
     } else {
       localStorage.removeItem('selectedTaskId');
       window.currentTaskId = null;
-      resetRightPanel(true);
     }
   }
+
+  refreshTaskList(list);
 }
+
 
 
 
@@ -1057,7 +1057,7 @@ function updateAllTaskCounts() {
 
     if (countElement) {
       countElement.textContent = count.toString();
-      console.log(`Set count for ${listName} to ${count}`);
+      //console.log(`Set count for ${listName} to ${count}`);
     } else {
       console.warn(`Could not find or create count element for ${listName}`);
     }
