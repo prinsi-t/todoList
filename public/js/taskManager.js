@@ -872,94 +872,58 @@ function loadTaskDetails(task) {
 
 function deleteTask(taskId) {
   const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
-  if (taskIndex === -1) return;
+  if (taskIndex === -1) {
+    console.error(`Task with ID ${taskId} not found`);
+    return;
+  }
 
   const task = localTaskCache[taskIndex];
-  const listName = task.list;
-  const listId = listName.toLowerCase().replace(/\s+/g, '-');
+  const list = task.list;
 
-  console.log(`🗑️ Deleting task ${taskId} from list "${listName}"`);
-  const isCurrentlySelectedTask = (window.currentTaskId === taskId);
-
-  // ✅ Remove task from cache
+  // Remove from local cache
   localTaskCache.splice(taskIndex, 1);
   saveTaskCacheToLocalStorage();
 
-  // ✅ Remove task element from DOM with animation
+  // Update count in UI
+  updateTaskCount(list, -1);
+
+  // Remove task element from DOM
   const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-  if (taskElement) {
-    taskElement.classList.add('opacity-0', 'scale-95');
-    setTimeout(() => {
-      taskElement.remove();
+  if (taskElement) taskElement.remove();
 
-      // 🔄 Optional empty state UI
-      const remainingTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
-      if (remainingTasks.length === 0) {
-        const taskListContainer = document.getElementById('taskList');
-        if (taskListContainer) {
-          const emptyState = document.createElement('div');
-          emptyState.className = 'text-center py-6 text-gray-500';
-          emptyState.textContent = `No tasks in ${listName} list yet. Add one above!`;
-          taskListContainer.appendChild(emptyState);
-        }
-      }
-    }, 200);
-  }
+  // Refresh task list view
+  refreshTaskList(list);
 
-  // ✅ Update sidebar task count
-  const countElement = document.getElementById(`count-${listId}`);
-  if (countElement) {
-    const updatedCount = localTaskCache.filter(t => t.list === listName && !t.deleted).length;
-    countElement.textContent = updatedCount;
-  }
+  // ✅ Dispatch deletion so panelManager removes the corresponding panel
+  document.dispatchEvent(new CustomEvent('taskDeleted', {
+    detail: { taskId, list }
+  }));
 
-  const allTasksCount = document.getElementById('allTasksCount');
-  if (allTasksCount) {
-    const allVisibleTasks = localTaskCache.filter(t => !t.deleted).length;
-    allTasksCount.textContent = allVisibleTasks;
-  }
+  // If the deleted task was selected, update selection
+  const selectedId = localStorage.getItem('selectedTaskId');
+  if (selectedId === taskId) {
+    const fallback = localTaskCache.find(t => t.list === list && !t.deleted);
+    if (fallback) {
+      setSelectedTaskUI(fallback);
+      localStorage.setItem('selectedTaskId', fallback._id);
 
-  // ✅ If the deleted task was selected
-  if (isCurrentlySelectedTask) {
-    const sameListTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
-    if (sameListTasks.length > 0) {
-      const recentTask = sameListTasks[sameListTasks.length - 1];
-      setSelectedTaskUI(recentTask);
-      window.currentTaskId = recentTask._id;
-      localStorage.setItem('selectedTaskId', recentTask._id);
-    
       setTimeout(() => {
         const taskElements = document.querySelectorAll('.task-item');
         taskElements.forEach(el => {
           el.classList.remove('selected', 'bg-dark-hover');
-          if (el.dataset.taskId === recentTask._id) {
+          if (el.dataset.taskId === fallback._id) {
             el.classList.add('selected', 'bg-dark-hover');
-            console.log(`✅ Highlighted fallback task: ${recentTask.title}`);
           }
         });
       }, 50);
-    }
-     else {
-      window.currentTaskId = null;
+    } else {
       localStorage.removeItem('selectedTaskId');
-    }
-  }
-
-  // ✅ Let the panel system handle cleanup (very important)
-  document.dispatchEvent(new CustomEvent('taskDeleted', {
-    detail: { taskId, list: task.list }
-  }));
-  
-
-  // ✅ Optionally sync with server
-  if (!taskId.startsWith('local_')) {
-    try {
-      fetch(`/todos/${taskId}`, { method: 'DELETE' }).catch(console.error);
-    } catch (error) {
-      console.error('Error deleting from server:', error);
+      window.currentTaskId = null;
+      resetRightPanel(true);
     }
   }
 }
+
 
 
 
