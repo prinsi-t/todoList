@@ -251,53 +251,62 @@ function fixAddTaskForm() {
   
   window.updateTaskCount = updateTaskCount;
   
-function highlightActiveList(activeList) {
+  function highlightActiveList(activeList) {
     console.log('Highlighting active list:', activeList);
   
     const sidebarItems = document.querySelectorAll('.sidebar-item');
     console.log(`Found ${sidebarItems.length} sidebar items to check`);
-    
+  
+    const listColorMap = {
+      Personal: 'text-purple-400',
+      Work: 'text-orange-400',
+      'Grocery List': 'text-cyan-400'
+    };
+  
     sidebarItems.forEach(item => {
       const listName = item.getAttribute('data-list');
+      const icon = item.querySelector('i');
+      const span = item.querySelector('span.flex-grow');
+  
       console.log(`Checking sidebar item: ${listName} against active list: ${activeList}`);
-      
+  
       if (listName === activeList) {
         console.log(`✅ Matching list found: ${listName} - applying active styles`);
-
-        item.classList.add('active-list', 'bg-dark-hover', 'text-white', 'border-l-4', 'border-blue-500');
-        item.style.transition = 'all 0.2s ease-in-out';
-        item.style.paddingLeft = '14px';
-        item.style.backgroundColor = '#1e293b !important';
-        
-        const icon = item.querySelector('i');
-        if (icon) icon.classList.add('text-blue-400');
-        
-        const span = item.querySelector('span.flex-grow');
+  
+        item.classList.add('active-list', 'bg-dark-hover', 'text-white');
+        item.setAttribute('style', 'background-color:rgb(55, 111, 201) !important; padding-left: 14px; transition: all 0.2s ease-in-out;');
+  
         if (span) {
           span.classList.add('font-medium');
           span.style.fontWeight = '600';
           span.style.color = 'white';
         }
-        
-        console.log(`Applied active styles to: ${listName}`);
       } else {
         console.log(`Removing active styles from: ${listName}`);
-        item.classList.remove('active-list', 'bg-dark-hover', 'text-white', 'border-l-4', 'border-blue-500');
+        item.classList.remove('active-list', 'bg-dark-hover', 'text-white');
         item.style.paddingLeft = '16px';
         item.style.backgroundColor = '';
-        
-        const icon = item.querySelector('i');
-        if (icon) icon.classList.remove('text-blue-400');
-        
-        const span = item.querySelector('span.flex-grow');
+  
         if (span) {
           span.classList.remove('font-medium');
           span.style.fontWeight = 'normal';
           span.style.color = '';
         }
+  
+        // 🛠️ Restore default icon color
+        if (icon) {
+          const defaultColor = listColorMap[listName];
+          if (defaultColor) {
+            // Remove any old text-* color class and add the correct one
+            icon.className = icon.className
+              .replace(/\btext-\w+-\d{3}\b/, '')
+              .trim() + ` ${defaultColor}`;
+          }
+        }
       }
     });
   }
+  
   
   window.highlightActiveList = highlightActiveList;
   
@@ -442,7 +451,7 @@ function clearExistingCustomLists() {
   
     const newListItem = document.createElement('a');
     newListItem.href = '#';
-    newListItem.className = 'sidebar-item flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-dark-hover';
+    newListItem.className = 'sidebar-item flex items-center gap-2 px-4 py-2 rounded-lg';
     newListItem.setAttribute('data-list', listName);
   
     const isCustomList = !isDefaultList(listName);
@@ -639,109 +648,108 @@ function updateDefaultListItems() {
     });
   }
   
-function addCustomStyles() {
-  console.log('Adding custom styles for sidebar items');
+  function addCustomStyles() {
+    console.log('Adding custom styles for sidebar items');
   
-  const existingStyle = document.getElementById('todo-app-custom-styles');
-  if (existingStyle) {
-    console.log('Removing existing custom styles');
-    existingStyle.remove();
+    const existingStyle = document.getElementById('todo-app-custom-styles');
+    if (existingStyle) {
+      console.log('Removing existing custom styles');
+      existingStyle.remove();
+    }
+  
+    const styleElement = document.createElement('style');
+    styleElement.id = 'todo-app-custom-styles';
+    styleElement.textContent = `
+      .sidebar-item {
+        transition: all 0.2s ease-in-out;
+        position: relative;
+        overflow: visible !important;
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+  
+      .sidebar-item .delete-list-btn {
+        opacity: 0;
+        transition: opacity 0.2s ease, color 0.2s ease;
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+      }
+  
+      .sidebar-item:hover .delete-list-btn {
+        opacity: 1;
+      }
+  
+      /* ✅ Hover effect ONLY for non-active items */
+      .sidebar-item:not(.active-list):hover {
+        background-color: #374151 !important;
+      }
+  
+      /* ❌ Prevent ALL hover styles on active list */
+      .sidebar-item.active-list:hover {
+        background-color: #1e293b !important;
+        color: white !important;
+        transform: translateX(2px) !important;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
+      }
+  
+      .sidebar-item span.flex-grow {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: calc(100% - 60px);
+      }
+  
+      .sidebar-item .text-sm.text-gray-500 {
+        margin-left: auto;
+        margin-right: 24px;
+      }
+  
+      .sidebar-item.active-list {
+        position: relative;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
+        background-color: #1e293b !important;
+        transform: translateX(2px);
+        transition: all 0.3s ease !important;
+        animation: subtle-pulse 3s infinite;
+      }
+  
+      .sidebar-item.text-white span.flex-grow {
+        color: white !important;
+        font-weight: 600 !important;
+      }
+  
+      .sidebar-item[data-list="Personal"].active-list i {
+        color: #60a5fa !important;
+      }
+  
+      .sidebar-item[data-list="Work"].active-list i {
+        color: #f97316 !important;
+      }
+  
+      .sidebar-item[data-list="Grocery List"].active-list i {
+        color: #10b981 !important;
+      }
+  
+      .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
+        color: #8b5cf6 !important;
+      }
+  
+      @keyframes subtle-pulse {
+        0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+        50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
+        100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+      }
+    `;
+  
+    document.head.appendChild(styleElement);
+    console.log('Custom styles added successfully for sidebar items');
   }
-
-  const styleElement = document.createElement('style');
-  styleElement.id = 'todo-app-custom-styles';
-  styleElement.textContent = `
-    .sidebar-item {
-      transition: all 0.2s ease-in-out;
-      position: relative;
-      overflow: visible !important; /* Changed from hidden to visible */
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-    
-    .sidebar-item .delete-list-btn {
-      opacity: 0;
-      transition: opacity 0.2s ease, color 0.2s ease;
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
-    }
-
-    .sidebar-item:hover .delete-list-btn {
-      opacity: 1;
-    }
-    
-    .sidebar-item span.flex-grow {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: calc(100% - 60px); /* Make space for count and delete button */
-    }
-    
-    .sidebar-item .text-sm.text-gray-500 {
-      margin-left: auto;
-      margin-right: 24px; /* Make space for delete button */
-    }
-    
-    .sidebar-item.active-list {
-      position: relative;
-      box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
-      background-color: #1e293b !important;
-      transform: translateX(2px);
-      transition: all 0.3s ease !important;
-    }
-    
-    .sidebar-item.border-l-4 {
-      border-left-width: 4px !important;
-      border-left-color: #3b82f6 !important;
-    }
-    
-    @keyframes subtle-pulse {
-      0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-      50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
-      100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-    }
-    
-    .sidebar-item.active-list {
-      animation: subtle-pulse 3s infinite;
-    }
-    
-    .sidebar-item.text-white span.flex-grow {
-      color: white !important;
-      font-weight: 600 !important;
-    }
-    
-    .sidebar-item[data-list="Personal"].active-list i {
-      color: #60a5fa !important; /* Blue for Personal */
-    }
-    
-    .sidebar-item[data-list="Work"].active-list i {
-      color: #f97316 !important; /* Orange for Work */
-    }
-    
-    .sidebar-item[data-list="Grocery List"].active-list i {
-      color: #10b981 !important; /* Green for Grocery */
-    }
-    
-    .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
-      color: #8b5cf6 !important; /* Purple for custom lists */
-    }
-    
-    .sidebar-item:hover:not(.active-list) {
-      background-color: transparent !important; 
-      transform: none;
-    }
-    
-    .sidebar-item:hover:not(.active-list)::after {
-      display: none;
-    }
-  `;
-  document.head.appendChild(styleElement);
-  console.log('Custom styles added successfully for sidebar items');
-}
+  
+  
   
   addCustomStyles();
 

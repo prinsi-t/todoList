@@ -340,18 +340,6 @@ function handleAddTask(e) {
   return false;
 }
 
-function highlightActiveList(listName) {
-  document.querySelectorAll('.sidebar-item').forEach(item => {
-    item.classList.remove('active');
-  });
-
-  const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
-  const activeItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
-  if (activeItem) {
-    activeItem.classList.add('active');
-  }
-}
-
 function refreshTaskList(listName) {
   console.log(`Refreshing task list for: ${listName}`);
 
