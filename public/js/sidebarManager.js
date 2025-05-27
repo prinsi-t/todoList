@@ -257,15 +257,15 @@ function fixAddTaskForm() {
     const sidebarItems = document.querySelectorAll('.sidebar-item');
     console.log(`Found ${sidebarItems.length} sidebar items to check`);
   
-    const listColorMap = {
-      Personal: 'text-purple-400',
-      Work: 'text-orange-400',
-      'Grocery List': 'text-cyan-400'
-    };
+    // const listColorMap = {
+    //   Personal: 'text-purple-400',
+    //   Work: 'text-orange-400',
+    //   'Grocery List': 'text-cyan-400'
+    // };
   
     sidebarItems.forEach(item => {
       const listName = item.getAttribute('data-list');
-      const icon = item.querySelector('i');
+      //const icon = item.querySelector('i');
       const span = item.querySelector('span.flex-grow');
   
       console.log(`Checking sidebar item: ${listName} against active list: ${activeList}`);
@@ -281,6 +281,12 @@ function fixAddTaskForm() {
           span.style.fontWeight = '600';
           span.style.color = 'white';
         }
+  
+        // if (icon) {
+        //   // 🛠️ Remove any existing text-* color class
+        //   icon.className = icon.className.replace(/\btext-\w+-\d{3}\b/g, '').trim();
+        // }
+  
       } else {
         console.log(`Removing active styles from: ${listName}`);
         item.classList.remove('active-list', 'bg-dark-hover', 'text-white');
@@ -293,19 +299,18 @@ function fixAddTaskForm() {
           span.style.color = '';
         }
   
-        // 🛠️ Restore default icon color
-        if (icon) {
-          const defaultColor = listColorMap[listName];
-          if (defaultColor) {
-            // Remove any old text-* color class and add the correct one
-            icon.className = icon.className
-              .replace(/\btext-\w+-\d{3}\b/, '')
-              .trim() + ` ${defaultColor}`;
-          }
-        }
+        // if (icon) {
+        //   const defaultColor = listColorMap[listName];
+        //   if (defaultColor) {
+        //     icon.className = icon.className
+        //       .replace(/\btext-\w+-\d{3}\b/g, '') // remove old color
+        //       .trim() + ` ${defaultColor}`;
+        //   }
+        // }
       }
     });
   }
+  
   
   
   window.highlightActiveList = highlightActiveList;
@@ -722,27 +727,9 @@ function updateDefaultListItems() {
         font-weight: 600 !important;
       }
   
-      .sidebar-item[data-list="Personal"].active-list i {
-        color: #60a5fa !important;
-      }
+    
   
-      .sidebar-item[data-list="Work"].active-list i {
-        color: #f97316 !important;
-      }
   
-      .sidebar-item[data-list="Grocery List"].active-list i {
-        color: #10b981 !important;
-      }
-  
-      .sidebar-item:not([data-list="Personal"]):not([data-list="Work"]):not([data-list="Grocery List"]).active-list i {
-        color: #8b5cf6 !important;
-      }
-  
-      @keyframes subtle-pulse {
-        0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-        50% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); }
-        100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
-      }
     `;
   
     document.head.appendChild(styleElement);
