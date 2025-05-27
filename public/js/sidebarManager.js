@@ -677,31 +677,31 @@ function updateDefaultListItems() {
       }
   
      .sidebar-item .item-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 1;
-  min-width: 0;
-}
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 1;
+        min-width: 0;
+      }
 
-.sidebar-item .item-left span {
-  white-space: normal;
-  word-break: break-word;
-  font-size: 0.875rem; /* text-sm */
-  color: #d1d5db; /* text-gray-300 */
-}
+      .sidebar-item .item-left span {
+        white-space: normal;
+        word-break: break-word;
+        font-size: 0.875rem; /* text-sm */
+        color: #d1d5db; /* text-gray-300 */
+      }
 
-.sidebar-item .count {
-  margin-left: auto;
-  font-size: 0.875rem;
-  color: #9ca3af; /* text-gray-400 */
-  white-space: nowrap;
-}
+      .sidebar-item .count {
+        margin-left: auto;
+        font-size: 0.875rem;
+        color: #9ca3af; /* text-gray-400 */
+        white-space: nowrap;
+      }
 
-.sidebar-item .delete-list-btn {
-  margin-left: 8px;
-  flex-shrink: 0;
-}
+      .sidebar-item .delete-list-btn {
+        margin-left: 8px;
+        flex-shrink: 0;
+      }
   
       .sidebar-item:hover .delete-list-btn {
         opacity: 1;

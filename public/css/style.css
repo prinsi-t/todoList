@@ -124,8 +124,10 @@ body {
   }
 
   .task-item span {
-    @apply transition-all duration-200;
+    @apply transition-all duration-200 break-words whitespace-normal overflow-wrap-anywhere max-w-full;
   }
+  
+  
 
   .task-item span.line-through {
     @apply text-gray-500;
@@ -190,6 +192,22 @@ body {
   .menu-item:hover {
     @apply text-white bg-gray-700/30;
   }
+
+  .right-panel h2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+  }
+  .panel-task-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+    
+  
 
   .relative {
     @apply inline-block;

@@ -430,8 +430,9 @@ function createTaskElement(task) {
   }
 
   const titleSpan = document.createElement('span');
-  titleSpan.className = `${task.completed ? 'line-through text-gray-500' : 'text-gray-200'} flex-grow text-sm`;
+  titleSpan.className = `${task.completed ? 'line-through text-gray-500' : 'text-gray-200'} flex-grow text-sm break-words overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px]`;
   titleSpan.textContent = task.title;
+  
 
   const actionsDiv = document.createElement('div');
   actionsDiv.className = 'task-item-actions flex items-center gap-1.5';
