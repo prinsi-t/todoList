@@ -97,29 +97,14 @@ body {
     transition: all 0.2s;
   }
 
-  .sidebar-item:hover, .sidebar-item.active {
-    background-color: #2A2E37;
-  }
+  
 
   .sidebar-items {
     @apply mt-6;
   }
 
-  .sidebar-item {
-    @apply px-4 py-2.5 rounded-lg cursor-pointer flex items-center gap-3 transition-colors duration-200 text-gray-300 hover:text-white hover:bg-dark-hover;
-  }
 
-  .sidebar-item.active {
-    @apply bg-dark-hover text-white;
-  }
 
-  .sidebar-item i {
-    @apply w-5 text-center;
-  }
-
-  .sidebar-item:hover span:last-child {
-    @apply text-gray-400;
-  }
 
   .task-item {
     @apply px-4 py-2.5 rounded-lg mb-1.5 cursor-pointer flex items-center gap-3 transition-all duration-200 relative;
@@ -127,10 +112,10 @@ body {
 
   .task-item:hover {
     @apply bg-dark-hover;
-  }
+  } 
 
   .task-item.selected {
-    @apply bg-dark-hover border-l-3 border-blue-500 pl-3;
+    @apply border-l-3 border-blue-500 pl-3;
     background-color: #2A2E37 !important;
     border-left: 3px solid #3B82F6 !important;
     padding-left: 12px !important;
