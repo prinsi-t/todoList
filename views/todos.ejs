@@ -98,9 +98,12 @@
                   <i class="fas fa-check text-white text-xs"></i>
                 <% } %>
               </div>
-              <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm break-words overflow-wrap-normal">
+              <span class="<%= task.completed ? 'line-through text-gray-500' : 'text-gray-200' %> flex-grow text-sm">
                 <%= task.title %>
               </span>
+              
+              
+              
             </div>
           <% }) %>
         </div>
@@ -111,9 +114,13 @@
         <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal">
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h2 class="text-2xl font-semibold text-gray-100 mb-1 break-words overflow-wrap-normal max-w-full">
+              <h2 class="text-2xl font-semibold text-gray-100 mb-1 panel-task-title">
+              
                 ${task.title || ''}
               </h2>
+              
+              
+              
               <div class="text-sm text-gray-400">Personal</div>
             </div>
             <button class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition" onclick="markSelectedTaskComplete('Personal')">
