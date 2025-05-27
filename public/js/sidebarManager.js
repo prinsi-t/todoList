@@ -473,13 +473,13 @@ function clearExistingCustomLists() {
     
     const countElement = document.createElement('span');
     countElement.id = `count-${listName.toLowerCase().replace(/\s+/g, '-')}`;
-    countElement.className = 'text-sm text-gray-500';
+    countElement.className = 'text-sm text-gray-300';
     countElement.textContent = '0';
     newListItem.appendChild(countElement);
   
     if (isCustomList) {
       const deleteButton = document.createElement('button');
-      deleteButton.className = 'delete-list-btn text-gray-400 hover:text-red-500 transition-opacity duration-200';
+      deleteButton.className = 'delete-list-btn text-gray-300 hover:text-red-500 transition-opacity duration-200';
       deleteButton.title = 'Delete list';
       
       const deleteIcon = document.createElement('i');
@@ -666,23 +666,42 @@ function updateDefaultListItems() {
     styleElement.id = 'todo-app-custom-styles';
     styleElement.textContent = `
       .sidebar-item {
-        transition: all 0.2s ease-in-out;
-        position: relative;
-        overflow: visible !important;
         display: flex;
         align-items: center;
-        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        transition: all 0.2s;
+        flex-wrap: nowrap;
       }
   
-      .sidebar-item .delete-list-btn {
-        opacity: 0;
-        transition: opacity 0.2s ease, color 0.2s ease;
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 10;
-      }
+     .sidebar-item .item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.sidebar-item .item-left span {
+  white-space: normal;
+  word-break: break-word;
+  font-size: 0.875rem; /* text-sm */
+  color: #d1d5db; /* text-gray-300 */
+}
+
+.sidebar-item .count {
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: #9ca3af; /* text-gray-400 */
+  white-space: nowrap;
+}
+
+.sidebar-item .delete-list-btn {
+  margin-left: 8px;
+  flex-shrink: 0;
+}
   
       .sidebar-item:hover .delete-list-btn {
         opacity: 1;
