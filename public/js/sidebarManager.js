@@ -1089,9 +1089,16 @@ function updatePanelWithTask(panel, task) {
 
   console.log(`Updating panel with task: ${task.title}`);
   const titleElement = panel.querySelector('h2');
-  if (titleElement) {
-    titleElement.textContent = task.title || '';
-  }
+if (titleElement) {
+  titleElement.textContent = task.title || '';
+
+  // Apply classes to force truncation
+  titleElement.className = 'text-2xl font-semibold text-gray-100 mb-1 break-words whitespace-nowrap overflow-hidden text-ellipsis max-w-[90%] block';
+}
+  
+  
+
+  
 
   const completeBtn = panel.querySelector('.complete-btn');
   if (completeBtn) {
