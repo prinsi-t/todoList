@@ -201,12 +201,31 @@ body {
     display: block;
   }
   .panel-task-title {
+    font-size: 1.125rem;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
+    display: block;
+    max-width: 400px; /* NEW */
   }
-    
+  
+  
+  
+  #right-panels-container {
+    max-width: 800px !important;
+    min-width: 300px;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  
+  .right-panel {
+    min-width: 0;        /* fix overflow from long content */
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+        
   
 
   .relative {
