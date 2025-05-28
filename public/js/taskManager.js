@@ -357,7 +357,10 @@ function refreshTaskList(listName) {
   if (filteredTasks.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'text-center py-6 text-gray-500';
-    emptyState.textContent = `No tasks in ${listName} list yet. Add one above!`;
+    const formattedListName = listName.match(/.{1,30}/g).join('\n');
+    emptyState.textContent = `No tasks in\n${formattedListName}\nlist yet. Add one above!`;
+    emptyState.style.whiteSpace = 'pre-wrap';  // 🔑 make \n render correctly
+
     taskList.appendChild(emptyState);
   } else {
    
