@@ -183,7 +183,13 @@ body {
 
   .task-menu .menu-item span {
     @apply ml-2 text-sm;
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px; /* or whatever width fits your layout */
   }
+  
 
   .menu-item {
     @apply flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 cursor-pointer transition-colors duration-200;
