@@ -615,134 +615,69 @@ function toggleTaskCompletion(taskId) {
   }
 }
 
-function moveTaskToList(taskId, newList) {
-  const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
-  if (taskIndex === -1) {
-    console.error(`Task with ID ${taskId} not found`);
-    return;
-  }
+// function moveTaskToList(taskId, newList) {
+//   const taskIndex = localTaskCache.findIndex(t => t._id === taskId);
+//   if (taskIndex === -1) {
+//     console.error(`Task with ID ${taskId} not found`);
+//     return;
+//   }
 
-  const oldList = localTaskCache[taskIndex].list;
-  if (oldList === newList) {
-    console.log(`Task is already in ${newList} list`);
-    return;
-  }
+//   const task = localTaskCache[taskIndex];
+//   const oldList = task.list;
+//   task.list = newList;
 
-  console.log(`Moving task ${taskId} from ${oldList} to ${newList}`);
+//   // Update cache
+//   localTaskCache[taskIndex] = task;
+//   saveTaskCacheToLocalStorage();
 
-  localTaskCache[taskIndex].list = newList;
-  saveTaskCacheToLocalStorage();
+//   // Remove from DOM manually
+//   const taskEl = document.querySelector(`.task-item[data-task-id="${taskId}"]`);
+//   if (taskEl) taskEl.remove();
 
-  const currentList = localStorage.getItem('activeList') || 'Personal';
+//   // Update localStorage references
+//   localStorage.setItem('activeList', newList);
+//   localStorage.setItem('selectedTaskId', task._id);
+//   window.currentTaskId = task._id;
 
-  const oldListSelector = oldList.toLowerCase().replace(/\s+/g, '-');
-  const newListSelector = newList.toLowerCase().replace(/\s+/g, '-');
+//   // Re-render task in the new list (skip full filter for speed)
+//   if (typeof window.renderTask === 'function') {
+//     window.renderTask(task);
+//   } else {
+//     // fallback: full refresh
+//     if (typeof window.filterTasks === 'function') {
+//       window.filterTasks(newList, true);
+//     }
+//   }
 
-  const oldCountElement = document.getElementById(`count-${oldListSelector}`);
-  const newCountElement = document.getElementById(`count-${newListSelector}`);
+//   // Ensure panel for new list exists
+//   if (typeof window.createPanelForList === 'function') {
+//     window.createPanelForList(newList);
+//   }
 
-  if (oldCountElement) {
-    let oldCount = parseInt(oldCountElement.textContent) || 0;
-    oldCount = Math.max(0, oldCount - 1);
-    oldCountElement.textContent = oldCount;
-    console.log(`Updated count for ${oldList} to ${oldCount}`);
-  }
+//   // Ensure per-task panel exists
+//   if (typeof window.createPanelForTask === 'function') {
+//     window.createPanelForTask(task);
+//   }
 
-  if (newCountElement) {
-    let newCount = parseInt(newCountElement.textContent) || 0;
-    newCount += 1;
-    newCountElement.textContent = newCount;
-    console.log(`Updated count for ${newList} to ${newCount}`);
-  }
+//   // Hide all panels
+//   document.querySelectorAll('.right-panel').forEach(panel => {
+//     panel.classList.add('hidden');
+//     panel.style.display = 'none';
+//   });
 
-  if (currentList === oldList) {
-    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-    if (taskElement) {
-      taskElement.remove();
+//   // Show new panel immediately
+//   if (typeof window.setSelectedTaskUI === 'function') {
+//     window.setSelectedTaskUI(task);
+//   }
 
-      const remainingTasks = document.querySelectorAll('.task-item');
-      if (remainingTasks.length === 0) {
-        const taskList = document.getElementById('taskList');
-        if (taskList) {
-          const emptyState = document.createElement('div');
-          emptyState.className = 'text-center py-6 text-gray-500';
-          emptyState.textContent = `No tasks in ${oldList} list yet. Add one above!`;
-          taskList.appendChild(emptyState);
-        }
-      }
-    }
+//   if (typeof window.showPanelForTask === 'function') {
+//     window.showPanelForTask(task);
+//   }
 
-    if (window.currentTaskId === taskId) {
-    
-      const recentTask = findMostRecentTask(currentList);
-      if (recentTask) {
-        setSelectedTaskUI(recentTask);
-        localStorage.setItem('selectedTaskId', recentTask._id);
+//   console.log(`✅ Task ${taskId} moved from "${oldList}" to "${newList}" and panel updated.`);
+// }
 
-        setTimeout(() => {
-          const taskElements = document.querySelectorAll('.task-item');
-          taskElements.forEach(el => {
-            el.classList.remove('selected', 'bg-dark-hover');
-            if (el.dataset.taskId === recentTask._id) {
-              el.classList.add('selected', 'bg-dark-hover');
-              console.log(`Highlighted task after move: ${recentTask.title} (ID: ${recentTask._id})`);
-            }
-          });
-        }, 50);
-      } else {
-      
-        resetRightPanel(true);
-        window.currentTaskId = null;
-      }
-    }
-  }
 
-  const destinationTaskList = document.getElementById('taskList-' + newListSelector);
-  if (destinationTaskList) {
-    const taskElement = createTaskElement(localTaskCache[taskIndex]);
-    if (taskElement) {
-      const emptyState = destinationTaskList.querySelector('.text-gray-500');
-      if (emptyState) {
-        emptyState.remove();
-      }
-      destinationTaskList.appendChild(taskElement);
-    }
-  } else {
-    if (currentList === newList) {
-      refreshTaskList(newList);
-    }
-  }
-
-  if (taskId.startsWith('local_')) {
-    console.log(`Skipping server update for local task: ${taskId}`);
-    return;
-  }
-
-  try {
-    fetch(`/todos/${taskId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ list: newList })
-    })
-    .then(res => {
-      if (!res.ok) {
-        console.error(`Server error when updating task list: ${res.status}`);
-        return null;
-      }
-      return res.json();
-    })
-    .then(updatedTask => {
-      if (updatedTask) {
-        console.log('Task updated on server:', updatedTask);
-      }
-    })
-    .catch(error => {
-      console.error('Error syncing task list change:', error);
-    });
-  } catch (error) {
-    console.error('Error making network request:', error);
-  }
-}
 
 async function selectTask(taskId) {
   try {
