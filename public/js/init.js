@@ -100,12 +100,51 @@ function wrapShowPanelForListOnceDefined() {
 
 wrapShowPanelForListOnceDefined();
 
-if (typeof window.createPanelForTask !== 'function') {
-  window.createPanelForTask = function (task) {
-    console.warn('⚠️ Dummy createPanelForTask called. Define your real implementation.');
-    return null;
-  };
-}
+window.createPanelForTask = function (task) {
+  if (!task || !task._id || !task.list) return null;
+
+  const listId = task.list.toLowerCase().replace(/\s+/g, '-');
+  const uniquePanelId = `right-panel-${listId}-${task._id}`;
+
+  // Prevent duplicates
+  if (document.getElementById(uniquePanelId)) return;
+
+  // Try to get base list panel to clone from
+  let basePanel = document.getElementById(`right-panel-${listId}`);
+
+  // If it doesn't exist, create a base list panel first
+  if (!basePanel && typeof createPanelForList === 'function') {
+    createPanelForList(task.list);
+    basePanel = document.getElementById(`right-panel-${listId}`);
+  }
+
+  if (!basePanel) {
+    console.warn(`No base panel found for list: ${task.list}`);
+    return;
+  }
+
+  const panel = basePanel.cloneNode(true);
+  panel.id = uniquePanelId;
+  panel.classList.add('right-panel', 'task-panel');
+  panel.classList.remove('hidden');
+  panel.style.display = 'block';
+
+  const titleEl = panel.querySelector('h2');
+  if (titleEl) titleEl.textContent = task.title;
+
+  const completeBtn = panel.querySelector('.complete-btn');
+  if (completeBtn) {
+    completeBtn.setAttribute('onclick', `markSelectedTaskComplete('${task.list}')`);
+    completeBtn.setAttribute('data-list', task.list);
+  }
+
+  const container = document.getElementById('right-panels-container');
+  if (container) container.appendChild(panel);
+
+  return panel;
+};
+
+
 
 async function initApp() {
   loadLocalTaskCache();
