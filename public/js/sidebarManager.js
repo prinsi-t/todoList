@@ -707,12 +707,10 @@ function updateDefaultListItems() {
         opacity: 1;
       }
   
-      /* ✅ Hover effect ONLY for non-active items */
       .sidebar-item:not(.active-list):hover {
         background-color: #374151 !important;
       }
   
-      /* ❌ Prevent ALL hover styles on active list */
       .sidebar-item.active-list:hover {
         background-color: #1e293b !important;
         color: white !important;
