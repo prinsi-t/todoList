@@ -205,6 +205,23 @@ function handleTaskFiles(files, taskId) {
 
     console.log(`Processing ${files.length} files for task ${taskId}`);
 
+// 🔒 Enforce attachment limit
+const existingAttachments = await loadAttachmentsForTask(taskId);
+const total = existingAttachments.length + files.length;
+
+if (existingAttachments.length >= 10) {
+  showAttachmentError(taskId, 'You already have 10 attachments.');
+  return Promise.resolve([]); // Safely exit, don't disrupt
+}
+
+if (total > 10) {
+  showAttachmentError(taskId, `Only ${10 - existingAttachments.length} images allowed.`);
+  return Promise.resolve([]); // Safely exit, don't disrupt
+}
+
+clearAttachmentError(taskId); // ✅ OK to proceed
+
+
     try {
       await waitForDBReady();  // 🧠 Ensure DB is ready before anything
     } catch (err) {
@@ -963,4 +980,29 @@ if (typeof module !== 'undefined' && module.exports) {
     handleTaskFiles,
     setupTaskFileUpload
   };
+}
+
+function showAttachmentError(taskId, message) {
+  const panel = document.querySelector(`.right-panel[data-current-task-id="${taskId}"]`) ||
+                document.querySelector(`.task-panel[data-task-id="${taskId}"]`);
+  if (!panel) return;
+
+  let errorEl = panel.querySelector('.attachment-error');
+  if (!errorEl) {
+    errorEl = document.createElement('div');
+    errorEl.className = 'attachment-error text-red-500 text-sm mt-2';
+    const dropZone = panel.querySelector('.drop-zone');
+    if (dropZone) dropZone.insertAdjacentElement('afterend', errorEl);
+  }
+
+  errorEl.textContent = message;
+}
+
+function clearAttachmentError(taskId) {
+  const panel = document.querySelector(`.right-panel[data-current-task-id="${taskId}"]`) ||
+                document.querySelector(`.task-panel[data-task-id="${taskId}"]`);
+  if (!panel) return;
+
+  const errorEl = panel.querySelector('.attachment-error');
+  if (errorEl) errorEl.remove();
 }
