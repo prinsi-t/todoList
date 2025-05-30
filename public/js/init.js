@@ -9,10 +9,10 @@ function loadLocalTaskCache() {
     const savedCache = localStorage.getItem('taskCache');
     if (savedCache) {
       localTaskCache = JSON.parse(savedCache);
-      console.log(`Loaded ${localTaskCache.length} tasks from localStorage`);
+   //   console.log(`Loaded ${localTaskCache.length} tasks from localStorage`);
     } else {
       localTaskCache = [];
-      console.log('No tasks found in localStorage');
+   //   console.log('No tasks found in localStorage');
     }
   } catch (error) {
     console.error('Error loading tasks from localStorage:', error);
@@ -25,7 +25,7 @@ function isNewLogin() {
   const newSessionId = Math.random().toString(36).substring(2, 15);
 
   if (!sessionId) {
-    console.log('No session ID found, this is a new login');
+  //  console.log('No session ID found, this is a new login');
     localStorage.setItem('sessionId', newSessionId);
     return true;
   }
@@ -33,19 +33,19 @@ function isNewLogin() {
   const hasLoggedIn = sessionStorage.getItem('hasLoggedIn');
 
   if (!hasLoggedIn) {
-    console.log('First page load in this session, this is a new login');
+   // console.log('First page load in this session, this is a new login');
     sessionStorage.setItem('hasLoggedIn', 'true');
     return true;
   }
 
-  console.log('User has already logged in this session, not a new login');
+//  console.log('User has already logged in this session, not a new login');
   return false;
 }
 
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = function(key, value) {
   if (key === 'activeList') {
-    console.log(`[localStorage] activeList being set to: ${value}`, new Error().stack);
+  //  console.log(`[localStorage] activeList being set to: ${value}`, new Error().stack);
   }
   return originalSetItem.apply(this, arguments);
 };
@@ -58,7 +58,7 @@ function wrapShowPanelForListOnceDefined() {
     if (typeof showPanelForList === 'function') {
       const original = showPanelForList;
       showPanelForList = function (listName) {
-        console.log(`[UI] showPanelForList called with: "${listName}"`, new Error().stack);
+        //console.log(`[UI] showPanelForList called with: "${listName}"`, new Error().stack);
       
         const listId = listName.toLowerCase().replace(/\s+/g, '-');
         const panelId = `right-panel-${listId}`;
@@ -71,7 +71,7 @@ function wrapShowPanelForListOnceDefined() {
           if (recentTask) {
             rightPanelsContainer.classList.remove('hidden');
             panel.classList.remove('hidden');
-            console.log(`✅ Showing panel for list: ${listName}`);
+           // console.log(`✅ Showing panel for list: ${listName}`);
       
             setSelectedTaskUI(recentTask);
             if (typeof showPanelForTask === 'function') {
@@ -153,7 +153,7 @@ async function initApp() {
   const isLoggingInNow = isNewLogin();
 
   if (isLoggingInNow) {
-    console.log('Fresh login detected — forcing activeList to Personal and clearing selectedTaskId');
+   // console.log('Fresh login detected — forcing activeList to Personal and clearing selectedTaskId');
     localStorage.setItem('activeList', 'Personal');
     localStorage.removeItem('selectedTaskId');
   }
@@ -173,17 +173,17 @@ async function initApp() {
   }
 
   const currentList = localStorage.getItem('activeList') || 'Personal';
-  console.log('Final activeList after all loads:', currentList);
+  //console.log('Final activeList after all loads:', currentList);
 
   if (typeof filterTasks === 'function') filterTasks(currentList, false);
   if (typeof highlightActiveList === 'function') highlightActiveList(currentList);
   if (typeof showPanelForList === 'function') showPanelForList(currentList);
 
-  console.log('Initial selected task ID:', localStorage.getItem('selectedTaskId'));
+ // console.log('Initial selected task ID:', localStorage.getItem('selectedTaskId'));
 
   if (typeof window.updateAllTaskCounts === 'function') {
     window.updateAllTaskCounts();
-    console.log('Updated all task counts on initialization');
+    //console.log('Updated all task counts on initialization');
   }
 }
 
@@ -196,7 +196,7 @@ function saveTaskCacheToLocalStorage() {
 }
 
 function setEventListeners() {
-  console.log('Setting up event listeners');
+ // console.log('Setting up event listeners');
 
   const completeBtn = document.getElementById('complete-btn');
   if (completeBtn) {
@@ -204,14 +204,14 @@ function setEventListeners() {
     completeBtn.parentNode.replaceChild(newBtn, completeBtn);
 
     newBtn.addEventListener('click', () => {
-      console.log('Mark as Complete button clicked');
+      //console.log('Mark as Complete button clicked');
       markSelectedTaskComplete();
     });
   } else {
     console.error('❌ Complete button not found');
   }
 
-  console.log('Skipping addTaskForm event listener in init.js - handled by sidebarManager.js');
+  //console.log('Skipping addTaskForm event listener in init.js - handled by sidebarManager.js');
 
   const addSubtaskBtn = document.getElementById('addSubtaskBtn');
   const subtaskInput = document.getElementById('subtaskInput');

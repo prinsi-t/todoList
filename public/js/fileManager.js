@@ -32,7 +32,7 @@ function openDatabase() {
 
   request.onsuccess = function(event) {
     db = event.target.result;
-    console.log('Task Attachments IndexedDB opened successfully');
+   // console.log('Task Attachments IndexedDB opened successfully');
   };
 
   request.onerror = function(event) {
@@ -58,7 +58,7 @@ function loadAttachmentsForTask(taskId) {
 
     request.onsuccess = function(event) {
       const attachments = event.target.result;
-      console.log(`Loaded ${attachments.length} attachments for task ${taskId}`);
+    //  console.log(`Loaded ${attachments.length} attachments for task ${taskId}`);
       resolve(attachments);
     };
 
@@ -86,7 +86,7 @@ function generateSimpleHash(str) {
 function saveAttachmentToDB(taskId, file) {
   return new Promise((resolve, reject) => {
     if (!db) {
-      console.log('Database not initialized during save, initializing now');
+   //   console.log('Database not initialized during save, initializing now');
       openDatabase();
       setTimeout(() => {
         saveAttachmentToDB(taskId, file).then(resolve).catch(reject);
@@ -127,7 +127,7 @@ function saveAttachmentToDB(taskId, file) {
       date: new Date().toISOString()
     };
     
-    console.log(`[saveAttachmentToDB] Saving file "${fileName}" for task ${taskId} under list "${taskList}"`);
+  //  console.log(`[saveAttachmentToDB] Saving file "${fileName}" for task ${taskId} under list "${taskList}"`);
     
     
     const request = objectStore.put(attachment);
@@ -203,7 +203,7 @@ function handleTaskFiles(files, taskId) {
       return;
     }
 
-    console.log(`Processing ${files.length} files for task ${taskId}`);
+  //  console.log(`Processing ${files.length} files for task ${taskId}`);
 
 // 🔒 Enforce attachment limit
 const existingAttachments = await loadAttachmentsForTask(taskId);
@@ -361,7 +361,7 @@ function findOrCreateFileInput(taskPanel, taskId) {
   }
   
   if (!fileInput) {
-    console.log(`Creating new file input for task ${taskId}`);
+    //console.log(`Creating new file input for task ${taskId}`);
     
     const fileUploadSection = taskPanel.querySelector('.image-preview-container');
     if (!fileUploadSection) {
@@ -377,7 +377,7 @@ function findOrCreateFileInput(taskPanel, taskId) {
         taskPanel.appendChild(containerDiv);
       }
       
-      console.log(`Created new image preview container for task ${taskId}`);
+      //console.log(`Created new image preview container for task ${taskId}`);
     }
 
     // Create container for file input and label
@@ -452,7 +452,7 @@ function setupFileInputHandler(fileInput, taskId) {
   
   fileInput.addEventListener('change', fileInput._changeHandler);
   fileInput.dataset.hasUploadHandler = 'true';
-  console.log(`File input handler set up for task ${taskId}`);
+  //console.log(`File input handler set up for task ${taskId}`);
 }
 
 
@@ -462,10 +462,10 @@ function removeAttachment(taskId, url) {
 }
 
 function applyFixToExistingPanels() {
-  console.log('Applying fix to existing panel file uploads');
+ // console.log('Applying fix to existing panel file uploads');
   
   const panels = document.querySelectorAll('.task-panel');
-  console.log(`Found ${panels.length} task panels to fix`);
+  //console.log(`Found ${panels.length} task panels to fix`);
   
   panels.forEach(panel => {
     const taskId = panel.dataset.taskId;
@@ -476,7 +476,7 @@ function applyFixToExistingPanels() {
   
   if (panels.length === 0) {
     const rightPanels = document.querySelectorAll('[id^="right-panel-"]');
-    console.log(`Found ${rightPanels.length} right panels to fix`);
+   // console.log(`Found ${rightPanels.length} right panels to fix`);
     
     rightPanels.forEach(panel => {
       const idParts = panel.id.split('-');
@@ -491,10 +491,10 @@ function applyFixToExistingPanels() {
 
 // Fix for the missing createHash function - improve this to be more robust
 function fixThCreateHash() {
-  console.log('Applying Th.createHash fix');
+  //console.log('Applying Th.createHash fix');
   
   if (typeof window.Th === 'undefined') {
-    console.log('Th object not found, creating it');
+    //console.log('Th object not found, creating it');
     window.Th = {};
   }
   
@@ -508,27 +508,27 @@ function fixThCreateHash() {
             digest: function(encoding) {
               // Just use our simple hash function instead
               const result = generateSimpleHash(data);
-              console.log(`Generated hash digest: ${result.substring(0, 8)}...`);
+             // console.log(`Generated hash digest: ${result.substring(0, 8)}...`);
               return result;
             }
           };
         }
       };
     };
-    console.log('Successfully fixed missing Th.createHash function');
+    //  console.log('Successfully fixed missing Th.createHash function');
   }
 }
 
 // Enhance the setupDropZones function to properly handle file drops
 function setupDropZones() {
-  console.log('Setting up drop zones for file uploads');
+  //console.log('Setting up drop zones for file uploads');
   
   const dropZones = document.querySelectorAll('.drop-zone');
-  console.log(`Found ${dropZones.length} drop zones`);
+ // console.log(`Found ${dropZones.length} drop zones`);
   
   dropZones.forEach(zone => {
     const listName = zone.dataset.list;
-    console.log(`Setting up drop zone for list: ${listName}`);
+    //console.log(`Setting up drop zone for list: ${listName}`);
     
     if (!listName) {
       console.warn('Drop zone missing list name attribute');
@@ -563,7 +563,7 @@ function setupDropZones() {
       const panel = this.closest('.right-panel');
       const taskId = panel ? panel.getAttribute('data-current-task-id') : null;
       
-      console.log(`Drop event detected for task: ${taskId}`);
+    //  console.log(`Drop event detected for task: ${taskId}`);
       
       if (!taskId) {
         console.error('No active task selected for file drop');
@@ -575,7 +575,7 @@ function setupDropZones() {
         console.log(`Processing ${files.length} dropped files`);
         handleTaskFiles(files, taskId)
           .then(attachments => {
-            console.log(`Successfully added ${attachments.length} attachments`);
+            //console.log(`Successfully added ${attachments.length} attachments`);
           })
           .catch(err => {
             console.error('Error handling dropped files:', err);
@@ -593,7 +593,7 @@ function setupDropZones() {
         return;
       }
       
-      console.log(`Click on drop zone for selected task: ${selectedTaskId}`);
+     // console.log(`Click on drop zone for selected task: ${selectedTaskId}`);
       
       // Find or create a file input for this task
       let fileInput = document.getElementById(`file-upload-${selectedTaskId}`);
@@ -620,24 +620,24 @@ function setupDropZones() {
     zone.addEventListener('click', zone._clickHandler);
     
     zone.dataset.hasDropHandlers = 'true';
-    console.log(`Drop handlers set up for zone: ${listName}`);
+    //console.log(`Drop handlers set up for zone: ${listName}`);
   });
 }
 
 // Add this function after setupDropZones
 function ensureDropZonesExist() {
-  console.log('Ensuring drop zones exist in all panels');
+  //console.log('Ensuring drop zones exist in all panels');
   
   // Get all right panels
   const rightPanels = document.querySelectorAll('.right-panel');
-  console.log(`Found ${rightPanels.length} right panels to check for drop zones`);
+ // console.log(`Found ${rightPanels.length} right panels to check for drop zones`);
   
   rightPanels.forEach(panel => {
     // Check if this panel already has a drop zone
     let dropZone = panel.querySelector('.drop-zone');
     
     if (!dropZone) {
-      console.log('Creating drop zone for panel:', panel.id);
+      //console.log('Creating drop zone for panel:', panel.id);
       
       // Get the list name from the panel
       const listName = panel.getAttribute('data-list');
@@ -694,7 +694,7 @@ function listenForTaskSelection() {
     if (taskItem) {
       const taskId = taskItem.getAttribute('data-task-id');
       if (taskId) {
-        console.log(`Task selected: ${taskId}`);
+        //console.log(`Task selected: ${taskId}`);
         localStorage.setItem('selectedTaskId', taskId); // ✅ ADD THIS
         setTimeout(() => {
           updateAttachmentUI(taskId);
@@ -707,7 +707,7 @@ function listenForTaskSelection() {
   document.addEventListener('taskSelected', function (e) {
     if (e.detail && e.detail.taskId) {
       const taskId = e.detail.taskId;
-      console.log(`Task selected event received: ${taskId}`);
+     // console.log(`Task selected event received: ${taskId}`);
       localStorage.setItem('selectedTaskId', taskId);
       updateAttachmentUI(taskId);
   
@@ -716,7 +716,7 @@ function listenForTaskSelection() {
                       document.querySelector(`.task-panel[data-task-id="${taskId}"]`);
   
         if (panel) {
-          console.log(`[taskSelected] Setting up file upload for task panel ${taskId}`);
+         // console.log(`[taskSelected] Setting up file upload for task panel ${taskId}`);
           setupTaskFileUpload(panel, taskId);
   
           // ✅ Fix: Add drop zone if needed and rewire handlers
@@ -735,7 +735,7 @@ function listenForTaskSelection() {
 
 // Enhance the initialize function to ensure everything is properly set up
 function initialize() {
-  console.log('Initializing Enhanced FileManager with fixes');
+  //console.log('Initializing Enhanced FileManager with fixes');
   
   // Fix the createHash function first
   fixThCreateHash();
@@ -757,7 +757,7 @@ function initialize() {
   // Apply fix for file upload functionality
   window.fileUploadFix = {
     fix: function() {
-      console.log('Applying file upload fix');
+    //  console.log('Applying file upload fix');
       fixThCreateHash();
       ensureDropZonesExist();
       applyFixToExistingPanels();
@@ -765,20 +765,20 @@ function initialize() {
       return 'File upload fix applied';
     },
     diagnose: function() {
-      console.log('Starting file upload diagnostic tool...');
-      console.log('IndexedDB is supported:', !!window.indexedDB);
-      console.log('fileManager exists:', !!window.fileManager);
+     // console.log('Starting file upload diagnostic tool...');
+    //  console.log('IndexedDB is supported:', !!window.indexedDB);
+     // console.log('fileManager exists:', !!window.fileManager);
       
       // Find file input elements
       const fileInputs = document.querySelectorAll('input[type="file"]');
-      console.log('Found', fileInputs.length, 'file input elements');
+     // console.log('Found', fileInputs.length, 'file input elements');
       
       // Find drop zones
       const dropZones = document.querySelectorAll('.drop-zone');
-      console.log('Found', dropZones.length, 'drop zones');
+     // console.log('Found', dropZones.length, 'drop zones');
       
       // Check if Th.createHash is fixed
-      console.log('Th.createHash is a function:', typeof window.Th?.createHash === 'function');
+     // console.log('Th.createHash is a function:', typeof window.Th?.createHash === 'function');
       
       return 'File upload diagnostic and fix tool loaded successfully!';
     }
@@ -794,7 +794,7 @@ function initialize() {
 }
 
 function updateAttachmentUI(taskId) {
-  console.log(`Updating attachment UI for task ${taskId}`);
+//  console.log(`Updating attachment UI for task ${taskId}`);
   
   // Find all panels for this task
   const panels = document.querySelectorAll(`.right-panel[data-current-task-id="${taskId}"]`);
@@ -805,10 +805,10 @@ function updateAttachmentUI(taskId) {
     const activePanel = document.querySelector(`.right-panel[data-list="${activeList}"]`);
     
     if (activePanel) {
-      console.log(`Using active list panel for task ${taskId}`);
+     // console.log(`Using active list panel for task ${taskId}`);
       updatePanelAttachments(activePanel, taskId);
     } else {
-      console.log(`No panels found for task ${taskId}`);
+     // console.log(`No panels found for task ${taskId}`);
     }
     return;
   }
@@ -827,7 +827,7 @@ function updatePanelAttachments(panel, taskId) {
   
   loadAttachmentsForTask(taskId)
     .then(attachments => {
-      console.log(`Loaded ${attachments.length} attachments for UI update`);
+    //  console.log(`Loaded ${attachments.length} attachments for UI update`);
       
       // Clear existing previews but keep any file input elements
       const fileInputs = container.querySelectorAll('input[type="file"]');
@@ -886,7 +886,7 @@ function setupMutationObserver() {
             const isRightPanel = node.classList?.contains('right-panel') || node.querySelector?.('.right-panel');
 
             if (isPanel) {
-              console.log('[Observer] New task panel detected');
+            //  console.log('[Observer] New task panel detected');
               newPanelsFound = true;
             }
 
@@ -903,7 +903,7 @@ function setupMutationObserver() {
 
             const inputs = node.querySelectorAll?.('input[type="file"][id^="file-upload-"]') || [];
             if (inputs.length > 0) {
-              console.log('[Observer] New file inputs detected:', inputs.length);
+            //  console.log('[Observer] New file inputs detected:', inputs.length);
               newFileInputsFound = true;
             }
           });
@@ -911,12 +911,12 @@ function setupMutationObserver() {
       });
 
       if (newPanelsFound) {
-        console.log('[Observer] Applying fixes to new task panels');
+        //console.log('[Observer] Applying fixes to new task panels');
         applyFixToExistingPanels();
       }
 
       if (newFileInputsFound) {
-        console.log('[Observer] Binding new file input handlers');
+      //  console.log('[Observer] Binding new file input handlers');
         const fileInputs = document.querySelectorAll('input[type="file"][id^="file-upload-"]');
         fileInputs.forEach(input => {
           if (input.dataset.hasUploadHandler !== 'true') {
@@ -929,7 +929,7 @@ function setupMutationObserver() {
       }
 
       if (newListPanelsDetected) {
-        console.log('[Observer] Ensuring drop zones exist for new list panels');
+        //console.log('[Observer] Ensuring drop zones exist for new list panels');
         if (window.fileUploadFix) {
           window.fileUploadFix.fix();  // Add drop zones + input handlers
         }

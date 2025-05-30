@@ -146,14 +146,14 @@ async function loadTasksFromServer() {
 
 
 async function loadTasks() {
-  console.log('Loading tasks...');
+  //console.log('Loading tasks...');
   
   loadTasksFromLocalStorage();
   
   const isLocalMode = true; // Set this to true to work in local-only mode
   
   if (isLocalMode) {
-    console.log('Running in local-only mode, skipping server fetch');
+    //console.log('Running in local-only mode, skipping server fetch');
     updateAllTaskCounts();
     const currentList = localStorage.getItem('activeList') || 'Personal';
     filterTasks(currentList, true);
@@ -210,7 +210,7 @@ function loadTasksFromServer() {
 
 function setupAddTaskFormListener() {
   
-  console.log('Skipping setupAddTaskFormListener in taskManager.js - handled by sidebarManager.js');
+  //console.log('Skipping setupAddTaskFormListener in taskManager.js - handled by sidebarManager.js');
 }
 
 function handleAddTask(e) {
@@ -341,7 +341,7 @@ function handleAddTask(e) {
 }
 
 function refreshTaskList(listName) {
-  console.log(`Refreshing task list for: ${listName}`);
+  //console.log(`Refreshing task list for: ${listName}`);
 
   const taskList = document.getElementById('taskList');
   if (!taskList) {
@@ -352,7 +352,7 @@ function refreshTaskList(listName) {
   taskList.innerHTML = '';
 
   const filteredTasks = localTaskCache.filter(task => task.list === listName);
-  console.log(`Found ${filteredTasks.length} tasks for list: ${listName}`);
+  //console.log(`Found ${filteredTasks.length} tasks for list: ${listName}`);
 
   if (filteredTasks.length === 0) {
     const emptyState = document.createElement('div');
@@ -398,7 +398,7 @@ function refreshTaskList(listName) {
           if (el.dataset.taskId === selectedTaskId) {
             el.classList.add('selected', 'bg-dark-hover');
             found = true;
-            console.log(`Highlighted selected task in refreshTaskList: ${selectedTaskId}`);
+           // console.log(`Highlighted selected task in refreshTaskList: ${selectedTaskId}`);
           }
         });
 
@@ -733,7 +733,7 @@ function setSelectedTaskUI(task) {
     return;
   }
 
-  console.log(`Setting selected task UI for: ${task.title} (ID: ${task._id}, List: ${task.list})`);
+  //console.log(`Setting selected task UI for: ${task.title} (ID: ${task._id}, List: ${task.list})`);
   window.currentTaskId = task._id;
 
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
@@ -828,7 +828,7 @@ function deleteTask(taskId) {
 
 
 window.filterTasks = function(listName, preserveSelection = false) {
-  console.log('Filtering tasks for list:', listName);
+  //console.log('Filtering tasks for list:', listName);
   
   localStorage.setItem('activeList', listName);
   
@@ -919,7 +919,7 @@ window.filterTasks = function(listName, preserveSelection = false) {
 };
 
 function updateAllTaskCounts() {
-  console.log('Running updateAllTaskCounts...');
+ // console.log('Running updateAllTaskCounts...');
   const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
   
   const customLists = [...new Set(localTaskCache.map(task => task.list))]
@@ -1125,20 +1125,20 @@ function resetRightPanel(forceReset = false) {
 
 function findMostRecentTask(listName) {
   if (!localTaskCache || localTaskCache.length === 0) {
-    console.log(`No tasks in cache for list: ${listName}`);
+    //console.log(`No tasks in cache for list: ${listName}`);
     return null;
   }
 
   const listTasks = localTaskCache.filter(task => task.list === listName);
   if (listTasks.length === 0) {
-    console.log(`No tasks found for list: ${listName}`);
+    //console.log(`No tasks found for list: ${listName}`);
     return null;
   }
 
-  console.log(`Found ${listTasks.length} tasks for list: ${listName}`);
+  //console.log(`Found ${listTasks.length} tasks for list: ${listName}`);
 
   listTasks.forEach(task => {
-    console.log(`- Task: ${task.title} (ID: ${task._id})`);
+   //console.log(`- Task: ${task.title} (ID: ${task._id})`);
   });
 
   const sortedTasks = listTasks.sort((a, b) => {
@@ -1167,13 +1167,13 @@ function findMostRecentTask(listName) {
     return -1;
   });
 
-  console.log('Sorted tasks (newest first):');
+  //console.log('Sorted tasks (newest first):');
   sortedTasks.forEach((task, index) => {
-    console.log(`${index + 1}. ${task.title} (ID: ${task._id})`);
+    //console.log(`${index + 1}. ${task.title} (ID: ${task._id})`);
   });
 
   const mostRecentTask = sortedTasks[0];
-  console.log(`Most recent task for ${listName}: ${mostRecentTask.title} (ID: ${mostRecentTask._id})`);
+  //console.log(`Most recent task for ${listName}: ${mostRecentTask.title} (ID: ${mostRecentTask._id})`);
 
   return mostRecentTask;
 }

@@ -1,5 +1,5 @@
 function initNotesManager() {
-  console.log('Initializing Notes Manager');
+  //console.log('Initializing Notes Manager');
 
   setupNotesEventListeners();
 
@@ -30,7 +30,7 @@ function setupNotesEventListeners() {
     if (taskItem) {
       const taskId = taskItem.getAttribute('data-task-id');
       if (taskId) {
-        console.log(`Task clicked: ${taskId}, loading notes`);
+       // console.log(`Task clicked: ${taskId}, loading notes`);
         setTimeout(() => loadNotesForTask(taskId), 100);
       }
     }
@@ -49,7 +49,7 @@ function saveNotes(notes, listName, taskId) {
     return;
   }
 
-  console.log(`Saving notes for list: ${listName}, task: ${taskId || 'none'}`);
+  //console.log(`Saving notes for list: ${listName}, task: ${taskId || 'none'}`);
 
   if (taskId) {
     const taskNotesKey = `notes_task_${taskId}`;
@@ -119,7 +119,7 @@ function loadNotesForTask(taskId) {
   const savedNotes = localStorage.getItem(taskNotesKey);
 
   if (savedNotes) {
-    console.log(`Found notes in localStorage for ${taskId}: "${savedNotes.substring(0, 20)}..."`);
+   // console.log(`Found notes in localStorage for ${taskId}: "${savedNotes.substring(0, 20)}..."`);
     notesTextarea.value = savedNotes;
 
     task.notes = savedNotes;
@@ -180,7 +180,7 @@ function loadNotesForActiveList() {
 function updateTaskNotesOnServer(taskId, notes) {
   if (!taskId || taskId.startsWith('local_')) return;
 
-  console.log(`Updating notes on server for task: ${taskId}`);
+//  console.log(`Updating notes on server for task: ${taskId}`);
 
   fetch(`/todos/${taskId}/notes`, {
     method: 'PUT',
@@ -196,7 +196,7 @@ function updateTaskNotesOnServer(taskId, notes) {
     })
     .then(updatedTask => {
       if (updatedTask) {
-        console.log('Notes updated on server:', updatedTask);
+   //     console.log('Notes updated on server:', updatedTask);
 
         const taskIndex = localTaskCache.findIndex(task => task._id === taskId);
         if (taskIndex !== -1) {
