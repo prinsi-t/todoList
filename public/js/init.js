@@ -57,39 +57,64 @@ function wrapShowPanelForListOnceDefined() {
   const interval = setInterval(() => {
     if (typeof showPanelForList === 'function') {
       const original = showPanelForList;
-      showPanelForList = function (listName) {
-        //console.log(`[UI] showPanelForList called with: "${listName}"`, new Error().stack);
-      
+
+      showPanelForList = function (listName, selectedTaskId = null) {
         const listId = listName.toLowerCase().replace(/\s+/g, '-');
         const panelId = `right-panel-${listId}`;
         const panel = document.getElementById(panelId);
         const rightPanelsContainer = document.getElementById('right-panels-container');
-      
-        if (rightPanelsContainer && panel) {
-          const recentTask = findMostRecentTask(listName);
-      
-          if (recentTask) {
-            rightPanelsContainer.classList.remove('hidden');
-            panel.classList.remove('hidden');
-           // console.log(`✅ Showing panel for list: ${listName}`);
-      
-            setSelectedTaskUI(recentTask);
-            if (typeof showPanelForTask === 'function') {
-              showPanelForTask(recentTask);
-            }
-          } else {
-            // Hide panel and container if no tasks in the list
-            panel.classList.add('hidden');
-            rightPanelsContainer.classList.add('hidden');
-            console.warn(`No task found to show in panel for list: ${listName} - hiding panel`);
-          }
-        } else {
+
+        if (!panel || !rightPanelsContainer) {
           console.warn(`[UI] Cannot show panel for list: ${listName} — panel or container missing`);
+          return original.call(this, listName, selectedTaskId);
         }
-      
-        return original.call(this, listName);
+
+        // 🧼 Hide all existing panels first
+        const allPanels = document.querySelectorAll('.right-panel');
+        allPanels.forEach(p => {
+          p.classList.add('hidden');
+          p.style.display = 'none';
+        });
+
+        // 🔁 Get task to show (either passed-in, or fallback to recent)
+        let task = null;
+
+        if (selectedTaskId) {
+          task = window.localTaskCache?.find(t => t._id === selectedTaskId);
+        }
+
+        if (!task) {
+          task = typeof findMostRecentTask === 'function' ? findMostRecentTask(listName) : null;
+        }
+
+        if (task && task.list === listName) {
+          rightPanelsContainer.classList.remove('hidden');
+          rightPanelsContainer.style.display = 'block';
+          panel.classList.remove('hidden');
+          panel.style.display = 'block';
+
+          if (typeof setSelectedTaskUI === 'function') {
+            setSelectedTaskUI(task);
+          }
+
+          if (typeof showPanelForTask === 'function') {
+            showPanelForTask(task);
+          }
+
+          localStorage.setItem('selectedTaskId', task._id);
+          window.currentTaskId = task._id;
+        } else {
+          panel.classList.add('hidden');
+          panel.style.display = 'none';
+          rightPanelsContainer.classList.add('hidden');
+          rightPanelsContainer.style.display = 'none';
+
+          console.warn(`No task found to show in panel for list: ${listName} - hiding panel`);
+        }
+
+        return original.call(this, listName, selectedTaskId);
       };
-      
+
       clearInterval(interval);
     } else if (++retries >= maxRetries) {
       clearInterval(interval);
@@ -97,6 +122,9 @@ function wrapShowPanelForListOnceDefined() {
     }
   }, 200);
 }
+
+
+
 
 wrapShowPanelForListOnceDefined();
 
@@ -139,7 +167,31 @@ window.createPanelForTask = function (task) {
   }
 
   const container = document.getElementById('right-panels-container');
-  if (container) container.appendChild(panel);
+  if (container) {
+    // Hide all other panels before appending the new one
+    if (recentTask) {
+  // Hide all other right panels before showing this one
+  const allPanels = rightPanelsContainer.querySelectorAll('.right-panel');
+  allPanels.forEach(p => {
+    p.classList.add('hidden');
+    p.style.display = 'none';
+  });
+
+  rightPanelsContainer.classList.remove('hidden');
+  panel.classList.remove('hidden');
+  panel.style.display = 'block';
+
+  setSelectedTaskUI(recentTask);
+  if (typeof showPanelForTask === 'function') {
+    showPanelForTask(recentTask);
+  }
+}
+
+  
+    container.classList.remove('hidden');
+    container.appendChild(panel);
+  }
+  
 
   return panel;
 };
