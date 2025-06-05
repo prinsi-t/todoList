@@ -38,7 +38,9 @@ function fixSidebarNavigation() {
 
           highlightActiveList(listName);
 
-          showPanelForList(listName, null);
+          const selectedTaskId = localStorage.getItem('selectedTaskId');
+          showPanelForList(listName, selectedTaskId || null);
+          
           
           if (typeof window.updatePanelOnListChange === 'function') {
             window.updatePanelOnListChange(listName);
@@ -135,6 +137,22 @@ function fixAddTaskForm() {
       } else {
         console.error('showPanelForTask function not available');
       }
+      if (typeof window.setSelectedTaskUI === 'function') {
+        setSelectedTaskUI(newTask);
+      }
+      if (typeof window.showPanelForList === 'function') {
+        showPanelForList(activeList, newTask._id);
+      }
+      setTimeout(() => {
+        const taskElements = document.querySelectorAll('.task-item');
+        taskElements.forEach(el => {
+          el.classList.remove('selected', 'bg-dark-hover');
+          if (el.dataset.taskId === newTask._id) {
+            el.classList.add('selected', 'bg-dark-hover');
+          }
+        });
+      }, 50);
+            
       
     } catch (error) {
       console.error('Error saving to localStorage:', error);
@@ -250,6 +268,122 @@ function fixAddTaskForm() {
   }
   
   window.updateTaskCount = updateTaskCount;
+
+  function updateAllTaskCounts() {
+    // console.log('Running updateAllTaskCounts...');
+    const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
+    
+    const customLists = [...new Set(localTaskCache.map(task => task.list))]
+      .filter(list => list && !defaultLists.includes(list));
+  
+    const allLists = [...defaultLists, ...customLists];
+  
+    let totalTasks = 0;
+  
+    allLists.forEach(listName => {
+      const listTasks = localTaskCache.filter(task => task.list === listName);
+      const count = listTasks.length;
+      totalTasks += count;
+  
+      const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+      const countId = `count-${listSelector}`;
+  
+      let countElement = document.getElementById(countId);
+      
+      if (!countElement) {
+        // FIX: Use the actual listName for the data-list attribute, not the selector
+        const listItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
+        
+        if (listItem) {
+          countElement = document.createElement('span');
+          countElement.id = countId;
+          countElement.className = 'text-sm text-gray-500 ml-auto';
+          listItem.appendChild(countElement);
+        } else {
+          countElement = document.createElement('span');
+          countElement.id = countId;
+          countElement.style.display = 'none';
+          document.body.appendChild(countElement);
+        }
+      }
+  
+      if (countElement) {
+        countElement.textContent = count.toString();
+        //console.log(`Set count for ${listName} to ${count}`);
+      } else {
+        console.warn(`Could not find or create count element for ${listName}`);
+      }
+    });
+  
+    const allTasksCount = document.getElementById('allTasksCount');
+    if (allTasksCount) {
+      allTasksCount.textContent = totalTasks.toString();
+      console.log(`Updated total tasks count to ${totalTasks}`);
+    }
+  }
+  window.updateAllTaskCounts = updateAllTaskCounts;
+
+  
+function ensureCountElementsExist() {
+  const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
+  
+  defaultLists.forEach(listName => {
+    const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+    const countId = `count-${listSelector}`;
+    
+    if (!document.getElementById(countId)) {
+      const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+      
+      if (listItem) {
+        const countSpan = document.createElement('span');
+        countSpan.id = countId;
+        countSpan.className = 'text-sm text-gray-500 ml-auto';
+        countSpan.textContent = '0'; // Default to 0
+        listItem.appendChild(countSpan);
+        console.log(`Created count element for ${listName}`);
+      } else {
+        const hiddenCount = document.createElement('span');
+        hiddenCount.id = countId;
+        hiddenCount.style.display = 'none';
+        hiddenCount.textContent = '0';
+        document.body.appendChild(hiddenCount);
+        console.log(`Created hidden count element for ${listName}`);
+      }
+    }
+  });
+
+  try {
+    const customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
+    
+    customLists.forEach(listName => {
+      const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
+      const countId = `count-${listSelector}`;
+      
+      if (!document.getElementById(countId)) {
+        const listItem = document.querySelector(`.sidebar-item[data-list="${listSelector}"]`);
+        
+        if (listItem) {
+          const countSpan = document.createElement('span');
+          countSpan.id = countId;
+          countSpan.className = 'text-sm text-gray-500 ml-auto';
+          countSpan.textContent = '0';
+          listItem.appendChild(countSpan);
+        } else {
+          const hiddenCount = document.createElement('span');
+          hiddenCount.id = countId;
+          hiddenCount.style.display = 'none';
+          hiddenCount.textContent = '0';
+          document.body.appendChild(hiddenCount);
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error processing custom lists:', error);
+  }
+}
+
+
+window.ensureCountElementsExist = ensureCountElementsExist;
   
   function highlightActiveList(activeList) {
     //console.log('Highlighting active list:', activeList);
@@ -953,12 +1087,9 @@ function showPanelForList(listName, selectedTaskId = null) {
     return;
   }
 
- // console.log(`Showing panel for list: ${listName}, selected task: ${selectedTaskId || 'none'}`);
-
   const currentActiveList = localStorage.getItem('activeList');
   if (currentActiveList !== listName) {
     localStorage.setItem('activeList', listName);
-  //  console.log(`Setting activeList in localStorage to: ${listName} in showPanelForList`);
   }
 
   const panels = document.querySelectorAll('.right-panel');
@@ -969,37 +1100,57 @@ function showPanelForList(listName, selectedTaskId = null) {
 
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
-  
+
+  // ✅ Declare panel first
   let panel = document.getElementById(panelId);
-  
   if (!panel) {
-   // console.log(`Panel for ${listName} doesn't exist, creating it`);
     panel = createPanelForList(listName);
   }
-  
-  if (panel) {
-    panel.classList.remove('hidden');
-    panel.style.display = 'block';
-   // console.log(`Made panel visible: ${panelId}`);
 
-    if (selectedTaskId) {
-      const selectedTask = findTaskById(selectedTaskId);
-      if (selectedTask && selectedTask.list === listName) {
-        updatePanelWithTask(panel, selectedTask);
-      } else {
-        updatePanelWithRecentTask(listName, panel);
-      }
+  const hasVisibleTasks = document.querySelector(`.task-item[data-list="${listName}"]`);
+
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+
+  if (!hasVisibleTasks || !panel) {
+    console.warn(`No task found to show in panel for list: ${listName} - hiding panel`);
+
+    if (panel) {
+      panel.classList.add('hidden');
+      panel.style.display = 'none';
+    }
+
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.add('hidden');
+    }
+
+    return;
+  }
+
+  // ✅ Show the panel and container if valid
+  panel.classList.remove('hidden');
+  panel.style.display = 'block';
+
+  if (rightPanelsContainer) {
+    rightPanelsContainer.classList.remove('hidden');
+  }
+
+  if (selectedTaskId) {
+    const selectedTask = findTaskById(selectedTaskId);
+    if (selectedTask && selectedTask.list === listName) {
+      updatePanelWithTask(panel, selectedTask);
     } else {
       updatePanelWithRecentTask(listName, panel);
     }
-
-    document.dispatchEvent(new CustomEvent('listChanged', {
-      detail: { listName }
-    }));
   } else {
-    console.error(`Failed to find or create panel for list: ${listName}`);
+    updatePanelWithRecentTask(listName, panel);
   }
+
+  document.dispatchEvent(new CustomEvent('listChanged', {
+    detail: { listName }
+  }));
 }
+
+
 
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof window.localTaskCache === 'undefined') {
