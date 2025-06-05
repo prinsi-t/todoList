@@ -217,7 +217,7 @@ async function initApp() {
     if (subtasksResult instanceof Promise) await subtasksResult;
   }
 
-  setupFileUpload();
+  //setupFileUpload();
 
   if (typeof loadNotesForActiveList === 'function') {
     const notesResult = loadNotesForActiveList();
