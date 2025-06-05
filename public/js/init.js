@@ -9,10 +9,8 @@ function loadLocalTaskCache() {
     const savedCache = localStorage.getItem('taskCache');
     if (savedCache) {
       localTaskCache = JSON.parse(savedCache);
-   //   console.log(`Loaded ${localTaskCache.length} tasks from localStorage`);
     } else {
       localTaskCache = [];
-   //   console.log('No tasks found in localStorage');
     }
   } catch (error) {
     console.error('Error loading tasks from localStorage:', error);
@@ -25,7 +23,6 @@ function isNewLogin() {
   const newSessionId = Math.random().toString(36).substring(2, 15);
 
   if (!sessionId) {
-  //  console.log('No session ID found, this is a new login');
     localStorage.setItem('sessionId', newSessionId);
     return true;
   }
@@ -33,20 +30,15 @@ function isNewLogin() {
   const hasLoggedIn = sessionStorage.getItem('hasLoggedIn');
 
   if (!hasLoggedIn) {
-   // console.log('First page load in this session, this is a new login');
     sessionStorage.setItem('hasLoggedIn', 'true');
     return true;
   }
 
-//  console.log('User has already logged in this session, not a new login');
   return false;
 }
 
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = function(key, value) {
-  if (key === 'activeList') {
-  //  console.log(`[localStorage] activeList being set to: ${value}`, new Error().stack);
-  }
   return originalSetItem.apply(this, arguments);
 };
 
@@ -65,26 +57,22 @@ function wrapShowPanelForListOnceDefined() {
         const rightPanelsContainer = document.getElementById('right-panels-container');
 
         if (!panel || !rightPanelsContainer) {
-          console.warn(`[UI] Cannot show panel for list: ${listName} — panel or container missing`);
           return original.call(this, listName, selectedTaskId);
         }
 
-        // 🧼 Hide all existing panels first
         const allPanels = document.querySelectorAll('.right-panel');
         allPanels.forEach(p => {
           p.classList.add('hidden');
           p.style.display = 'none';
         });
 
-        // 🔁 Get task to show (either passed-in, or fallback to recent)
         let task = null;
-
         if (selectedTaskId) {
           task = window.localTaskCache?.find(t => t._id === selectedTaskId);
         }
 
-        if (!task) {
-          task = typeof findMostRecentTask === 'function' ? findMostRecentTask(listName) : null;
+        if (!task && typeof findMostRecentTask === 'function') {
+          task = findMostRecentTask(listName);
         }
 
         if (task && task.list === listName) {
@@ -108,8 +96,6 @@ function wrapShowPanelForListOnceDefined() {
           panel.style.display = 'none';
           rightPanelsContainer.classList.add('hidden');
           rightPanelsContainer.style.display = 'none';
-
-          console.warn(`No task found to show in panel for list: ${listName} - hiding panel`);
         }
 
         return original.call(this, listName, selectedTaskId);
@@ -118,13 +104,9 @@ function wrapShowPanelForListOnceDefined() {
       clearInterval(interval);
     } else if (++retries >= maxRetries) {
       clearInterval(interval);
-      console.warn('showPanelForList not defined after waiting, skipping wrap');
     }
   }, 200);
 }
-
-
-
 
 wrapShowPanelForListOnceDefined();
 
@@ -134,20 +116,16 @@ window.createPanelForTask = function (task) {
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
   const uniquePanelId = `right-panel-${listId}-${task._id}`;
 
-  // Prevent duplicates
   if (document.getElementById(uniquePanelId)) return;
 
-  // Try to get base list panel to clone from
   let basePanel = document.getElementById(`right-panel-${listId}`);
 
-  // If it doesn't exist, create a base list panel first
   if (!basePanel && typeof createPanelForList === 'function') {
     createPanelForList(task.list);
     basePanel = document.getElementById(`right-panel-${listId}`);
   }
 
   if (!basePanel) {
-    console.warn(`No base panel found for list: ${task.list}`);
     return;
   }
 
@@ -168,35 +146,12 @@ window.createPanelForTask = function (task) {
 
   const container = document.getElementById('right-panels-container');
   if (container) {
-    // Hide all other panels before appending the new one
-    if (recentTask) {
-  // Hide all other right panels before showing this one
-  const allPanels = rightPanelsContainer.querySelectorAll('.right-panel');
-  allPanels.forEach(p => {
-    p.classList.add('hidden');
-    p.style.display = 'none';
-  });
-
-  rightPanelsContainer.classList.remove('hidden');
-  panel.classList.remove('hidden');
-  panel.style.display = 'block';
-
-  setSelectedTaskUI(recentTask);
-  if (typeof showPanelForTask === 'function') {
-    showPanelForTask(recentTask);
-  }
-}
-
-  
     container.classList.remove('hidden');
     container.appendChild(panel);
   }
-  
 
   return panel;
 };
-
-
 
 async function initApp() {
   loadLocalTaskCache();
@@ -205,7 +160,6 @@ async function initApp() {
   const isLoggingInNow = isNewLogin();
 
   if (isLoggingInNow) {
-   // console.log('Fresh login detected — forcing activeList to Personal and clearing selectedTaskId');
     localStorage.setItem('activeList', 'Personal');
     localStorage.removeItem('selectedTaskId');
   }
@@ -217,25 +171,19 @@ async function initApp() {
     if (subtasksResult instanceof Promise) await subtasksResult;
   }
 
-  //setupFileUpload();
-
   if (typeof loadNotesForActiveList === 'function') {
     const notesResult = loadNotesForActiveList();
     if (notesResult instanceof Promise) await notesResult;
   }
 
   const currentList = localStorage.getItem('activeList') || 'Personal';
-  //console.log('Final activeList after all loads:', currentList);
 
   if (typeof filterTasks === 'function') filterTasks(currentList, false);
   if (typeof highlightActiveList === 'function') highlightActiveList(currentList);
   if (typeof showPanelForList === 'function') showPanelForList(currentList);
 
- // console.log('Initial selected task ID:', localStorage.getItem('selectedTaskId'));
-
   if (typeof window.updateAllTaskCounts === 'function') {
     window.updateAllTaskCounts();
-    //console.log('Updated all task counts on initialization');
   }
 }
 
@@ -248,23 +196,6 @@ function saveTaskCacheToLocalStorage() {
 }
 
 function setEventListeners() {
- // console.log('Setting up event listeners');
-
-  const completeBtn = document.getElementById('complete-btn');
-  if (completeBtn) {
-    const newBtn = completeBtn.cloneNode(true);
-    completeBtn.parentNode.replaceChild(newBtn, completeBtn);
-
-    newBtn.addEventListener('click', () => {
-      //console.log('Mark as Complete button clicked');
-      markSelectedTaskComplete();
-    });
-  } else {
-    console.error('❌ Complete button not found');
-  }
-
-  //console.log('Skipping addTaskForm event listener in init.js - handled by sidebarManager.js');
-
   const addSubtaskBtn = document.getElementById('addSubtaskBtn');
   const subtaskInput = document.getElementById('subtaskInput');
 
