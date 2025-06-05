@@ -1,54 +1,17 @@
-let isTaskBlurred = false;
-
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const addTaskForm = document.getElementById('addTaskForm');
   const newTaskInput = document.getElementById('newTaskInput');
-  const taskCategory = document.getElementById('taskCategory');
   const taskList = document.getElementById('taskList');
-  const taskBlurContent = document.getElementById('task-blur-content');
   const completeBtn = document.getElementById('complete-btn');
 
   loadTasksFromLocalStorage();
 
-  isTaskBlurred = localStorage.getItem('isTaskBlurred') === 'true';
-
-  if (isTaskBlurred) {
-    taskBlurContent.classList.add('blurred');
-    taskBlurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
-    completeBtn.textContent = 'Mark as Incomplete';
-    completeBtn.className = 'bg-green-500 text-white px-4 py-2 rounded-md';
-  }
-
   setupAddTaskFormListener();
 
-  completeBtn.addEventListener('click', function() {
-    isTaskBlurred = !isTaskBlurred;
-
-    localStorage.setItem('isTaskBlurred', isTaskBlurred);
-
-    const blurContent = document.getElementById('task-blur-content');
-
-    if (isTaskBlurred) {
-      blurContent.classList.add('blurred');
-      blurContent.removeAttribute('style');
-      blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
-      completeBtn.textContent = 'Mark as Incomplete';
-      completeBtn.className = 'bg-green-500 text-white px-4 py-2 rounded-md';
-      console.log('Applying blur effect with 5px blur');
-
-    } else {
-      blurContent.classList.remove('blurred');
-      blurContent.removeAttribute('style');
-      blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
-      completeBtn.textContent = 'Mark as Complete';
-      completeBtn.className = 'bg-blue-500 text-white px-4 py-2 rounded-md';
-      console.log('Removing blur effect completely');
-    }
-  });
+  // Blur handled externally
+  completeBtn.addEventListener('click', toggleBlurFromCompleteBtn);
 
   ensureCountElementsExist();
-  
-  //loadTasksFromServer();
   loadTasks();
 });
 
