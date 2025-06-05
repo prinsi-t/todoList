@@ -215,7 +215,7 @@ if (existingAttachments.length >= 10) {
 }
 
 if (total > 10) {
-  showAttachmentError(taskId, `Only ${10 - existingAttachments.length} images allowed.`);
+  showAttachmentError(taskId, `Only 10 images allowed.`);
   return Promise.resolve([]); // Safely exit, don't disrupt
 }
 
@@ -355,46 +355,42 @@ function deleteTaskAttachment(taskId, attachmentUrl) {
 
 function findOrCreateFileInput(taskPanel, taskId) {
   let fileInput = taskPanel.querySelector(`input[type="file"][id="file-upload-${taskId}"]`);
-  
+
   if (!fileInput) {
     fileInput = taskPanel.querySelector('input[type="file"][id^="file-upload-"]');
   }
-  
+
   if (!fileInput) {
-    //console.log(`Creating new file input for task ${taskId}`);
-    
     const fileUploadSection = taskPanel.querySelector('.image-preview-container');
     if (!fileUploadSection) {
-      // Create file upload section if it doesn't exist
       const containerDiv = document.createElement('div');
       containerDiv.className = 'image-preview-container mt-4';
-      
+
       const taskContentSection = taskPanel.querySelector('.task-content');
       if (taskContentSection) {
         taskContentSection.appendChild(containerDiv);
       } else {
-        // Fallback - append to the panel itself
         taskPanel.appendChild(containerDiv);
       }
-      
-      //console.log(`Created new image preview container for task ${taskId}`);
     }
 
-    // Create container for file input and label
     const uploadContainer = document.createElement('div');
     uploadContainer.className = 'flex items-center my-2';
-    
-   
-    
+
     fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.id = `file-upload-${taskId}`;
     fileInput.className = 'hidden';
     fileInput.accept = 'image/*';
-    
-  
+
+    // ✅ Fix: safely detect list name from taskPanel or fallback
+    const taskList = taskPanel?.dataset?.list || getCurrentTaskList(taskId);
+    if (taskList === 'personal' || taskList === 'custom') {
+      fileInput.multiple = true;
+    }
+
     uploadContainer.appendChild(fileInput);
-    
+
     const imageContainer = taskPanel.querySelector('.image-preview-container');
     if (imageContainer) {
       imageContainer.appendChild(uploadContainer);
@@ -402,9 +398,10 @@ function findOrCreateFileInput(taskPanel, taskId) {
       console.error(`Image preview container not found for task ${taskId} after creation attempt`);
     }
   }
-  
+
   return fileInput;
 }
+
 
 function setupTaskFileUpload(taskPanel, taskId) {
   if (!taskPanel || !taskId) {
@@ -882,28 +879,36 @@ function setupMutationObserver() {
           mutation.addedNodes.forEach(function(node) {
             if (node.nodeType !== 1) return;
 
-            const isPanel = node.classList?.contains('task-panel') || node.querySelector?.('.task-panel');
-            const isRightPanel = node.classList?.contains('right-panel') || node.querySelector?.('.right-panel');
+            const isPanel =
+              node.classList?.contains('task-panel') ||
+              node.querySelector?.('.task-panel');
+
+            const isRightPanel =
+              node.classList?.contains('right-panel') ||
+              node.querySelector?.('.right-panel');
 
             if (isPanel) {
-            //  console.log('[Observer] New task panel detected');
+              // New task panel added
               newPanelsFound = true;
             }
 
             if (isRightPanel) {
-              const panels = node.classList.contains('right-panel') ? [node] : node.querySelectorAll('.right-panel');
+              const panels = node.classList.contains('right-panel')
+                ? [node]
+                : node.querySelectorAll('.right-panel');
+
               panels.forEach(panel => {
-                const listName = panel.getAttribute('data-list');
-                if (listName && !panel.querySelector('.drop-zone')) {
-                  console.log(`[Observer] Right panel for new list "${listName}" detected without drop zone`);
-                  newListPanelsDetected = true;
+                const dropZone = panel.querySelector('.drop-zone');
+                if (!dropZone) {
+                  console.log(`[Observer] Found new right-panel missing drop zone — forcing fix`);
+                  newListPanelsDetected = true; // ✅ Trigger fix regardless of data-list presence
                 }
               });
             }
 
-            const inputs = node.querySelectorAll?.('input[type="file"][id^="file-upload-"]') || [];
+            const inputs =
+              node.querySelectorAll?.('input[type="file"][id^="file-upload-"]') || [];
             if (inputs.length > 0) {
-            //  console.log('[Observer] New file inputs detected:', inputs.length);
               newFileInputsFound = true;
             }
           });
@@ -911,12 +916,10 @@ function setupMutationObserver() {
       });
 
       if (newPanelsFound) {
-        //console.log('[Observer] Applying fixes to new task panels');
         applyFixToExistingPanels();
       }
 
       if (newFileInputsFound) {
-      //  console.log('[Observer] Binding new file input handlers');
         const fileInputs = document.querySelectorAll('input[type="file"][id^="file-upload-"]');
         fileInputs.forEach(input => {
           if (input.dataset.hasUploadHandler !== 'true') {
@@ -929,16 +932,24 @@ function setupMutationObserver() {
       }
 
       if (newListPanelsDetected) {
-        //console.log('[Observer] Ensuring drop zones exist for new list panels');
-        if (window.fileUploadFix) {
-          window.fileUploadFix.fix();  // Add drop zones + input handlers
+        console.log('[Observer] Running drop zone + input fix for new panels');
+        if (window.fileUploadFix?.fix) {
+          window.fileUploadFix.fix();  // 🔁 Adds drop zones + input handlers
         }
       }
+
+      // Failsafe: re-run fix after short delay in case of async rendering
+      setTimeout(() => {
+        if (window.fileUploadFix?.fix) {
+          window.fileUploadFix.fix();
+        }
+      }, 1000);
     }, 300);
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
 }
+
 
 
 function setupTaskItemClickHandler() {
