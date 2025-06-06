@@ -1257,16 +1257,16 @@ if (titleElement) {
       : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
   }
 
-  const blurContent = panel.querySelector('.task-blur-content');
-  if (blurContent) {
-    if (task.completed && isTaskBlurred) {
-      blurContent.classList.add('blurred');
-      blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
-    } else {
-      blurContent.classList.remove('blurred');
-      blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
-    }
-  }
+  // const blurContent = panel.querySelector('.task-blur-content');
+  // if (blurContent) {
+  //   if (task.completed && isTaskBlurred) {
+  //     blurContent.classList.add('blurred');
+  //     blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
+  //   } else {
+  //     blurContent.classList.remove('blurred');
+  //     blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
+  //   }
+  // }
 
   const subtasksList = panel.querySelector('.subtasks-list');
   if (subtasksList && task.subtasks) {
@@ -1352,7 +1352,9 @@ function setupListSwitchListeners() {
       const selectedTaskId = preserveSelection ? localStorage.getItem('selectedTaskId') : null;
       
       setTimeout(() => {
-        showPanelForList(listName, selectedTaskId);
+        const selectedTask = localTaskCache.find(t => t._id === selectedTaskId);
+        if (selectedTask) showPanelForTask(selectedTask);
+        
         highlightActiveList(listName);
         
         if (typeof window.updatePanelOnListChange === 'function') {

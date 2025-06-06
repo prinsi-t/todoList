@@ -198,7 +198,14 @@ function saveTaskCacheToLocalStorage() {
 function setEventListeners() {
   const addSubtaskBtn = document.getElementById('addSubtaskBtn');
   const subtaskInput = document.getElementById('subtaskInput');
-
+  const completeBtn = document.getElementById('complete-btn');
+  if (completeBtn) {
+    completeBtn.addEventListener('click', () => {
+      console.log('✅ Complete button clicked');
+      toggleBlurFromCompleteBtn();
+    });
+  }
+  
   if (addSubtaskBtn) {
     addSubtaskBtn.addEventListener('click', (e) => {
       e.preventDefault();
