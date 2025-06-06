@@ -511,9 +511,17 @@ function toggleTaskCompletion(taskId) {
 
   const selectedTask = document.querySelector('.task-item.selected');
   if (selectedTask && selectedTask.dataset.taskId === taskId) {
-
     const taskList = localTaskCache[taskIndex].list;
     applyBlurEffect(newCompletedState, taskList);
+
+    // Update the Mark as Complete button text and color
+    const completeBtn = document.getElementById('complete-btn');
+    if (completeBtn) {
+      completeBtn.textContent = newCompletedState ? 'Mark as Incomplete' : 'Mark as Complete';
+      completeBtn.className = newCompletedState
+        ? 'complete-btn bg-green-500 text-white px-4 py-2 rounded-md'
+        : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
+    }
   }
 
   if (taskId.startsWith('local_')) {
@@ -550,6 +558,7 @@ function toggleTaskCompletion(taskId) {
     console.error('Error making network request:', error);
   }
 }
+
 
 
 

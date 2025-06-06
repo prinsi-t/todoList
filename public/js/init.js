@@ -7,11 +7,7 @@ let localTaskCache = [];
 function loadLocalTaskCache() {
   try {
     const savedCache = localStorage.getItem('taskCache');
-    if (savedCache) {
-      localTaskCache = JSON.parse(savedCache);
-    } else {
-      localTaskCache = [];
-    }
+    localTaskCache = savedCache ? JSON.parse(savedCache) : [];
   } catch (error) {
     console.error('Error loading tasks from localStorage:', error);
     localTaskCache = [];
@@ -28,7 +24,6 @@ function isNewLogin() {
   }
 
   const hasLoggedIn = sessionStorage.getItem('hasLoggedIn');
-
   if (!hasLoggedIn) {
     sessionStorage.setItem('hasLoggedIn', 'true');
     return true;
@@ -38,7 +33,7 @@ function isNewLogin() {
 }
 
 const originalSetItem = localStorage.setItem;
-localStorage.setItem = function(key, value) {
+localStorage.setItem = function (key, value) {
   return originalSetItem.apply(this, arguments);
 };
 
@@ -115,19 +110,15 @@ window.createPanelForTask = function (task) {
 
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
   const uniquePanelId = `right-panel-${listId}-${task._id}`;
-
   if (document.getElementById(uniquePanelId)) return;
 
   let basePanel = document.getElementById(`right-panel-${listId}`);
-
   if (!basePanel && typeof createPanelForList === 'function') {
     createPanelForList(task.list);
     basePanel = document.getElementById(`right-panel-${listId}`);
   }
 
-  if (!basePanel) {
-    return;
-  }
+  if (!basePanel) return;
 
   const panel = basePanel.cloneNode(true);
   panel.id = uniquePanelId;
@@ -158,7 +149,6 @@ async function initApp() {
   setEventListeners();
 
   const isLoggingInNow = isNewLogin();
-
   if (isLoggingInNow) {
     localStorage.setItem('activeList', 'Personal');
     localStorage.removeItem('selectedTaskId');
@@ -177,7 +167,6 @@ async function initApp() {
   }
 
   const currentList = localStorage.getItem('activeList') || 'Personal';
-
   if (typeof filterTasks === 'function') filterTasks(currentList, false);
   if (typeof highlightActiveList === 'function') highlightActiveList(currentList);
   if (typeof showPanelForList === 'function') showPanelForList(currentList);
@@ -198,14 +187,7 @@ function saveTaskCacheToLocalStorage() {
 function setEventListeners() {
   const addSubtaskBtn = document.getElementById('addSubtaskBtn');
   const subtaskInput = document.getElementById('subtaskInput');
-  const completeBtn = document.getElementById('complete-btn');
-  if (completeBtn) {
-    completeBtn.addEventListener('click', () => {
-      console.log('✅ Complete button clicked');
-      toggleBlurFromCompleteBtn();
-    });
-  }
-  
+
   if (addSubtaskBtn) {
     addSubtaskBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -225,4 +207,17 @@ function setEventListeners() {
       }
     });
   }
+
+  // ✅ Universal listener for all complete buttons (static + dynamic)
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.complete-btn');
+    if (!btn) return;
+
+    const taskId = localStorage.getItem('selectedTaskId');
+    const task = localTaskCache.find(t => t._id === taskId);
+    if (!task) return;
+
+    console.log(`✅ Complete clicked for ${task.title} in list ${task.list}`);
+    toggleBlurFromCompleteBtn();
+  });
 }

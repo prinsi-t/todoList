@@ -20,7 +20,10 @@ function applyBlurEffect(shouldBlur, listName) {
 }
 
 function updatePanelBlurUI(task) {
-  const panel = document.getElementById(`right-panel-${task.list.toLowerCase().replace(/\s+/g, '-')}`);
+  const listId = task.list.toLowerCase().replace(/\s+/g, '-');
+
+  // Try both static and dynamic panel IDs
+  const panel = document.querySelector(`#right-panel-${listId}, #right-panel-${listId}-${task._id}`);
   if (!panel) return;
 
   const blurContent = panel.querySelector('.task-blur-content');
@@ -34,8 +37,8 @@ function updatePanelBlurUI(task) {
     }
   }
 
-  const completeBtn = document.getElementById('complete-btn');
-  if (completeBtn && localStorage.getItem('selectedTaskId') === task._id) {
+  const completeBtn = panel.querySelector('.complete-btn');
+  if (completeBtn) {
     completeBtn.textContent = task.completed ? 'Mark as Incomplete' : 'Mark as Complete';
     completeBtn.className = task.completed
       ? 'complete-btn bg-green-500 text-white px-4 py-2 rounded-md'
@@ -44,9 +47,6 @@ function updatePanelBlurUI(task) {
 }
 
 function toggleBlurFromCompleteBtn() {
-  const completeBtn = document.getElementById('complete-btn');
-  if (!completeBtn) return;
-
   const currentTaskId = localStorage.getItem('selectedTaskId');
   const task = localTaskCache.find(t => t._id === currentTaskId);
   if (!task) return;
@@ -59,13 +59,8 @@ function toggleBlurFromCompleteBtn() {
   const checkbox = document.querySelector(`.task-item[data-task-id="${currentTaskId}"] .checkbox`);
   const taskText = document.querySelector(`.task-item[data-task-id="${currentTaskId}"] span`);
   if (checkbox) {
-    if (task.completed) {
-      checkbox.classList.add('checked');
-      checkbox.innerHTML = '<i class="fas fa-check text-white text-xs"></i>';
-    } else {
-      checkbox.classList.remove('checked');
-      checkbox.innerHTML = '';
-    }
+    checkbox.classList.toggle('checked', task.completed);
+    checkbox.innerHTML = task.completed ? '<i class="fas fa-check text-white text-xs"></i>' : '';
   }
   if (taskText) {
     taskText.className = task.completed
@@ -83,13 +78,17 @@ function setupInitialBlurState() {
 
   applyBlurEffect(task.completed, task.list);
 
-  const completeBtn = document.getElementById('complete-btn');
+  const listId = task.list.toLowerCase().replace(/\s+/g, '-');
+  const panel = document.querySelector(`#right-panel-${listId}, #right-panel-${listId}-${task._id}`);
+  if (!panel) return;
+
+  const completeBtn = panel.querySelector('.complete-btn');
   if (!completeBtn) return;
 
   completeBtn.textContent = task.completed ? 'Mark as Incomplete' : 'Mark as Complete';
   completeBtn.className = task.completed
-    ? 'bg-green-500 text-white px-4 py-2 rounded-md'
-    : 'bg-blue-500 text-white px-4 py-2 rounded-md';
+    ? 'complete-btn bg-green-500 text-white px-4 py-2 rounded-md'
+    : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
 }
 
 function setupCheckboxBlurListeners() {
