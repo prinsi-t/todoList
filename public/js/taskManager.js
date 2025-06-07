@@ -1,3 +1,6 @@
+// Fixed taskManager.js - Key changes to preserve selected task on refresh
+window.selectionLocked = false;
+
 document.addEventListener('DOMContentLoaded', function () {
   const addTaskForm = document.getElementById('addTaskForm');
   const newTaskInput = document.getElementById('newTaskInput');
@@ -5,12 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const completeBtn = document.getElementById('complete-btn');
 
   loadTasksFromLocalStorage();
-
   setupAddTaskFormListener();
-
-  // Blur handled externally
   completeBtn.addEventListener('click', toggleBlurFromCompleteBtn);
-
   ensureCountElementsExist();
   loadTasks();
 });
@@ -38,8 +37,13 @@ function saveTaskCacheToLocalStorage() {
 }
 window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
 
+// 🔧 FIXED: Preserve selected task on refresh
 async function loadTasksFromServer() {
   try {
+    // 🔑 Get the currently selected task BEFORE loading
+    const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
+    const currentList = localStorage.getItem('activeList') || 'Personal';
+    
     const response = await fetch('/todos/all');
     if (response.ok) {
       const serverTasks = await response.json();
@@ -71,30 +75,100 @@ async function loadTasksFromServer() {
       saveTaskCacheToLocalStorage();
       updateAllTaskCounts();
 
-      const currentList = localStorage.getItem('activeList') || localStorage.getItem('lastSelectedList') || 'Personal';
-      console.log(`Using active list from localStorage: ${currentList}`);
+      console.log(`Loading tasks for list: ${currentList}`);
 
-      filterTasks(currentList, true);
+      // 🔧 Filter tasks but preserve selection
+      filterTasks(currentList, true); // Always preserve selection on refresh
 
-      const recentTask = findMostRecentTask(currentList);
-      if (recentTask) {
-        console.log(`Found most recent task on load for ${currentList}: ${recentTask.title} (ID: ${recentTask._id})`);
+      // 🔑 PRESERVE SELECTED TASK: Check if the selected task still exists
+      if (currentSelectedTaskId) {
+        const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId);
+        
+        if (selectedTask && selectedTask.list === currentList) {
+          // ✅ Selected task exists in current list - keep it selected
+          console.log(`✅ Preserving selected task: ${selectedTask.title} (ID: ${selectedTask._id})`);
+          
+           // ✅ Selected task exists in current list - keep it selected
+    setSelectedTaskUI(selectedTask);
+    localStorage.setItem('selectedTaskId', selectedTask._id);
+    window.currentTaskId = selectedTask._id;
 
-        // Select the task in panel/data
-        setSelectedTaskUI(recentTask);
-        localStorage.setItem('selectedTaskId', recentTask._id);
+    console.log(`✅ Preserved selected task after refresh: ${selectedTask.title}`);
+    return; // ⛔ Stop here — avoid overriding with recent task
 
-        // Highlight it visually after DOM is ready
-        setTimeout(() => {
-          const taskElements = document.querySelectorAll('.task-item');
-          taskElements.forEach(el => {
-            el.classList.remove('selected', 'bg-dark-hover');
-            if (el.dataset.taskId === recentTask._id) {
-              el.classList.add('selected', 'bg-dark-hover');
-              console.log(`✅ Highlighted task on load: ${recentTask.title} (ID: ${recentTask._id})`);
-            }
-          });
-        }, 100);
+
+          // Highlight it visually after DOM is ready
+          setTimeout(() => {
+            const taskElements = document.querySelectorAll('.task-item');
+            taskElements.forEach(el => {
+              el.classList.remove('selected', 'bg-dark-hover');
+              if (el.dataset.taskId === selectedTask._id) {
+                el.classList.add('selected', 'bg-dark-hover');
+                console.log(`✅ Preserved highlight for: ${selectedTask.title}`);
+              }
+            });
+          }, 100);
+        } else if (selectedTask && selectedTask.list !== currentList) {
+          // Selected task exists but in different list - clear selection
+          console.log(`⚠️ Selected task is in different list (${selectedTask.list}), clearing selection`);
+          localStorage.removeItem('selectedTaskId');
+          
+          // Fall back to most recent task in current list
+          const recentTask = findMostRecentTask(currentList);
+          if (recentTask) {
+            setSelectedTaskUI(recentTask);
+            localStorage.setItem('selectedTaskId', recentTask._id);
+            
+            setTimeout(() => {
+              const taskElements = document.querySelectorAll('.task-item');
+              taskElements.forEach(el => {
+                el.classList.remove('selected', 'bg-dark-hover');
+                if (el.dataset.taskId === recentTask._id) {
+                  el.classList.add('selected', 'bg-dark-hover');
+                }
+              });
+            }, 100);
+          }
+        } else {
+          // Selected task no longer exists - clear and select most recent
+          console.log(`⚠️ Selected task no longer exists, selecting most recent`);
+          localStorage.removeItem('selectedTaskId');
+          
+          const recentTask = findMostRecentTask(currentList);
+          if (recentTask) {
+            setSelectedTaskUI(recentTask);
+            localStorage.setItem('selectedTaskId', recentTask._id);
+            window.currentTaskId = selectedTask._id;
+
+            setTimeout(() => {
+              const taskElements = document.querySelectorAll('.task-item');
+              taskElements.forEach(el => {
+                el.classList.remove('selected', 'bg-dark-hover');
+                if (el.dataset.taskId === recentTask._id) {
+                  el.classList.add('selected', 'bg-dark-hover');
+                }
+              });
+            }, 100);
+          }
+        }
+      } else {
+        // No task was selected - select most recent
+        const recentTask = findMostRecentTask(currentList);
+        if (recentTask) {
+          console.log(`No task selected, choosing most recent: ${recentTask.title}`);
+          setSelectedTaskUI(recentTask);
+          localStorage.setItem('selectedTaskId', recentTask._id);
+          
+          setTimeout(() => {
+            const taskElements = document.querySelectorAll('.task-item');
+            taskElements.forEach(el => {
+              el.classList.remove('selected', 'bg-dark-hover');
+              if (el.dataset.taskId === recentTask._id) {
+                el.classList.add('selected', 'bg-dark-hover');
+              }
+            });
+          }, 100);
+        }
       }
     } else {
       console.error('Failed to fetch tasks from server:', response.status);
@@ -103,28 +177,47 @@ async function loadTasksFromServer() {
     console.error('Error loading tasks from server:', error);
     updateAllTaskCounts();
 
-    const currentList = localStorage.getItem('activeList') || localStorage.getItem('lastSelectedList') || 'Personal';
+    const currentList = localStorage.getItem('activeList') || 'Personal';
     console.log(`Error case - using active list from localStorage: ${currentList}`);
-    filterTasks(currentList);
+    filterTasks(currentList, true); // Preserve selection even on error
   }
 }
 
-
 async function loadTasks() {
-  //console.log('Loading tasks...');
-  
   loadTasksFromLocalStorage();
   
   const isLocalMode = true; // Set this to true to work in local-only mode
   
   if (isLocalMode) {
-    //console.log('Running in local-only mode, skipping server fetch');
+    console.log('Running in local-only mode, skipping server fetch');
     updateAllTaskCounts();
     const currentList = localStorage.getItem('activeList') || 'Personal';
-    filterTasks(currentList, true);
+    
+    // 🔧 PRESERVE SELECTION in local mode too
+    const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
+    
+    filterTasks(currentList, true); // Always preserve selection
+    
+    // If we have a selected task, make sure it's highlighted
+    if (currentSelectedTaskId) {
+      const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId);
+      if (selectedTask && selectedTask.list === currentList) {
+        setTimeout(() => {
+          const taskElements = document.querySelectorAll('.task-item');
+          taskElements.forEach(el => {
+            el.classList.remove('selected', 'bg-dark-hover');
+            if (el.dataset.taskId === currentSelectedTaskId) {
+              el.classList.add('selected', 'bg-dark-hover');
+              console.log(`✅ Preserved selection in local mode: ${selectedTask.title}`);
+            }
+          });
+        }, 100);
+      }
+    }
     return;
   }
   
+  // Server mode code remains the same...
   try {
     const response = await fetch('/todos/all');
     if (response.ok) {
@@ -164,11 +257,10 @@ async function loadTasks() {
   
   updateAllTaskCounts();
   const currentList = localStorage.getItem('activeList') || 'Personal';
-  filterTasks(currentList, true);
+  filterTasks(currentList, true); // Always preserve selection
 }
 
 window.loadTasks = loadTasks;
-
 
 
 async function handleAddTask(e) {
@@ -218,16 +310,12 @@ async function handleAddTask(e) {
   if (typeof setSelectedTaskUI === 'function') {
     setSelectedTaskUI(newTask);
   }
+  
   setTimeout(() => {
     if (typeof showPanelForList === 'function') {
       showPanelForList(currentList, newTask._id);
     }
   }, 50);
-  
-
-  if (typeof showPanelForList === 'function') {
-    showPanelForList(currentList, newTask._id);
-  }
 
   input.value = '';
 
@@ -274,12 +362,9 @@ async function handleAddTask(e) {
   }
 }
 
-
 window.handleAddTask = handleAddTask;
 
 function refreshTaskList(listName) {
-  //console.log(`Refreshing task list for: ${listName}`);
-
   const taskList = document.getElementById('taskList');
   if (!taskList) {
     console.error('Task list container not found');
@@ -289,26 +374,21 @@ function refreshTaskList(listName) {
   taskList.innerHTML = '';
 
   const filteredTasks = localTaskCache.filter(task => task.list === listName);
-  //console.log(`Found ${filteredTasks.length} tasks for list: ${listName}`);
 
   if (filteredTasks.length === 0) {
     const emptyState = document.createElement('div');
     emptyState.className = 'text-center py-6 text-gray-500';
     const formattedListName = listName.match(/.{1,30}/g).join('\n');
     emptyState.textContent = `No tasks in\n${formattedListName}\nlist yet. Add one above!`;
-    emptyState.style.whiteSpace = 'pre-wrap';  // 🔑 make \n render correctly
-
+    emptyState.style.whiteSpace = 'pre-wrap';
     taskList.appendChild(emptyState);
   } else {
-   
     const sortedTasks = filteredTasks.sort((a, b) => {
-
       if (a._id.startsWith('local_') && b._id.startsWith('local_')) {
         const aTime = parseInt(a._id.replace('local_', ''));
         const bTime = parseInt(b._id.replace('local_', ''));
         return bTime - aTime; 
       }
-     
       else if (a._id.startsWith('local_')) {
         return -1; 
       }
@@ -325,29 +405,12 @@ function refreshTaskList(listName) {
       }
     });
 
-    const selectedTaskId = localStorage.getItem('selectedTaskId');
-    if (selectedTaskId) {
-      
-      setTimeout(() => {
-        const taskElements = document.querySelectorAll('.task-item');
-        let found = false;
-        taskElements.forEach(el => {
-          if (el.dataset.taskId === selectedTaskId) {
-            el.classList.add('selected', 'bg-dark-hover');
-            found = true;
-           // console.log(`Highlighted selected task in refreshTaskList: ${selectedTaskId}`);
-          }
-        });
-
-        if (!found) {
-          console.warn(`Could not find task element for ID: ${selectedTaskId} in the DOM`);
-        }
-      }, 50);
-    }
+    
   }
 
   updateAllTaskCounts();
 }
+
 
 function createTaskElement(task) {
   if (!task) return null;
@@ -564,20 +627,22 @@ function toggleTaskCompletion(taskId) {
 
 async function selectTask(taskId) {
   try {
-
     const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
     const isAlreadySelected = currentSelectedTaskId === taskId;
-
     const localTask = localTaskCache.find(task => task._id === taskId);
 
     if (localTask) {
-
       setSelectedTaskUI(localTask);
 
       const taskElements = document.querySelectorAll('.task-item');
       taskElements.forEach(el => {
         el.classList.remove('selected', 'bg-dark-hover');
-        if (el.dataset.taskId === taskId) {
+
+        const elTaskId = el.dataset.taskId;
+        const elList = el.dataset.list?.toLowerCase().trim();
+        const selList = localTask.list?.toLowerCase().trim();
+
+        if (elTaskId === taskId && elList === selList) {
           el.classList.add('selected', 'bg-dark-hover');
         }
       });
@@ -596,31 +661,28 @@ async function selectTask(taskId) {
 
     setTimeout(() => {
       setSelectedTaskUI(task);
-    
-      // Optional: visually highlight it
+
       const taskElements = document.querySelectorAll('.task-item');
       taskElements.forEach(el => {
         el.classList.remove('selected', 'bg-dark-hover');
-        if (el.dataset.taskId === task._id) {
+
+        const elTaskId = el.dataset.taskId;
+        const elList = el.dataset.list?.toLowerCase().trim();
+        const selList = task.list?.toLowerCase().trim();
+
+        if (elTaskId === task._id && elList === selList) {
           el.classList.add('selected', 'bg-dark-hover');
         }
       });
     }, 150);
-    
-
-    const taskElements = document.querySelectorAll('.task-item');
-    taskElements.forEach(el => {
-      el.classList.remove('selected', 'bg-dark-hover');
-      if (el.dataset.taskId === taskId) {
-        el.classList.add('selected', 'bg-dark-hover');
-      }
-    });
 
     localStorage.setItem('selectedTaskId', taskId);
   } catch (err) {
     console.error('Failed to select task:', err);
   }
 }
+
+
 
 function setSelectedTaskUI(task) {
   if (!task) {
@@ -962,156 +1024,138 @@ function deleteTask(taskId) {
 
 
 window.filterTasks = function(listName, preserveSelection = false) {
-  console.log('Filtering tasks for list:', listName);
-  
+  console.log('Filtering tasks for list:', listName, 'preserveSelection:', preserveSelection);
+  if (window.selectionLocked && preserveSelection) {
+    console.log('🔒 Selection is locked, skipping re-selection.');
+    return;
+  }
+
   localStorage.setItem('activeList', listName);
-  
-  // Update UI elements synchronously
+
   const titleElement = document.querySelector('h1');
-  if (titleElement) {
-    titleElement.textContent = `${listName} tasks`;
-  }
-  
+  if (titleElement) titleElement.textContent = `${listName} tasks`;
+
   const taskCategory = document.getElementById('taskCategory');
-  if (taskCategory) {
-    taskCategory.value = listName;
-  }
-  
+  if (taskCategory) taskCategory.value = listName;
+
   const newTaskInput = document.getElementById('newTaskInput');
-  if (newTaskInput) {
-    newTaskInput.value = '';
-  }
-  
-  // Handle list highlighting
+  if (newTaskInput) newTaskInput.value = '';
+
   if (typeof window.highlightActiveList === 'function') {
     window.highlightActiveList(listName);
   } else if (typeof highlightActiveList === 'function') {
     highlightActiveList(listName);
   }
-  
-  // Refresh task list
+
   refreshTaskList(listName);
-  
-  // Update panel visibility - ENHANCED
-  if (typeof showPanelForList === 'function') {
-    showPanelForList(listName);
+
+  const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
+  let taskToSelect = null;
+
+  const lastMovedTaskId = localStorage.getItem('lastMovedTaskId');
+  if (lastMovedTaskId) {
+    const movedTask = localTaskCache.find(t => t._id === lastMovedTaskId && t.list === listName);
+    if (movedTask) {
+      console.log(`✅ Selecting recently moved task: ${movedTask.title}`);
+      taskToSelect = movedTask;
+      localStorage.removeItem('lastMovedTaskId');
+    }
   }
-  
-  // Enhanced panel visibility handling
+
+  if (!taskToSelect && preserveSelection && currentSelectedTaskId) {
+    const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId && t.list === listName);
+    if (selectedTask) {
+      console.log(`✅ Preserving manually selected task: ${selectedTask.title}`);
+      taskToSelect = selectedTask;
+    } else {
+      console.warn(`⏳ selectedTaskId exists but task not yet in cache: retrying`);
+      setTimeout(() => filterTasks(listName, true), 100);
+      return;
+    }
+  }
+
+  if (!taskToSelect && (!preserveSelection || !currentSelectedTaskId)) {
+    taskToSelect = findMostRecentTask(listName);
+    if (taskToSelect) {
+      console.log(`📍 Fallback: Selecting most recent task: ${taskToSelect.title}`);
+    }
+  }
+
+  if (taskToSelect) {
+    setSelectedTaskUI(taskToSelect);
+    window.selectionLocked = true;
+    localStorage.setItem('selectedTaskId', taskToSelect._id);
+    localStorage.setItem('lastSelectedList', listName);
+
+    if (typeof showPanelForList === 'function') {
+      showPanelForList(listName, taskToSelect._id);
+    }
+
+    requestAnimationFrame(() => {
+      const taskElements = document.querySelectorAll('.task-item');
+      let found = false;
+    
+      const selectedTaskId = taskToSelect._id;
+      const selectedList = taskToSelect.list?.toLowerCase().replace(/\s+/g, '-').trim();
+    
+      taskElements.forEach(el => {
+        el.classList.remove('selected', 'bg-dark-hover');
+    
+        const elTaskId = el.dataset.taskId;
+        const elList = el.dataset.list?.toLowerCase().replace(/\s+/g, '-').trim();
+    
+        if (elTaskId === selectedTaskId && elList === selectedList) {
+          el.classList.add('selected', 'bg-dark-hover');
+          found = true;
+        }
+      });
+    
+      if (!found) {
+        console.warn(`Could not find task element for ID: ${selectedTaskId} - will retry`);
+        setTimeout(() => {
+          const retryElements = document.querySelectorAll('.task-item');
+          retryElements.forEach(el => {
+            el.classList.remove('selected', 'bg-dark-hover');
+    
+            const elTaskId = el.dataset.taskId;
+            const elList = el.dataset.list?.toLowerCase().replace(/\s+/g, '-').trim();
+    
+            if (elTaskId === selectedTaskId && elList === selectedList) {
+              el.classList.add('selected', 'bg-dark-hover');
+              console.log(`✅ Highlighted task on retry: ${taskToSelect.title}`);
+            }
+          });
+        }, 100);
+      }
+    });
+    
+    
+  } else {
+    console.log(`No tasks found in ${listName} list`);
+    localStorage.removeItem('selectedTaskId');
+
+    const rightPanelsContainer = document.getElementById('right-panels-container');
+    if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
+  }
+
   const listTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
   const rightPanelsContainer = document.getElementById('right-panels-container');
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const panel = document.getElementById(`right-panel-${listId}`);
-  
+
   if (listTasks.length > 0) {
-    // Show container and panel if tasks exist
-    if (rightPanelsContainer) {
-      rightPanelsContainer.classList.remove('hidden');
-    }
-    if (panel) {
-      panel.classList.remove('hidden');
-    }
-    
-    // Update panel visibility using existing function
+    if (rightPanelsContainer) rightPanelsContainer.classList.remove('hidden');
+    if (panel) panel.classList.remove('hidden');
+
     if (typeof updateRightPanelVisibility === 'function') {
       updateRightPanelVisibility(listName);
     }
   } else {
-    // Hide panel if no tasks
-    if (panel) {
-      panel.classList.add('hidden');
-    }
-    if (rightPanelsContainer) {
-      rightPanelsContainer.classList.add('hidden');
-    }
-  }
-  
-  // Check if we have a recently moved task
-  const lastMovedTaskId = localStorage.getItem('lastMovedTaskId');
-  
-  if (lastMovedTaskId) {
-    const movedTask = localTaskCache.find(t => t._id === lastMovedTaskId && t.list === listName);
-    if (movedTask) {
-      // Select the moved task
-      setSelectedTaskUI(movedTask);
-      localStorage.setItem('selectedTaskId', movedTask._id);
-      localStorage.setItem('lastSelectedList', listName);
-      
-      // Highlight the moved task
-      requestAnimationFrame(() => {
-        const taskElements = document.querySelectorAll('.task-item');
-        taskElements.forEach(el => {
-          el.classList.remove('selected', 'bg-dark-hover');
-          if (el.dataset.taskId === movedTask._id) {
-            el.classList.add('selected', 'bg-dark-hover');
-          }
-        });
-      });
-      
-      // Clear the lastMovedTaskId
-      localStorage.removeItem('lastMovedTaskId');
-      return;
-    }
-    
-    // If we didn't find the moved task in this list, clear the lastMovedTaskId
-    localStorage.removeItem('lastMovedTaskId');
-  }
-  
-  if (!preserveSelection) {
-    // Original code for selecting the most recent task
-    const recentTask = findMostRecentTask(listName);
-    
-    if (recentTask) {
-      console.log(`Found most recent task in ${listName}: ${recentTask.title} (ID: ${recentTask._id})`);
-      
-      setSelectedTaskUI(recentTask);
-      
-      localStorage.setItem('selectedTaskId', recentTask._id);
-      localStorage.setItem('lastSelectedList', listName);
-      
-      // Use requestAnimationFrame for smooth visual updates
-      requestAnimationFrame(() => {
-        const taskElements = document.querySelectorAll('.task-item');
-        let found = false;
-        
-        taskElements.forEach(el => {
-          el.classList.remove('selected', 'bg-dark-hover');
-          if (el.dataset.taskId === recentTask._id) {
-            el.classList.add('selected', 'bg-dark-hover');
-            found = true;
-            console.log(`Highlighted task: ${recentTask.title} (ID: ${recentTask._id})`);
-          }
-        });
-        
-        if (!found) {
-          console.warn(`Could not find task element for ID: ${recentTask._id} - refreshing task list`);
-          refreshTaskList(listName);
-          
-          // Try highlighting again after refresh
-          requestAnimationFrame(() => {
-            const taskElements = document.querySelectorAll('.task-item');
-            taskElements.forEach(el => {
-              if (el.dataset.taskId === recentTask._id) {
-                el.classList.add('selected', 'bg-dark-hover');
-                console.log(`Highlighted task after refresh: ${recentTask.title}`);
-              }
-            });
-          });
-        }
-      });
-    } else {
-      console.log(`No tasks found in ${listName} list`);
-      
-      const listId = listName.toLowerCase().replace(/\s+/g, '-');
-      const panelId = `right-panel-${listId}`;
-      const panel = document.getElementById(panelId);
-      
-      if (panel && typeof clearPanel === 'function') {
-        clearPanel(panel, listName);
-      }
-    }
+    if (panel) panel.classList.add('hidden');
+    if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
   }
 };
+
 
 
 
@@ -1178,57 +1222,37 @@ function resetRightPanel(forceReset = false) {
 
 function findMostRecentTask(listName) {
   if (!localTaskCache || localTaskCache.length === 0) {
-    //console.log(`No tasks in cache for list: ${listName}`);
     return null;
   }
 
   const listTasks = localTaskCache.filter(task => task.list === listName);
   if (listTasks.length === 0) {
-    //console.log(`No tasks found for list: ${listName}`);
     return null;
   }
 
-  //console.log(`Found ${listTasks.length} tasks for list: ${listName}`);
-
-  listTasks.forEach(task => {
-   //console.log(`- Task: ${task.title} (ID: ${task._id})`);
-  });
-
   const sortedTasks = listTasks.sort((a, b) => {
-
     if (a._id.startsWith('local_') && b._id.startsWith('local_')) {
       const aTime = parseInt(a._id.replace('local_', ''));
       const bTime = parseInt(b._id.replace('local_', ''));
-      return bTime - aTime; // Descending order (newest first)
+      return bTime - aTime;
     }
-
     else if (a._id.startsWith('local_')) {
-      return -1; // a comes first
+      return -1;
     }
     else if (b._id.startsWith('local_')) {
-      return 1; // b comes first
+      return 1;
     }
-
     else {
       const aNum = parseInt(a._id.replace(/\D/g, ''));
       const bNum = parseInt(b._id.replace(/\D/g, ''));
       if (!isNaN(aNum) && !isNaN(bNum)) {
-        return bNum - aNum; // Descending order (newest first)
+        return bNum - aNum;
       }
     }
-
     return -1;
   });
 
-  //console.log('Sorted tasks (newest first):');
-  sortedTasks.forEach((task, index) => {
-    //console.log(`${index + 1}. ${task.title} (ID: ${task._id})`);
-  });
-
-  const mostRecentTask = sortedTasks[0];
-  //console.log(`Most recent task for ${listName}: ${mostRecentTask.title} (ID: ${mostRecentTask._id})`);
-
-  return mostRecentTask;
+  return sortedTasks[0];
 }
 
 function ensureRightPanelContainerExists() {

@@ -62,13 +62,22 @@ function wrapShowPanelForListOnceDefined() {
         });
 
         let task = null;
-        if (selectedTaskId) {
-          task = window.localTaskCache?.find(t => t._id === selectedTaskId);
-        }
+if (selectedTaskId) {
+  task = window.localTaskCache?.find(t => t._id === selectedTaskId);
+  
+  // ⛔ If selected task isn't found, WAIT and retry instead of falling back
+  if (!task) {
+    console.warn(`⏳ Waiting for selected task (${selectedTaskId}) to load...`);
+    setTimeout(() => showPanelForList(listName, selectedTaskId), 100);
+    return;
+  }
+}
 
-        if (!task && typeof findMostRecentTask === 'function') {
-          task = findMostRecentTask(listName);
-        }
+// ⛔ Only fallback to recent if NO selection was intended
+if (!task && !selectedTaskId && typeof findMostRecentTask === 'function') {
+  task = findMostRecentTask(listName);
+}
+
 
         if (task && task.list === listName) {
           rightPanelsContainer.classList.remove('hidden');
@@ -146,12 +155,14 @@ window.createPanelForTask = function (task) {
 
 async function initApp() {
   loadLocalTaskCache();
+  window.selectionLocked = false;
+
   setEventListeners();
 
   const isLoggingInNow = isNewLogin();
   if (isLoggingInNow) {
     localStorage.setItem('activeList', 'Personal');
-    localStorage.removeItem('selectedTaskId');
+    localStorage.removeItem('selectedTaskId'); // Clear on new login only
   }
 
   await loadTasksFromServer();
@@ -167,9 +178,24 @@ async function initApp() {
   }
 
   const currentList = localStorage.getItem('activeList') || 'Personal';
-  if (typeof filterTasks === 'function') filterTasks(currentList, false);
-  if (typeof highlightActiveList === 'function') highlightActiveList(currentList);
-  if (typeof showPanelForList === 'function') showPanelForList(currentList);
+  
+  // 🔧 CRITICAL FIX: Always preserve selection during initialization
+  if (typeof filterTasks === 'function') {
+    filterTasks(currentList, true); // ALWAYS preserve selection
+  }
+  
+  if (typeof highlightActiveList === 'function') {
+    highlightActiveList(currentList);
+  }
+  
+  const selectedTaskId = localStorage.getItem('selectedTaskId');
+
+  setTimeout(() => {
+    if (typeof showPanelForList === 'function') {
+      showPanelForList(currentList, selectedTaskId);
+    }
+  }, 100); // Delay lets localTaskCache populate properly
+  
 
   if (typeof window.updateAllTaskCounts === 'function') {
     window.updateAllTaskCounts();
