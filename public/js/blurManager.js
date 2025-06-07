@@ -1,5 +1,3 @@
-// blurManager.js
-
 function applyBlurEffect(shouldBlur, listName) {
   const listId = listName.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
@@ -21,20 +19,34 @@ function applyBlurEffect(shouldBlur, listName) {
 
 function updatePanelBlurUI(task) {
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
-
-  // Try both static and dynamic panel IDs
-  const panel = document.querySelector(`#right-panel-${listId}, #right-panel-${listId}-${task._id}`);
-  if (!panel) return;
-
-  const blurContent = panel.querySelector('.task-blur-content');
-  if (blurContent) {
-    if (task.completed) {
-      blurContent.classList.add('blurred');
-      blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
-    } else {
-      blurContent.classList.remove('blurred');
-      blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
+  const allPanels = document.querySelectorAll(`#right-panel-${listId}-${task._id}, #right-panel-${listId}`);
+  let panel = null;
+  
+  allPanels.forEach(p => {
+    const currentId = p.dataset.currentTaskId;
+    if (!panel && currentId === task._id) {
+      panel = p;
     }
+  });
+  if (!panel) return;
+  
+  if (!panel) {
+    console.warn('⚠️ Panel not found for blur:', task.title);
+    return;
+  }
+
+  // ✅ fallback: use .task-blur-content if available, else entire panel
+  const blurContent = panel.querySelector('.task-blur-content') || panel;
+
+  console.log('🔍 Applying blur to:', task.title, '| Completed:', task.completed);
+  console.log('📎 Panel:', panel, '| Blur target:', blurContent);
+
+  if (task.completed) {
+    blurContent.classList.add('blurred');
+    blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
+  } else {
+    blurContent.classList.remove('blurred');
+    blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
   }
 
   const completeBtn = panel.querySelector('.complete-btn');
@@ -46,16 +58,30 @@ function updatePanelBlurUI(task) {
   }
 }
 
+
+
 function toggleBlurFromCompleteBtn() {
   const currentTaskId = localStorage.getItem('selectedTaskId');
   const task = localTaskCache.find(t => t._id === currentTaskId);
   if (!task) return;
 
   task.completed = !task.completed;
-  saveTaskCacheToLocalStorage();
-  applyBlurEffect(task.completed, task.list);
 
-  // Update checkbox in list
+// ✅ Update the task in localStorage correctly
+const cached = localStorage.getItem('taskCache');
+if (cached) {
+  const fromStorage = JSON.parse(cached);
+  const i = fromStorage.findIndex(t => t._id === task._id);
+  if (i !== -1) {
+    fromStorage[i].completed = task.completed;
+    localStorage.setItem('taskCache', JSON.stringify(fromStorage));
+  }
+}
+
+saveTaskCacheToLocalStorage(); // still keep your usual save
+applyBlurEffect(task.completed, task.list);
+
+
   const checkbox = document.querySelector(`.task-item[data-task-id="${currentTaskId}"] .checkbox`);
   const taskText = document.querySelector(`.task-item[data-task-id="${currentTaskId}"] span`);
   if (checkbox) {
@@ -69,40 +95,6 @@ function toggleBlurFromCompleteBtn() {
   }
 
   updatePanelBlurUI(task);
-}
-
-function setupInitialBlurState() {
-  const currentTaskId = localStorage.getItem('selectedTaskId');
-  const task = localTaskCache.find(t => t._id === currentTaskId);
-  if (!task) return;
-
-  const listId = task.list.toLowerCase().replace(/\s+/g, '-');
-
-  // ✅ Only target the selected task's panel
-  const panel = document.getElementById(`right-panel-${listId}-${task._id}`);
-  if (!panel) {
-    console.warn('❌ Specific panel for selected task not found');
-    return;
-  }
-
-  const blurContent = panel.querySelector('.task-blur-content');
-  if (blurContent) {
-    if (task.completed) {
-      blurContent.classList.add('blurred');
-      blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
-    } else {
-      blurContent.classList.remove('blurred');
-      blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
-    }
-  }
-
-  const completeBtn = panel.querySelector('.complete-btn');
-  if (completeBtn) {
-    completeBtn.textContent = task.completed ? 'Mark as Incomplete' : 'Mark as Complete';
-    completeBtn.className = task.completed
-      ? 'complete-btn bg-green-500 text-white px-4 py-2 rounded-md'
-      : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
-  }
 }
 
 
@@ -123,7 +115,6 @@ function setupCheckboxBlurListeners() {
     saveTaskCacheToLocalStorage();
     applyBlurEffect(task.completed, task.list);
 
-    // Update checkbox visual
     if (task.completed) {
       checkbox.classList.add('checked');
       checkbox.innerHTML = '<i class="fas fa-check text-white text-xs"></i>';
@@ -132,7 +123,6 @@ function setupCheckboxBlurListeners() {
       checkbox.innerHTML = '';
     }
 
-    // Update task text style
     const textEl = taskItem.querySelector('span');
     if (textEl) {
       textEl.className = task.completed
@@ -140,7 +130,6 @@ function setupCheckboxBlurListeners() {
         : 'text-gray-200 flex-grow text-sm';
     }
 
-    // Update button + blur in panel if selected
     if (task._id === localStorage.getItem('selectedTaskId')) {
       updatePanelBlurUI(task);
     }
@@ -154,9 +143,4 @@ window.setupInitialBlurState = setupInitialBlurState;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupCheckboxBlurListeners();
-
-  // Wait for selected panel to exist before applying blur
-  setTimeout(() => {
-    setupInitialBlurState();
-  }, 300);
 });
