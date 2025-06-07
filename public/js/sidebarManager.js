@@ -33,13 +33,18 @@ function fixSidebarNavigation() {
         } else {
           localStorage.setItem('activeList', listName);
           localStorage.setItem('lastSelectedList', listName);
-         // console.log(`Set active list in localStorage to: ${listName} (from sidebar click)`);
-          localStorage.removeItem('selectedTaskId');
-
+          
+          // ✅ Do NOT remove selectedTaskId here — allow fallback selection
           highlightActiveList(listName);
-
-          const selectedTaskId = localStorage.getItem('selectedTaskId');
-          showPanelForList(listName, selectedTaskId || null);
+          
+          // let showPanelForList decide fallback task
+          showPanelForList(listName);
+          
+          // ✅ Let filterTasks preserve selection
+          if (typeof window.filterTasks === 'function') {
+            window.filterTasks(listName, true);
+          }
+          
           
           
           if (typeof window.updatePanelOnListChange === 'function') {
@@ -645,7 +650,7 @@ function clearExistingCustomLists() {
       localStorage.removeItem('selectedTaskId');
   
       if (typeof window.filterTasks === 'function') {
-        window.filterTasks(listName, false);
+        window.filterTasks(listName, true);
       }
       highlightActiveList(listName);
     });

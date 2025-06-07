@@ -373,7 +373,11 @@ function refreshTaskList(listName) {
 
   taskList.innerHTML = '';
 
-  const filteredTasks = localTaskCache.filter(task => task.list === listName);
+  const normalizedList = listName.trim().toLowerCase();
+  const filteredTasks = localTaskCache.filter(task => task.list.trim().toLowerCase() === normalizedList);
+  console.log(`Filtered ${filteredTasks.length} tasks for list: "${listName}"`);
+  console.table(filteredTasks);
+    
 
   if (filteredTasks.length === 0) {
     const emptyState = document.createElement('div');
@@ -690,6 +694,16 @@ function setSelectedTaskUI(task) {
     return;
   }
 
+  if (task && task._id) {
+    localStorage.setItem('selectedTaskId', task._id);
+
+    // ✅ ensure panel knows what it's showing
+    const panel = document.querySelector(`#right-panel-${task.list.toLowerCase().replace(/\s+/g, '-')}`);
+    if (panel) {
+      panel.dataset.currentTaskId = task._id;
+    }
+  }
+
   const currentList = localStorage.getItem('activeList');
   if (task.list !== currentList) {
     console.warn(`⛔ Skipping panel render: task "${task.title}" is in list "${task.list}", but current list is "${currentList}"`);
@@ -724,6 +738,9 @@ function setSelectedTaskUI(task) {
   localStorage.setItem('selectedTaskId', task._id);
   localStorage.setItem('lastSelectedList', task.list);
 }
+
+
+
 
 
 function loadTaskDetails(task) {
@@ -1074,7 +1091,7 @@ window.filterTasks = function(listName, preserveSelection = false) {
     }
   }
 
-  if (!taskToSelect && (!preserveSelection || !currentSelectedTaskId)) {
+  if (!taskToSelect && (!preserveSelection || !currentSelectedTaskId) && !window.selectionLocked) {
     taskToSelect = findMostRecentTask(listName);
     if (taskToSelect) {
       console.log(`📍 Fallback: Selecting most recent task: ${taskToSelect.title}`);
@@ -1083,43 +1100,33 @@ window.filterTasks = function(listName, preserveSelection = false) {
 
   if (taskToSelect) {
     setSelectedTaskUI(taskToSelect);
-    window.selectionLocked = true;
-    localStorage.setItem('selectedTaskId', taskToSelect._id);
-    localStorage.setItem('lastSelectedList', listName);
-
-    if (typeof showPanelForList === 'function') {
-      showPanelForList(listName, taskToSelect._id);
-    }
 
     requestAnimationFrame(() => {
       const taskElements = document.querySelectorAll('.task-item');
       let found = false;
-    
+
       const selectedTaskId = taskToSelect._id;
       const selectedList = taskToSelect.list?.toLowerCase().replace(/\s+/g, '-').trim();
-    
+
       taskElements.forEach(el => {
         el.classList.remove('selected', 'bg-dark-hover');
-    
         const elTaskId = el.dataset.taskId;
         const elList = el.dataset.list?.toLowerCase().replace(/\s+/g, '-').trim();
-    
+
         if (elTaskId === selectedTaskId && elList === selectedList) {
           el.classList.add('selected', 'bg-dark-hover');
           found = true;
         }
       });
-    
+
       if (!found) {
-        console.warn(`Could not find task element for ID: ${selectedTaskId} - will retry`);
         setTimeout(() => {
           const retryElements = document.querySelectorAll('.task-item');
           retryElements.forEach(el => {
             el.classList.remove('selected', 'bg-dark-hover');
-    
             const elTaskId = el.dataset.taskId;
             const elList = el.dataset.list?.toLowerCase().replace(/\s+/g, '-').trim();
-    
+
             if (elTaskId === selectedTaskId && elList === selectedList) {
               el.classList.add('selected', 'bg-dark-hover');
               console.log(`✅ Highlighted task on retry: ${taskToSelect.title}`);
@@ -1127,9 +1134,17 @@ window.filterTasks = function(listName, preserveSelection = false) {
           });
         }, 100);
       }
+
+      // ✅ Lock selection *after* highlight
+      window.selectionLocked = true;
     });
-    
-    
+
+    localStorage.setItem('selectedTaskId', taskToSelect._id);
+    localStorage.setItem('lastSelectedList', listName);
+
+    if (typeof showPanelForList === 'function') {
+      showPanelForList(listName, taskToSelect._id);
+    }
   } else {
     console.log(`No tasks found in ${listName} list`);
     localStorage.removeItem('selectedTaskId');
@@ -1139,36 +1154,38 @@ window.filterTasks = function(listName, preserveSelection = false) {
   }
 
   const listTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
-const rightPanelsContainer = document.getElementById('right-panels-container');
-const listId = listName.toLowerCase().replace(/\s+/g, '-');
-const panel = document.getElementById(`right-panel-${listId}`);
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+  const listId = listName.toLowerCase().replace(/\s+/g, '-');
+  const panel = document.getElementById(`right-panel-${listId}`);
 
-// ✅ FIX: Only show panel if there are tasks AND one is selected
-if (listTasks.length > 0 && taskToSelect) {
-  if (rightPanelsContainer) {
-    rightPanelsContainer.classList.remove('hidden');
-    rightPanelsContainer.style.display = 'block';
-  }
+  if (listTasks.length > 0 && taskToSelect) {
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.remove('hidden');
+      rightPanelsContainer.style.display = 'block';
+    }
 
-  if (panel) {
-    panel.classList.remove('hidden');
-    panel.style.display = 'block';
-  }
+    if (panel) {
+      panel.classList.remove('hidden');
+      panel.style.display = 'block';
+    }
 
-  if (typeof updateRightPanelVisibility === 'function') {
-    updateRightPanelVisibility(listName);
+    if (typeof updateRightPanelVisibility === 'function') {
+      updateRightPanelVisibility(listName);
+    }
+  } else {
+    if (panel) {
+      panel.classList.add('hidden');
+      panel.style.display = 'none';
+    }
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.add('hidden');
+      rightPanelsContainer.style.display = 'none';
+    }
   }
-} else {
-  if (panel) {
-    panel.classList.add('hidden');
-    panel.style.display = 'none';
-  }
-  if (rightPanelsContainer) {
-    rightPanelsContainer.classList.add('hidden');
-    rightPanelsContainer.style.display = 'none';
-  }
-}
-}
+};
+
+
+
 
 
 
@@ -1327,6 +1344,10 @@ function updateRightPanelVisibility(listName) {
   }
 
 function showPanelForTask(task) {
+  if (task && task._id) {
+    localStorage.setItem('selectedTaskId', task._id); // ✅ force sync
+  }
+  
     if (!task || !task._id || task.deleted) return;
 
     const rightPanelsContainer = ensureRightPanelContainerExists();
