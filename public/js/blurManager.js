@@ -76,20 +76,36 @@ function setupInitialBlurState() {
   const task = localTaskCache.find(t => t._id === currentTaskId);
   if (!task) return;
 
-  applyBlurEffect(task.completed, task.list);
-
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
-  const panel = document.querySelector(`#right-panel-${listId}, #right-panel-${listId}-${task._id}`);
-  if (!panel) return;
+
+  // ✅ Only target the selected task's panel
+  const panel = document.getElementById(`right-panel-${listId}-${task._id}`);
+  if (!panel) {
+    console.warn('❌ Specific panel for selected task not found');
+    return;
+  }
+
+  const blurContent = panel.querySelector('.task-blur-content');
+  if (blurContent) {
+    if (task.completed) {
+      blurContent.classList.add('blurred');
+      blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
+    } else {
+      blurContent.classList.remove('blurred');
+      blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
+    }
+  }
 
   const completeBtn = panel.querySelector('.complete-btn');
-  if (!completeBtn) return;
-
-  completeBtn.textContent = task.completed ? 'Mark as Incomplete' : 'Mark as Complete';
-  completeBtn.className = task.completed
-    ? 'complete-btn bg-green-500 text-white px-4 py-2 rounded-md'
-    : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
+  if (completeBtn) {
+    completeBtn.textContent = task.completed ? 'Mark as Incomplete' : 'Mark as Complete';
+    completeBtn.className = task.completed
+      ? 'complete-btn bg-green-500 text-white px-4 py-2 rounded-md'
+      : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
+  }
 }
+
+
 
 function setupCheckboxBlurListeners() {
   document.addEventListener('click', (e) => {
@@ -138,5 +154,9 @@ window.setupInitialBlurState = setupInitialBlurState;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupCheckboxBlurListeners();
-  setupInitialBlurState();
+
+  // Wait for selected panel to exist before applying blur
+  setTimeout(() => {
+    setupInitialBlurState();
+  }, 300);
 });
