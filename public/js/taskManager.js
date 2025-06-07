@@ -1139,22 +1139,36 @@ window.filterTasks = function(listName, preserveSelection = false) {
   }
 
   const listTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
-  const rightPanelsContainer = document.getElementById('right-panels-container');
-  const listId = listName.toLowerCase().replace(/\s+/g, '-');
-  const panel = document.getElementById(`right-panel-${listId}`);
+const rightPanelsContainer = document.getElementById('right-panels-container');
+const listId = listName.toLowerCase().replace(/\s+/g, '-');
+const panel = document.getElementById(`right-panel-${listId}`);
 
-  if (listTasks.length > 0) {
-    if (rightPanelsContainer) rightPanelsContainer.classList.remove('hidden');
-    if (panel) panel.classList.remove('hidden');
-
-    if (typeof updateRightPanelVisibility === 'function') {
-      updateRightPanelVisibility(listName);
-    }
-  } else {
-    if (panel) panel.classList.add('hidden');
-    if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
+// ✅ FIX: Only show panel if there are tasks AND one is selected
+if (listTasks.length > 0 && taskToSelect) {
+  if (rightPanelsContainer) {
+    rightPanelsContainer.classList.remove('hidden');
+    rightPanelsContainer.style.display = 'block';
   }
-};
+
+  if (panel) {
+    panel.classList.remove('hidden');
+    panel.style.display = 'block';
+  }
+
+  if (typeof updateRightPanelVisibility === 'function') {
+    updateRightPanelVisibility(listName);
+  }
+} else {
+  if (panel) {
+    panel.classList.add('hidden');
+    panel.style.display = 'none';
+  }
+  if (rightPanelsContainer) {
+    rightPanelsContainer.classList.add('hidden');
+    rightPanelsContainer.style.display = 'none';
+  }
+}
+}
 
 
 
