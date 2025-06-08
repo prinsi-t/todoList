@@ -1,44 +1,59 @@
-function applyBlurEffect(shouldBlur, listName) {
-  const listId = listName.toLowerCase().replace(/\s+/g, '-');
-  const panelId = `right-panel-${listId}`;
-  const panel = document.getElementById(panelId);
-  if (!panel) return;
+function applyBlurEffect(task, strict = false) {
+  if (!task || !task._id || !task.list) return;
 
-  const panelContent = panel.querySelector('.task-blur-content') || panel;
-
-  if (shouldBlur) {
-    panelContent.classList.add('blurred-panel');
-    panelContent.style.filter = 'blur(5px)';
-    panelContent.style.pointerEvents = 'none';
-  } else {
-    panelContent.classList.remove('blurred-panel');
-    panelContent.style.filter = 'none';
-    panelContent.style.pointerEvents = 'auto';
-  }
-}
-
-function updatePanelBlurUI(task) {
-  const listId = task.list.toLowerCase().replace(/\s+/g, '-');
-  const allPanels = document.querySelectorAll(`#right-panel-${listId}-${task._id}, #right-panel-${listId}`);
-  let panel = null;
-  
-  allPanels.forEach(p => {
-    const currentId = p.dataset.currentTaskId;
-    if (!panel && currentId === task._id) {
-      panel = p;
-    }
-  });
-  if (!panel) return;
-  
-  if (!panel) {
-    console.warn('⚠️ Panel not found for blur:', task.title);
+  if (strict && !task.completed) {
+    console.log(`🚫 Skipping blur for incomplete task: ${task.title}`);
     return;
   }
 
-  // ✅ fallback: use .task-blur-content if available, else entire panel
+  const listId = task.list.toLowerCase().replace(/\s+/g, '-').trim();
+
+  // ✅ CORRECT PANEL ID for dynamic panels
+  const panel = document.getElementById(`right-panel-${listId}-${task._id}`);
+
+  if (!panel) {
+    console.warn('⚠️ No matching panel found for:', task.title);
+    return;
+  }
+
   const blurContent = panel.querySelector('.task-blur-content') || panel;
 
+  if (task.completed) {
+    blurContent.classList.add('blurred');
+    blurContent.style.cssText = 'filter: blur(5px) !important; pointer-events: none;';
+  } else {
+    blurContent.classList.remove('blurred');
+    blurContent.style.cssText = 'filter: none !important; pointer-events: auto;';
+  }
+
   console.log('🔍 Applying blur to:', task.title, '| Completed:', task.completed);
+  console.log('📎 Panel:', panel, '| Blur target:', blurContent);
+}
+
+
+
+
+
+function updatePanelBlurUI(task) {
+  if (!task || !task._id || !task.list) return;
+
+  const listId = task.list.toLowerCase().replace(/\s+/g, '-').trim();
+  const panel = document.getElementById(`right-panel-${listId}-${task._id}`);
+
+  if (!panel) {
+    console.warn('⚠️ Correct panel not found for blur update:', task.title);
+    return;
+  }
+
+  const blurContent = panel.querySelector('.task-blur-content');
+
+  if (!blurContent) {
+    console.warn('⚠️ task-blur-content not found, falling back to panel for:', task.title);
+  }
+  const target = blurContent || panel;
+  
+
+  console.log('🔍 Re-applying blur to:', task.title, '| Completed:', task.completed);
   console.log('📎 Panel:', panel, '| Blur target:', blurContent);
 
   if (task.completed) {
@@ -57,6 +72,9 @@ function updatePanelBlurUI(task) {
       : 'complete-btn bg-blue-500 text-white px-4 py-2 rounded-md';
   }
 }
+
+
+
 
 
 
@@ -79,7 +97,7 @@ if (cached) {
 }
 
 saveTaskCacheToLocalStorage(); // still keep your usual save
-applyBlurEffect(task.completed, task.list);
+applyBlurEffect(task, true);
 
 
   const checkbox = document.querySelector(`.task-item[data-task-id="${currentTaskId}"] .checkbox`);
@@ -113,7 +131,7 @@ function setupCheckboxBlurListeners() {
 
     task.completed = !task.completed;
     saveTaskCacheToLocalStorage();
-    applyBlurEffect(task.completed, task.list);
+    applyBlurEffect(task, true);
 
     if (task.completed) {
       checkbox.classList.add('checked');
@@ -139,7 +157,7 @@ function setupCheckboxBlurListeners() {
 window.applyBlurEffect = applyBlurEffect;
 window.toggleBlurFromCompleteBtn = toggleBlurFromCompleteBtn;
 window.setupCheckboxBlurListeners = setupCheckboxBlurListeners;
-window.setupInitialBlurState = setupInitialBlurState;
+
 
 document.addEventListener('DOMContentLoaded', () => {
   setupCheckboxBlurListeners();
