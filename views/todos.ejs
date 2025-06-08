@@ -111,65 +111,64 @@
         </div>
       </div>
 
-      <!-- Right Panel Container -->
-      <div id="right-panels-container" class="flex-1 hidden overflow-x-hidden max-w-full">
+     <!-- Inside your right-panels-container -->
+<div id="right-panels-container" class="flex-1 hidden overflow-x-hidden max-w-full">
 
-        <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal">
-          <div class="flex items-center justify-between mb-6">
-            <div class="flex flex-col max-w-[300px]">
-              <h2 class="panel-task-title text-lg text-gray-100 mb-1"></h2>
-              <div class="text-sm text-gray-400 truncate">Personal</div>
-            </div>
-            
-            
-            
-            <button id="complete-btn" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition">
+  <!-- ✅ Base template panel: DO NOT USE directly -->
+  <div id="right-panel-personal" class="right-panel hidden bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal" data-template="true">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex flex-col max-w-[300px]">
+        <h2 class="panel-task-title text-lg text-gray-100 mb-1"></h2>
+        <div class="text-sm text-gray-400 truncate">Personal</div>
+      </div>
+      <button id="complete-btn" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded transition">
+        Mark as Complete
+      </button>
+    </div>
 
-              Mark as Complete
+    <!-- ✅ Blur target -->
+    <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
+      <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
+        <div>
+          <h3 class="text-lg text-gray-400 mb-2">NOTES</h3>
+          <textarea
+            placeholder="Insert your notes here"
+            class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
+            rows="4"
+          ></textarea>
+        </div>
+
+        <div class="subtasks-section">
+          <h3 class="text-lg text-gray-400 mb-2">SUBTASKS</h3>
+          <div class="flex items-center gap-2 mb-4">
+            <input
+              type="text"
+              class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
+              placeholder="Add a new subtask..."
+            >
+            <button class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200" data-list="Personal">
+              Add
             </button>
           </div>
+          <div id="subtasksList" class="subtasks-list space-y-1"></div>
+        </div>
 
-          <div class="task-blur-content transition-all duration-300 bg-dark/80 p-6 rounded-lg">
-            <div class="bg-dark p-4 rounded-lg border border-dark-border space-y-6">
-              <div>
-                <h3 class="text-lg text-gray-400 mb-2">NOTES</h3>
-                <textarea
-                  placeholder="Insert your notes here"
-                  class="notes-textarea w-full bg-transparent text-white placeholder-gray-600 focus:outline-none border border-gray-600 rounded p-2"
-                  rows="4"
-                ></textarea>
-              </div>
-
-              <div class="subtasks-section">
-                <h3 class="text-lg text-gray-400 mb-2">SUBTASKS</h3>
-                <div class="flex items-center gap-2 mb-4">
-                  <input
-                    type="text"
-                    class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
-                    placeholder="Add a new subtask..."
-                  >
-                  <button class="add-subtask-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200" data-list="Personal">
-                    Add
-                  </button>
-                </div>
-                <div id="subtasksList" class="subtasks-list space-y-1"></div>
-              </div>
-
-              <div class="attachments-section mt-6">
-                <h3 class="text-lg font-medium text-gray-400 mb-2">ATTACHMENTS</h3>
-                <div class="drop-zone border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:bg-dark-hover transition-colors" data-list="<%= activeList %>">
-                  <div class="flex flex-col items-center justify-center">
-                    <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
-                    <p class="text-gray-400">Click to add / drop your files here</p>
-                    <p class="text-gray-500 text-xs mt-1">(Max 10 images)</p>
-                  </div>
-                </div>
-                <div class="image-preview-container mt-4 flex flex-wrap gap-2"></div>
-              </div>
+        <div class="attachments-section mt-6">
+          <h3 class="text-lg font-medium text-gray-400 mb-2">ATTACHMENTS</h3>
+          <div class="drop-zone border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:bg-dark-hover transition-colors" data-list="<%= activeList %>">
+            <div class="flex flex-col items-center justify-center">
+              <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+              <p class="text-gray-400">Click to add / drop your files here</p>
+              <p class="text-gray-500 text-xs mt-1">(Max 10 images)</p>
             </div>
           </div>
+          <div class="image-preview-container mt-4 flex flex-wrap gap-2"></div>
         </div>
-      </div> <!-- End of right-panels-container -->
+      </div>
+    </div>
+  </div>
+</div>
+
     </div> <!-- End of main flex content -->
   </div> <!-- ✅ End of .main-content wrapper -->
 

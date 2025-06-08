@@ -87,9 +87,17 @@ function wrapShowPanelForListOnceDefined() {
             setSelectedTaskUI(task);
           }
 
+          if (typeof createPanelForTask === 'function') {
+            const created = createPanelForTask(task);
+            if (!created) {
+              console.warn('⚠️ Could not create panel for:', task.title);
+            }
+          }
+          
           if (typeof showPanelForTask === 'function') {
             showPanelForTask(task);
           }
+          
 
           if (typeof updatePanelBlurUI === 'function') {
             setTimeout(() => updatePanelBlurUI(task), 100);
@@ -149,13 +157,29 @@ window.createPanelForTask = function (task) {
   if (!basePanel) return;
 
   const panel = basePanel.cloneNode(true);
-  panel.id = uniquePanelId;
-  panel.classList.add('right-panel', 'task-panel');
-  panel.classList.remove('hidden');
-  panel.style.display = 'block';
+panel.id = uniquePanelId;
+panel.classList.add('right-panel', 'task-panel');
+panel.classList.remove('hidden');
+panel.style.display = 'block';
+
+// 🚫 Remove template-only markers
+panel.removeAttribute('data-template');
+
+// ✅ Set correct data
+panel.setAttribute('data-current-task-id', task._id);
+panel.setAttribute('data-list', task.list);
+
 
   const titleEl = panel.querySelector('h2');
   if (titleEl) titleEl.textContent = task.title;
+// ✅ Set panel's list info correctly
+panel.dataset.currentTaskId = task._id;
+
+// ✅ Ensure blur target is valid
+const blurContent = panel.querySelector('.task-blur-content');
+if (!blurContent) {
+  console.warn('⚠️ Panel created, but no .task-blur-content found for task:', task.title);
+}
 
   const completeBtn = panel.querySelector('.complete-btn');
   if (completeBtn) {

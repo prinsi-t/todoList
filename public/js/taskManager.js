@@ -579,9 +579,15 @@ function toggleTaskCompletion(taskId) {
   const selectedTask = document.querySelector('.task-item.selected');
   if (selectedTask && selectedTask.dataset.taskId === taskId) {
     const taskList = localTaskCache[taskIndex].list;
-    applyBlurEffect(newCompletedState, taskList);
 
-    // Update the Mark as Complete button text and color
+    // 🔧 Replace this:
+    // applyBlurEffect(newCompletedState, taskList); ❌ Wrong
+
+    // ✅ With this:
+    const updatedTask = localTaskCache[taskIndex];
+    applyBlurEffect(updatedTask, true);
+    updatePanelBlurUI(updatedTask);
+
     const completeBtn = document.getElementById('complete-btn');
     if (completeBtn) {
       completeBtn.textContent = newCompletedState ? 'Mark as Incomplete' : 'Mark as Complete';
@@ -625,6 +631,7 @@ function toggleTaskCompletion(taskId) {
     console.error('Error making network request:', error);
   }
 }
+
 
 
 
@@ -1040,58 +1047,49 @@ function deleteTask(taskId) {
 
 
 
-window.filterTasks = function(listName, preserveSelection = false) {
+window.filterTasks = function (listName, preserveSelection = false) {
   console.log('Filtering tasks for list:', listName, 'preserveSelection:', preserveSelection);
-  if (window.selectionLocked && preserveSelection) {
-    console.log('🔒 Selection is locked, skipping re-selection.');
-    return;
-  }
+
+  if (window.selectionLocked && preserveSelection) return;
 
   localStorage.setItem('activeList', listName);
 
-  const titleElement = document.querySelector('h1');
-  if (titleElement) titleElement.textContent = `${listName} tasks`;
-
-  const taskCategory = document.getElementById('taskCategory');
-  if (taskCategory) taskCategory.value = listName;
-
+  const listTitle = document.getElementById('listTitle');
+  const categoryLabel = document.getElementById('categoryLabel');
   const newTaskInput = document.getElementById('newTaskInput');
-  if (newTaskInput) newTaskInput.value = '';
 
-  if (typeof window.highlightActiveList === 'function') {
-    window.highlightActiveList(listName);
-  } else if (typeof highlightActiveList === 'function') {
-    highlightActiveList(listName);
-  }
+  if (listTitle) listTitle.textContent = listName;
+  if (categoryLabel) categoryLabel.textContent = listName;
+  if (newTaskInput) newTaskInput.placeholder = `Add a task to ${listName}`;
 
   refreshTaskList(listName);
 
-  const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
+  const selectedTaskId = localStorage.getItem('selectedTaskId');
   let taskToSelect = null;
 
   const lastMovedTaskId = localStorage.getItem('lastMovedTaskId');
   if (lastMovedTaskId) {
     const movedTask = localTaskCache.find(t => t._id === lastMovedTaskId && t.list === listName);
     if (movedTask) {
-      console.log(`✅ Selecting recently moved task: ${movedTask.title}`);
       taskToSelect = movedTask;
+      console.log(`🔄 Focusing moved task: ${movedTask.title}`);
       localStorage.removeItem('lastMovedTaskId');
     }
   }
 
-  if (!taskToSelect && preserveSelection && currentSelectedTaskId) {
-    const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId && t.list === listName);
+  if (!taskToSelect && preserveSelection && selectedTaskId) {
+    const selectedTask = localTaskCache.find(t => t._id === selectedTaskId && t.list === listName);
     if (selectedTask) {
       console.log(`✅ Preserving manually selected task: ${selectedTask.title}`);
       taskToSelect = selectedTask;
     } else {
-      console.warn(`⏳ selectedTaskId exists but task not yet in cache: retrying`);
+      console.log(`⏳ Waiting for selected task (${selectedTaskId}) to appear...`);
       setTimeout(() => filterTasks(listName, true), 100);
       return;
     }
   }
 
-  if (!taskToSelect && (!preserveSelection || !currentSelectedTaskId) && !window.selectionLocked) {
+  if (!taskToSelect && (!preserveSelection || !selectedTaskId) && !window.selectionLocked) {
     taskToSelect = findMostRecentTask(listName);
     if (taskToSelect) {
       console.log(`📍 Fallback: Selecting most recent task: ${taskToSelect.title}`);
@@ -1103,39 +1101,16 @@ window.filterTasks = function(listName, preserveSelection = false) {
 
     requestAnimationFrame(() => {
       const taskElements = document.querySelectorAll('.task-item');
-      let found = false;
-
-      const selectedTaskId = taskToSelect._id;
-      const selectedList = taskToSelect.list?.toLowerCase().replace(/\s+/g, '-').trim();
+      const selectedId = taskToSelect._id;
+      const selectedList = taskToSelect.list.toLowerCase().replace(/\s+/g, '-').trim();
 
       taskElements.forEach(el => {
         el.classList.remove('selected', 'bg-dark-hover');
-        const elTaskId = el.dataset.taskId;
-        const elList = el.dataset.list?.toLowerCase().replace(/\s+/g, '-').trim();
-
-        if (elTaskId === selectedTaskId && elList === selectedList) {
+        if (el.dataset.taskId === selectedId && el.dataset.list === selectedList) {
           el.classList.add('selected', 'bg-dark-hover');
-          found = true;
         }
       });
 
-      if (!found) {
-        setTimeout(() => {
-          const retryElements = document.querySelectorAll('.task-item');
-          retryElements.forEach(el => {
-            el.classList.remove('selected', 'bg-dark-hover');
-            const elTaskId = el.dataset.taskId;
-            const elList = el.dataset.list?.toLowerCase().replace(/\s+/g, '-').trim();
-
-            if (elTaskId === selectedTaskId && elList === selectedList) {
-              el.classList.add('selected', 'bg-dark-hover');
-              console.log(`✅ Highlighted task on retry: ${taskToSelect.title}`);
-            }
-          });
-        }, 100);
-      }
-
-      // ✅ Lock selection *after* highlight
       window.selectionLocked = true;
     });
 
@@ -1145,44 +1120,16 @@ window.filterTasks = function(listName, preserveSelection = false) {
     if (typeof showPanelForList === 'function') {
       showPanelForList(listName, taskToSelect._id);
     }
-  } else {
-    console.log(`No tasks found in ${listName} list`);
-    localStorage.removeItem('selectedTaskId');
-
-    const rightPanelsContainer = document.getElementById('right-panels-container');
-    if (rightPanelsContainer) rightPanelsContainer.classList.add('hidden');
   }
 
-  const listTasks = localTaskCache.filter(t => t.list === listName && !t.deleted);
-  const rightPanelsContainer = document.getElementById('right-panels-container');
-  const listId = listName.toLowerCase().replace(/\s+/g, '-');
-  const panel = document.getElementById(`right-panel-${listId}`);
-
-  if (listTasks.length > 0 && taskToSelect) {
-    if (rightPanelsContainer) {
-      rightPanelsContainer.classList.remove('hidden');
-      rightPanelsContainer.style.display = 'block';
-    }
-
-    if (panel) {
-      panel.classList.remove('hidden');
-      panel.style.display = 'block';
-    }
-
-    if (typeof updateRightPanelVisibility === 'function') {
-      updateRightPanelVisibility(listName);
-    }
-  } else {
-    if (panel) {
-      panel.classList.add('hidden');
-      panel.style.display = 'none';
-    }
-    if (rightPanelsContainer) {
-      rightPanelsContainer.classList.add('hidden');
-      rightPanelsContainer.style.display = 'none';
-    }
-  }
+  // ✅ Apply blur correctly to each task panel in the list
+  const normalizedList = listName.trim().toLowerCase();
+  const tasksInList = localTaskCache.filter(task => task.list.trim().toLowerCase() === normalizedList);
+  tasksInList.forEach(task => {
+    applyBlurEffect(task, true);
+  });
 };
+
 
 
 
