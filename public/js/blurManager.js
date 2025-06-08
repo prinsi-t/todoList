@@ -8,8 +8,10 @@ function applyBlurEffect(task, strict = false) {
 
   const listId = task.list.toLowerCase().replace(/\s+/g, '-').trim();
 
-  // ✅ CORRECT PANEL ID for dynamic panels
-  const panel = document.getElementById(`right-panel-${listId}-${task._id}`);
+  const dynamicPanel = document.getElementById(`right-panel-${listId}-${task._id}`);
+const fallbackPanel = document.getElementById(`right-panel-${listId}`);
+const panel = dynamicPanel || fallbackPanel;
+
 
   if (!panel) {
     console.warn('⚠️ No matching panel found for:', task.title);
@@ -38,7 +40,10 @@ function updatePanelBlurUI(task) {
   if (!task || !task._id || !task.list) return;
 
   const listId = task.list.toLowerCase().replace(/\s+/g, '-').trim();
-  const panel = document.getElementById(`right-panel-${listId}-${task._id}`);
+  const dynamicPanel = document.getElementById(`right-panel-${listId}-${task._id}`);
+const fallbackPanel = document.getElementById(`right-panel-${listId}`);
+const panel = dynamicPanel || fallbackPanel;
+
 
   if (!panel) {
     console.warn('⚠️ Correct panel not found for blur update:', task.title);
