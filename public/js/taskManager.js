@@ -1047,6 +1047,9 @@ function deleteTask(taskId) {
 
 
 
+// Fix for panel showing when no tasks exist
+// Replace the filterTasks function with this updated version
+
 window.filterTasks = function (listName, preserveSelection = false) {
   console.log('Filtering tasks for list:', listName, 'preserveSelection:', preserveSelection);
 
@@ -1073,6 +1076,29 @@ window.filterTasks = function (listName, preserveSelection = false) {
 
   refreshTaskList(listName);
 
+  // 🔧 NEW: Check if there are any tasks in this list
+  const normalizedList = listName.trim().toLowerCase();
+  const tasksInList = localTaskCache.filter(task => 
+    task.list.trim().toLowerCase() === normalizedList && !task.deleted
+  );
+
+  // 🔧 NEW: Hide right panel if no tasks exist
+  const rightPanelsContainer = document.getElementById('right-panels-container');
+  if (tasksInList.length === 0) {
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.add('hidden');
+      rightPanelsContainer.style.display = 'none';
+    }
+    
+    // Clear any selected task data
+    localStorage.removeItem('selectedTaskId');
+    window.currentTaskId = null;
+    
+    console.log(`✅ Hidden panel for empty list: ${listName}`);
+    return; // Exit early, no need to select tasks
+  }
+
+  // 🔧 EXISTING: Rest of the function remains the same for when tasks exist
   const selectedTaskId = localStorage.getItem('selectedTaskId');
   let taskToSelect = null;
 
@@ -1106,6 +1132,12 @@ window.filterTasks = function (listName, preserveSelection = false) {
   }
 
   if (taskToSelect) {
+    // 🔧 NEW: Show right panel only when we have a task to select
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.remove('hidden');
+      rightPanelsContainer.style.display = 'block';
+    }
+
     setSelectedTaskUI(taskToSelect);
 
     requestAnimationFrame(() => {
@@ -1129,14 +1161,18 @@ window.filterTasks = function (listName, preserveSelection = false) {
     if (typeof showPanelForList === 'function') {
       showPanelForList(listName, taskToSelect._id);
     }
-  }
 
-  // ✅ Apply blur correctly to each task panel in the list
-  const normalizedList = listName.trim().toLowerCase();
-  const tasksInList = localTaskCache.filter(task => task.list.trim().toLowerCase() === normalizedList);
-  tasksInList.forEach(task => {
-    applyBlurEffect(task, true);
-  });
+    // ✅ Apply blur correctly to each task panel in the list
+    tasksInList.forEach(task => {
+      applyBlurEffect(task, true);
+    });
+  } else {
+    // 🔧 NEW: If no task to select, hide the panel
+    if (rightPanelsContainer) {
+      rightPanelsContainer.classList.add('hidden');
+      rightPanelsContainer.style.display = 'none';
+    }
+  }
 };
 
 
