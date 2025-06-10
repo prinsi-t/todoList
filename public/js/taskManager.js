@@ -1054,13 +1054,22 @@ window.filterTasks = function (listName, preserveSelection = false) {
 
   localStorage.setItem('activeList', listName);
 
+  // 🔧 FIX: Update the main heading to show current list name
   const listTitle = document.getElementById('listTitle');
   const categoryLabel = document.getElementById('categoryLabel');
   const newTaskInput = document.getElementById('newTaskInput');
+  
+  // 🔧 FIX: Also update the main page heading (h1 element)
+  const mainHeading = document.querySelector('h1');
 
   if (listTitle) listTitle.textContent = listName;
   if (categoryLabel) categoryLabel.textContent = listName;
   if (newTaskInput) newTaskInput.placeholder = `Add a task to ${listName}`;
+  
+  // 🔧 FIX: Update the main heading that shows "Personal tasks", "Work tasks", etc.
+  if (mainHeading) {
+    mainHeading.textContent = `${listName} tasks`;
+  }
 
   refreshTaskList(listName);
 
