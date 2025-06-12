@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const completeBtn = document.getElementById('complete-btn');
 
   loadTasksFromLocalStorage();
-  setupAddTaskFormListener();
   completeBtn.addEventListener('click', toggleBlurFromCompleteBtn);
   ensureCountElementsExist();
   loadTasks();
@@ -37,228 +36,125 @@ function saveTaskCacheToLocalStorage() {
 }
 window.saveTaskCacheToLocalStorage = saveTaskCacheToLocalStorage;
 
-// 🔧 FIXED: Preserve selected task on refresh
 async function loadTasksFromServer() {
   try {
-    // 🔑 Get the currently selected task BEFORE loading
     const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
     const currentList = localStorage.getItem('activeList') || 'Personal';
-    
+
     const response = await fetch('/todos/all');
-    if (response.ok) {
-      const serverTasks = await response.json();
-
-      const localTaskMap = {};
-      localTaskCache.forEach(task => {
-        localTaskMap[task._id] = task;
-      });
-
-      const mergedTasks = serverTasks.map(serverTask => {
-        const localTask = localTaskMap[serverTask._id];
-        if (localTask) {
-          serverTask.completed = localTask.completed;
-          if (localTask.subtasks && localTask.subtasks.length > 0) {
-            serverTask.subtasks = [...localTask.subtasks];
-          }
-          delete localTaskMap[serverTask._id];
-        }
-        return serverTask;
-      });
-
-      for (const taskId in localTaskMap) {
-        if (taskId.startsWith('local_')) {
-          mergedTasks.push(localTaskMap[taskId]);
-        }
-      }
-
-      localTaskCache = mergedTasks;
-      saveTaskCacheToLocalStorage();
-      updateAllTaskCounts();
-
-      console.log(`Loading tasks for list: ${currentList}`);
-
-      // 🔧 Filter tasks but preserve selection
-      filterTasks(currentList, true); // Always preserve selection on refresh
-
-      // 🔑 PRESERVE SELECTED TASK: Check if the selected task still exists
-      if (currentSelectedTaskId) {
-        const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId);
-        
-        if (selectedTask && selectedTask.list === currentList) {
-          // ✅ Selected task exists in current list - keep it selected
-          console.log(`✅ Preserving selected task: ${selectedTask.title} (ID: ${selectedTask._id})`);
-          
-           // ✅ Selected task exists in current list - keep it selected
-    setSelectedTaskUI(selectedTask);
-    localStorage.setItem('selectedTaskId', selectedTask._id);
-    window.currentTaskId = selectedTask._id;
-
-    console.log(`✅ Preserved selected task after refresh: ${selectedTask.title}`);
-    return; // ⛔ Stop here — avoid overriding with recent task
-
-
-          // Highlight it visually after DOM is ready
-          setTimeout(() => {
-            const taskElements = document.querySelectorAll('.task-item');
-            taskElements.forEach(el => {
-              el.classList.remove('selected', 'bg-dark-hover');
-              if (el.dataset.taskId === selectedTask._id) {
-                el.classList.add('selected', 'bg-dark-hover');
-                console.log(`✅ Preserved highlight for: ${selectedTask.title}`);
-              }
-            });
-          }, 100);
-        } else if (selectedTask && selectedTask.list !== currentList) {
-          // Selected task exists but in different list - clear selection
-          console.log(`⚠️ Selected task is in different list (${selectedTask.list}), clearing selection`);
-          localStorage.removeItem('selectedTaskId');
-          
-          // Fall back to most recent task in current list
-          const recentTask = findMostRecentTask(currentList);
-          if (recentTask) {
-            setSelectedTaskUI(recentTask);
-            localStorage.setItem('selectedTaskId', recentTask._id);
-            
-            setTimeout(() => {
-              const taskElements = document.querySelectorAll('.task-item');
-              taskElements.forEach(el => {
-                el.classList.remove('selected', 'bg-dark-hover');
-                if (el.dataset.taskId === recentTask._id) {
-                  el.classList.add('selected', 'bg-dark-hover');
-                }
-              });
-            }, 100);
-          }
-        } else {
-          // Selected task no longer exists - clear and select most recent
-          console.log(`⚠️ Selected task no longer exists, selecting most recent`);
-          localStorage.removeItem('selectedTaskId');
-          
-          const recentTask = findMostRecentTask(currentList);
-          if (recentTask) {
-            setSelectedTaskUI(recentTask);
-            localStorage.setItem('selectedTaskId', recentTask._id);
-            window.currentTaskId = selectedTask._id;
-
-            setTimeout(() => {
-              const taskElements = document.querySelectorAll('.task-item');
-              taskElements.forEach(el => {
-                el.classList.remove('selected', 'bg-dark-hover');
-                if (el.dataset.taskId === recentTask._id) {
-                  el.classList.add('selected', 'bg-dark-hover');
-                }
-              });
-            }, 100);
-          }
-        }
-      } else {
-        // No task was selected - select most recent
-        const recentTask = findMostRecentTask(currentList);
-        if (recentTask) {
-          console.log(`No task selected, choosing most recent: ${recentTask.title}`);
-          setSelectedTaskUI(recentTask);
-          localStorage.setItem('selectedTaskId', recentTask._id);
-          
-          setTimeout(() => {
-            const taskElements = document.querySelectorAll('.task-item');
-            taskElements.forEach(el => {
-              el.classList.remove('selected', 'bg-dark-hover');
-              if (el.dataset.taskId === recentTask._id) {
-                el.classList.add('selected', 'bg-dark-hover');
-              }
-            });
-          }, 100);
-        }
-      }
-    } else {
+    if (!response.ok) {
       console.error('Failed to fetch tasks from server:', response.status);
+      return;
     }
-  } catch (error) {
-    console.error('Error loading tasks from server:', error);
+
+    const serverTasks = await response.json();
+
+    const localTaskMap = {};
+    localTaskCache.forEach(task => {
+      localTaskMap[task._id] = task;
+    });
+
+    const mergedTasks = serverTasks.map(serverTask => {
+      const localTask = localTaskMap[serverTask._id];
+      if (localTask) {
+        serverTask.completed = localTask.completed;
+        if (localTask.subtasks && localTask.subtasks.length > 0) {
+          serverTask.subtasks = [...localTask.subtasks];
+        }
+        delete localTaskMap[serverTask._id];
+      }
+      return serverTask;
+    });
+
+    for (const taskId in localTaskMap) {
+      if (taskId.startsWith('local_')) {
+        mergedTasks.push(localTaskMap[taskId]);
+      }
+    }
+
+    localTaskCache = mergedTasks;
+    saveTaskCacheToLocalStorage();
     updateAllTaskCounts();
 
-    const currentList = localStorage.getItem('activeList') || 'Personal';
-    console.log(`Error case - using active list from localStorage: ${currentList}`);
-    filterTasks(currentList, true); // Preserve selection even on error
-  }
-}
+    filterTasks(currentList, true);
 
-async function loadTasks() {
-  loadTasksFromLocalStorage();
-  
-  const isLocalMode = true; // Set this to true to work in local-only mode
-  
-  if (isLocalMode) {
-    console.log('Running in local-only mode, skipping server fetch');
-    updateAllTaskCounts();
-    const currentList = localStorage.getItem('activeList') || 'Personal';
-    
-    // 🔧 PRESERVE SELECTION in local mode too
-    const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
-    
-    filterTasks(currentList, true); // Always preserve selection
-    
-    // If we have a selected task, make sure it's highlighted
     if (currentSelectedTaskId) {
       const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId);
       if (selectedTask && selectedTask.list === currentList) {
+        console.log(`✅ Preserving selected task after refresh: ${selectedTask.title}`);
+        setSelectedTaskUI(selectedTask);
+        localStorage.setItem('selectedTaskId', selectedTask._id);
+        window.currentTaskId = selectedTask._id;
+
         setTimeout(() => {
           const taskElements = document.querySelectorAll('.task-item');
           taskElements.forEach(el => {
             el.classList.remove('selected', 'bg-dark-hover');
-            if (el.dataset.taskId === currentSelectedTaskId) {
+            if (el.dataset.taskId === selectedTask._id) {
               el.classList.add('selected', 'bg-dark-hover');
-              console.log(`✅ Preserved selection in local mode: ${selectedTask.title}`);
+            }
+          });
+        }, 100);
+
+        return; // ⛔ Prevent fallback
+      }
+    }
+
+    console.log('ℹ️ No fallback task selected — respecting existing selection');
+    // No fallback logic – let init.js handle it
+
+  } catch (error) {
+    console.error('Error loading tasks from server:', error);
+
+    const currentList = localStorage.getItem('activeList') || 'Personal';
+    filterTasks(currentList, true);
+    updateAllTaskCounts();
+  }
+}
+
+
+
+
+
+
+
+async function loadTasks() {
+  loadTasksFromLocalStorage();
+
+  const isLocalMode = true;
+  if (isLocalMode) {
+    console.log('🛠️ Running in local-only mode');
+
+    updateAllTaskCounts();
+    const currentList = localStorage.getItem('activeList') || 'Personal';
+    const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
+
+    filterTasks(currentList, true);
+
+    if (currentSelectedTaskId) {
+      const selectedTask = localTaskCache.find(t => t._id === currentSelectedTaskId);
+      if (selectedTask && selectedTask.list === currentList) {
+        console.log(`✅ Preserved selection in local mode: ${selectedTask.title}`);
+
+        setTimeout(() => {
+          const taskElements = document.querySelectorAll('.task-item');
+          taskElements.forEach(el => {
+            el.classList.remove('selected', 'bg-dark-hover');
+            if (el.dataset.taskId === selectedTask._id) {
+              el.classList.add('selected', 'bg-dark-hover');
             }
           });
         }, 100);
       }
     }
+
     return;
   }
-  
-  // Server mode code remains the same...
-  try {
-    const response = await fetch('/todos/all');
-    if (response.ok) {
-      const serverTasks = await response.json();
-      
-      const localTaskMap = {};
-      localTaskCache.forEach(task => {
-        localTaskMap[task._id] = task;
-      });
-      
-      const mergedTasks = serverTasks.map(serverTask => {
-        const localTask = localTaskMap[serverTask._id];
-        if (localTask) {
-          serverTask.completed = localTask.completed;
-          if (localTask.subtasks && localTask.subtasks.length > 0) {
-            serverTask.subtasks = [...localTask.subtasks];
-          }
-          delete localTaskMap[serverTask._id];
-        }
-        return serverTask;
-      });
-      
-      for (const taskId in localTaskMap) {
-        if (taskId.startsWith('local_')) {
-          mergedTasks.push(localTaskMap[taskId]);
-        }
-      }
-      
-      localTaskCache = mergedTasks;
-      saveTaskCacheToLocalStorage();
-    } else {
-      console.error('Failed to fetch tasks from server:', response.status);
-    }
-  } catch (error) {
-    console.error('Error loading tasks from server:', error);
-  }
-  
-  updateAllTaskCounts();
-  const currentList = localStorage.getItem('activeList') || 'Personal';
-  filterTasks(currentList, true); // Always preserve selection
+
+  // If not local mode, fallback to server
+  await loadTasksFromServer();
 }
+
 
 window.loadTasks = loadTasks;
 
@@ -637,6 +533,8 @@ function toggleTaskCompletion(taskId) {
 
 
 async function selectTask(taskId) {
+  console.log('👉 selectTask CALLED for ID:', taskId);
+
   try {
     const currentSelectedTaskId = localStorage.getItem('selectedTaskId');
     const isAlreadySelected = currentSelectedTaskId === taskId;
@@ -696,6 +594,8 @@ async function selectTask(taskId) {
 
 
 function setSelectedTaskUI(task) {
+  console.log('🌟 setSelectedTaskUI CALLED for:', task.title, '| ID:', task._id, '| List:', task.list);
+
   if (!task) {
     console.warn('No task provided to setSelectedTaskUI');
     return;
@@ -1101,6 +1001,7 @@ window.filterTasks = function (listName, preserveSelection = false) {
   // 🔧 EXISTING: Rest of the function remains the same for when tasks exist
   const selectedTaskId = localStorage.getItem('selectedTaskId');
   let taskToSelect = null;
+  console.log('🎯 FINAL taskToSelect in filterTasks:', taskToSelect?.title || 'None');
 
   const lastMovedTaskId = localStorage.getItem('lastMovedTaskId');
   if (lastMovedTaskId) {
@@ -1112,17 +1013,19 @@ window.filterTasks = function (listName, preserveSelection = false) {
     }
   }
 
-  if (!taskToSelect && preserveSelection && selectedTaskId) {
+  if (preserveSelection && selectedTaskId) {
     const selectedTask = localTaskCache.find(t => t._id === selectedTaskId && t.list === listName);
     if (selectedTask) {
       console.log(`✅ Preserving manually selected task: ${selectedTask.title}`);
       taskToSelect = selectedTask;
     } else {
-      console.log(`⏳ Waiting for selected task (${selectedTaskId}) to appear...`);
-      setTimeout(() => filterTasks(listName, true), 100);
-      return;
+      console.warn(`🛑 Selected task (${selectedTaskId}) not found or not in list "${listName}". Skipping fallback.`);
+      return; // 🛑 Do not fallback — let current UI stay as is
     }
   }
+  console.log('🔍 Final taskToSelect in filterTasks:', taskToSelect?.title || 'None');
+  
+  
 
   if (!taskToSelect && (!preserveSelection || !selectedTaskId) && !window.selectionLocked) {
     taskToSelect = findMostRecentTask(listName);
