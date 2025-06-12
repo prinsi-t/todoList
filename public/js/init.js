@@ -73,9 +73,18 @@ function wrapShowPanelForListOnceDefined() {
           }
         }
 
-        if (!task && typeof findMostRecentTask === 'function') {
+        if (!task && selectedTaskId) {
+          const selectedFromCache = window.localTaskCache?.find(t => t._id === selectedTaskId);
+          if (selectedFromCache && selectedFromCache.list === listName) {
+            task = selectedFromCache;
+          }
+        }
+        
+        // ⛔ Only fallback to recent task if NO selectedTaskId is provided
+        if (!task && !selectedTaskId && typeof findMostRecentTask === 'function') {
           task = findMostRecentTask(listName);
         }
+        
 
         if (task && task.list === listName) {
           rightPanelsContainer.classList.remove('hidden');
@@ -86,6 +95,7 @@ function wrapShowPanelForListOnceDefined() {
           if (typeof setSelectedTaskUI === 'function') {
             setSelectedTaskUI(task);
           }
+          console.log('📦 showPanelForList setting selected task:', task.title, '| ID:', task._id);
 
           if (typeof createPanelForTask === 'function') {
             const created = createPanelForTask(task);
@@ -120,7 +130,7 @@ function wrapShowPanelForListOnceDefined() {
   // ✅ UNLOCK SELECTION AFTER PANEL SHOWN
   setTimeout(() => {
     window.selectionLocked = false;
-  }, 100);
+  }, 300);
           return;
         }
 
@@ -146,7 +156,9 @@ window.createPanelForTask = function (task) {
 
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
   const uniquePanelId = `right-panel-${listId}-${task._id}`;
-  if (document.getElementById(uniquePanelId)) return;
+  const existing = document.getElementById(uniquePanelId);
+if (existing) return existing;
+
 
   let basePanel = document.getElementById(`right-panel-${listId}`);
   if (!basePanel && typeof createPanelForList === 'function') {

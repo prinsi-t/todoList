@@ -70,7 +70,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeList = localStorage.getItem('activeList') || 'Personal';
     //console.log('DOMContentLoaded - Showing panel for active list:', activeList);
     
-    showPanelForList(activeList);
+    const selectedTaskId = localStorage.getItem('selectedTaskId');
+showPanelForList(activeList, selectedTaskId);
+
     
     highlightActiveList(activeList);
   }, 500);
