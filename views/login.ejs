@@ -62,7 +62,12 @@
   <!-- Main Form Container -->
   <div class="w-full max-w-md bg-[#22252D] rounded-lg shadow-lg p-6 relative z-10">
     <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
-
+    <% if (error) { %>
+      <div class="mb-4 p-3 bg-red-500 text-white text-sm rounded">
+        <%= error %>
+      </div>
+    <% } %>
+    
     <!-- Hidden dummy fields to prevent auto-fill -->
     <input type="text" name="dummy-email" style="display: none;" autocomplete="off">
     <input type="password" name="dummy-password" style="display: none;" autocomplete="off">
