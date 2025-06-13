@@ -121,7 +121,8 @@ async function loadTasksFromServer() {
 async function loadTasks() {
   loadTasksFromLocalStorage();
 
-  const isLocalMode = true;
+  const isLocalMode = false;
+
   if (isLocalMode) {
     console.log('🛠️ Running in local-only mode');
 

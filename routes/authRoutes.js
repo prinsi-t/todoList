@@ -14,16 +14,18 @@ const ensureAuthenticated = (req, res, next) => {
 
 // Login Page
 router.get('/login', (req, res) => {
-  res.render('login', { title: 'Login' });
+  res.render('login', { title: 'Login', error: null });
 });
+
 
 // Handle Login
 router.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) return next(err);
     if (!user) {
-      return res.redirect('/login');
+      return res.render('login', { title: 'Login', error: info?.message });
     }
+    
     req.logIn(user, (err) => {
       if (err) return next(err);
       return res.redirect('/todos');

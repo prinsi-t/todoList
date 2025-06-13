@@ -209,45 +209,37 @@ if (!blurContent) {
 };
 
 async function initApp() {
-  loadLocalTaskCache();
-  
-  // 🔄 Sync completed states from taskCache to localTaskCache
-const cached = localStorage.getItem('taskCache');
-if (cached) {
-  const fromStorage = JSON.parse(cached);
-  for (let storedTask of fromStorage) {
-    const i = localTaskCache.findIndex(t => t._id === storedTask._id);
-    if (i !== -1) {
-      localTaskCache[i].completed = storedTask.completed; // ✅ force sync
-    }
-  }
-}
-
-  window.selectionLocked = false;
-// 🧪 Log what's going on
-const selectedId = localStorage.getItem('selectedTaskId');
-console.log('🆔 Selected Task ID:', selectedId);
-console.log('🧠 TaskCache from localStorage:', localStorage.getItem('taskCache'));
-console.log('🧩 localTaskCache in memory:', localTaskCache);
-  setEventListeners();
-
   const isLoggingInNow = isNewLogin();
+  
   if (isLoggingInNow) {
+    console.log('🔄 New login detected: resetting cache and state');
     localStorage.setItem('activeList', 'Personal');
     localStorage.removeItem('selectedTaskId');
+    
   }
 
+  loadLocalTaskCache();
+
+  // ⛔ Reset in-memory cache if cleared in localStorage
+  const cached = localStorage.getItem('taskCache');
+  if (!cached) {
+    localTaskCache = [];
+  } else {
+    const fromStorage = JSON.parse(cached);
+    for (let storedTask of fromStorage) {
+      const i = localTaskCache.findIndex(t => t._id === storedTask._id);
+      if (i !== -1) {
+        localTaskCache[i].completed = storedTask.completed;
+      }
+    }
+  }
+
+  window.selectionLocked = false;
+
+  setEventListeners();
+
+  // ✅ Load fresh tasks from server
   await loadTasksFromServer();
-
-  if (typeof loadLocalSubtasks === 'function') {
-    const subtasksResult = loadLocalSubtasks();
-    if (subtasksResult instanceof Promise) await subtasksResult;
-  }
-
-  if (typeof loadNotesForActiveList === 'function') {
-    const notesResult = loadNotesForActiveList();
-    if (notesResult instanceof Promise) await notesResult;
-  }
 
   const currentList = localStorage.getItem('activeList') || 'Personal';
 
@@ -267,10 +259,21 @@ console.log('🧩 localTaskCache in memory:', localTaskCache);
     }
   }, 100);
 
-  if (typeof window.updateAllTaskCounts === 'function') {
-    window.updateAllTaskCounts();
+  if (typeof updateAllTaskCounts === 'function') {
+    updateAllTaskCounts();
+  }
+
+  if (typeof loadLocalSubtasks === 'function') {
+    const subtasksResult = loadLocalSubtasks();
+    if (subtasksResult instanceof Promise) await subtasksResult;
+  }
+
+  if (typeof loadNotesForActiveList === 'function') {
+    const notesResult = loadNotesForActiveList();
+    if (notesResult instanceof Promise) await notesResult;
   }
 }
+
 
 function saveTaskCacheToLocalStorage() {
   try {
