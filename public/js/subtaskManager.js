@@ -316,11 +316,8 @@ function loadSubtasksForCurrentTask() {
     attachDeleteListener(el);
   });
 
-  if (normalized.length === 0) {
-    showNoSubtasksMessage();
-  } else {
-    hideNoSubtasksMessage();
-  }
+  updateNoSubtaskMessage(subtasksList, normalized.length === 0);
+
 
   // Sync to localStorage just in case
   const taskSubtasksKey = `subtasks_${window.currentTaskId}`;
@@ -379,10 +376,17 @@ function deleteSubtask(subtaskId) {
   localStorage.setItem(taskSubtasksKey, JSON.stringify(updatedSubtasks));
   console.log('💾 Updated localStorage for task:', taskSubtasksKey);
 
-  const subtasksList = document.getElementById('subtasksList');
-  if (subtasksList && subtasksList.children.length === 0) {
-    showNoSubtasksMessage();
+  const panel = document.querySelector(`.right-panel[data-current-task-id="${window.currentTaskId}"]`);
+  const subtasksList = panel?.querySelector('#subtasksList');
+  
+  if (subtasksList) {
+    const subtaskCount = [...subtasksList.children].filter(el =>
+      !el.classList.contains('no-subtasks-message')
+    ).length;
+    updateNoSubtaskMessage(subtasksList, subtaskCount === 0);
   }
+  
+
 
   // 🔁 Server delete only for synced tasks
   if (!window.currentTaskId.startsWith('local_')) {
@@ -520,17 +524,29 @@ function fetchTaskFromServer(taskId) {
 
 
 function loadLocalSubtasks() {
-  const subtasksList = document.getElementById('subtasksList');
-  if (!subtasksList) return;
-
   const taskId = window.currentTaskId;
-  if (!taskId || !taskId.startsWith('local_')) {
-    loadSubtasksForCurrentTask();
+  if (!taskId) {
+    console.warn('❌ loadLocalSubtasks called without currentTaskId.');
     return;
   }
 
+  if (!taskId.startsWith('local_')) {
+    loadSubtasksForCurrentTask(); // fallback for server tasks
+    return;
+  }
+
+  const panel = document.querySelector(`.right-panel[data-current-task-id="${taskId}"]`);
+  const subtasksList = panel?.querySelector('#subtasksList');
+
+  if (!subtasksList) {
+    console.warn('❌ Subtasks list not found in panel for:', taskId);
+    return;
+  }
+
+  // Clear current list
   subtasksList.innerHTML = '';
 
+  // Load from localStorage
   const key = `subtasks_${taskId}`;
   const storedSubtasks = safeParseJSON(key, []).map(subtask => {
     if (!subtask || typeof subtask !== 'object') return null;
@@ -549,29 +565,26 @@ function loadLocalSubtasks() {
     };
   }).filter(Boolean);
 
-  if (storedSubtasks.length > 0) {
-    hideNoSubtasksMessage();
+  // Render each subtask
+  storedSubtasks.forEach(subtask => {
+    const el = createSubtaskElement(subtask.text, subtask.id, subtask.completed);
+    subtasksList.appendChild(el);
+    attachDeleteListener(el);
+  });
 
-    storedSubtasks.forEach(subtask => {
-      const el = createSubtaskElement(subtask.text, subtask.id, subtask.completed);
-      subtasksList.appendChild(el);
-      attachDeleteListener(el);
-    });
+  // Update message visibility
+  updateNoSubtaskMessage(subtasksList, storedSubtasks.length === 0);
 
-    // ✅ Save normalized subtasks back to the correct per-task key
-    localStorage.setItem(key, JSON.stringify(storedSubtasks));
-    console.log(`✅ Loaded and normalized ${storedSubtasks.length} subtasks for ${taskId}`);
-  } else {
-    showNoSubtasksMessage();
-    console.log(`ℹ️ No subtasks found for ${taskId}`);
-  }
-
-  // ✅ Sync memory cache
+  // Sync memory
   const taskIndex = localTaskCache.findIndex(t => t._id === taskId);
   if (taskIndex !== -1) {
     localTaskCache[taskIndex].subtasks = storedSubtasks;
     saveTaskCacheToLocalStorage();
   }
+
+  // Store cleaned list again
+  localStorage.setItem(key, JSON.stringify(storedSubtasks));
+  console.log(`✅ Loaded and normalized ${storedSubtasks.length} subtasks for ${taskId}`);
 }
 
 
@@ -635,6 +648,23 @@ function hideNoSubtasksMessage(panel) {
     });
   }
 }
+
+function updateNoSubtaskMessage(subtasksList, shouldShow) {
+  if (!subtasksList) return;
+
+  const existing = subtasksList.querySelector('.no-subtasks-message');
+  if (shouldShow) {
+    if (!existing) {
+      const msg = document.createElement('div');
+      msg.className = 'no-subtasks-message text-gray-500 mt-2';
+      msg.textContent = 'No subtasks added yet.';
+      subtasksList.appendChild(msg);
+    }
+  } else if (existing) {
+    existing.remove();
+  }
+}
+
 
 document.addEventListener('taskSelected', function (e) {
   if (e.detail && e.detail.taskId) {
