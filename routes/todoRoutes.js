@@ -145,6 +145,7 @@ router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
 
     // Store both title and text properties to ensure compatibility
     todo.subtasks.push({
+      id: req.body.id,
       title: subtaskText,
       text: subtaskText  // Add text property for client-side compatibility
     });
@@ -167,29 +168,28 @@ router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
   }
 });
 
-router.delete('/todos/:id/subtasks/:index', ensureAuthenticated, async (req, res) => {
+router.delete('/todos/:id/subtask', ensureAuthenticated, async (req, res) => {
   try {
+    const { subtaskId } = req.body;
     const todo = await Todo.findOne({ _id: req.params.id, user: req.user._id });
     if (!todo) return res.status(404).json({ error: 'Todo not found' });
 
-    todo.subtasks.splice(req.params.index, 1);
+    todo.subtasks = todo.subtasks.filter(s => s.id !== subtaskId);
     await todo.save();
 
-    // Transform the response to include both title and text properties
     const response = todo.toObject();
-    if (response.subtasks && Array.isArray(response.subtasks)) {
-      response.subtasks = response.subtasks.map(subtask => ({
-        ...subtask,
-        text: subtask.title || subtask.text || 'Untitled subtask'
-      }));
-    }
+    response.subtasks = response.subtasks.map(s => ({
+      ...s,
+      text: s.title || s.text || 'Untitled subtask',
+    }));
 
     res.json(response);
   } catch (error) {
-    console.error('Error deleting subtask:', error);
+    console.error('Error deleting subtask by ID:', error);
     res.status(500).json({ error: 'Failed to delete subtask' });
   }
 });
+
 
 router.put('/todos/:id/subtasks/:index/complete', ensureAuthenticated, async (req, res) => {
   try {

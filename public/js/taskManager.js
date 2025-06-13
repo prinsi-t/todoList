@@ -618,6 +618,12 @@ function setSelectedTaskUI(task) {
   }
 
   window.currentTaskId = task._id;
+  if (task.list !== 'Personal' && typeof loadSubtasksForCurrentTask === 'function') {
+  setTimeout(() => {
+    loadSubtasksForCurrentTask();
+  }, 50);
+}
+
 
   const listId = task.list.toLowerCase().replace(/\s+/g, '-');
   const panelId = `right-panel-${listId}`;
