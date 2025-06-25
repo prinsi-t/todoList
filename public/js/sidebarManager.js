@@ -777,52 +777,46 @@ const panelData = {};
 let panelManagerInitialized = false;
 
 function initPanelManager() {
-  if (panelManagerInitialized) {
-  //  console.log('Panel manager already initialized, skipping');
-    return;
-  }
-  
- // console.log('Initializing Panel Manager');
+  if (panelManagerInitialized) return;
   panelManagerInitialized = true;
-
-  
 
   setupListSwitchListeners();
 
-  const activeList = getActiveList() || 'Personal';
+  const activeList = getActiveList(); // ✅ uses synced sessionState/localStorage
+  const selectedTaskId = getSelectedTaskId?.();
 
-  console.log(`Active list from localStorage in initPanelManager: ${activeList}`);
+  console.log(`📌 [initPanelManager] Using activeList: ${activeList} | selectedTaskId: ${selectedTaskId}`);
 
-  const selectedTaskId = localStorage.getItem('selectedTaskId');
-  
   setTimeout(() => {
     if (activeList) {
       showPanelForList(activeList, selectedTaskId);
 
-      if (typeof window.highlightActiveList === 'function') {
-        window.highlightActiveList(activeList);
+      if (typeof highlightActiveList === 'function') {
+        highlightActiveList(activeList);
       }
-      
-      if (typeof window.filterTasks === 'function') {
-        window.filterTasks(activeList, true); 
+
+      if (typeof filterTasks === 'function') {
+        filterTasks(activeList, true);
       }
     } else {
-      const defaultList = 'Personal'; // or choose any default
-localStorage.setItem('activeList', defaultList);
-//console.log(`No active list found, setting to default: ${defaultList}`);
-showPanelForList(defaultList, selectedTaskId);
+      const fallback = 'Personal';
+      setActiveList(fallback);
+      localStorage.setItem('activeList', fallback);
 
-if (typeof window.highlightActiveList === 'function') {
-  window.highlightActiveList(defaultList);
-}
+      console.warn(`⚠️ No activeList found — falling back to: ${fallback}`);
+      showPanelForList(fallback, selectedTaskId);
 
-if (typeof window.filterTasks === 'function') {
-  window.filterTasks(defaultList, true);
-}
+      if (typeof highlightActiveList === 'function') {
+        highlightActiveList(fallback);
+      }
 
+      if (typeof filterTasks === 'function') {
+        filterTasks(fallback, true);
+      }
     }
   }, 300);
 }
+
 
 function createPanelsForCustomLists() {
   try {

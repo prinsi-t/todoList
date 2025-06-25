@@ -476,7 +476,8 @@ function setSelectedTaskUI(task) {
 
     taskElements.forEach(el => {
       const elTaskId = el.dataset.taskId?.trim();
-const elList = el.dataset.list?.trim().toLowerCase();
+      const elList = el.dataset.list?.trim().toLowerCase().replace(/\s+/g, '-');
+
 const isSelected =
   elTaskId === String(selectedId).trim() &&
   elList === selectedList;
@@ -508,6 +509,25 @@ if (!elTaskId || !elList) {
     console.log('✅ Forced style reapply done for:', task.title);
     console.log('%c[UI CHECK] Selected task DOM updated and forced highlight', 'background: #1e293b; color: white; padding: 2px;');
   });
+  setTimeout(() => {
+    const retryElements = document.querySelectorAll('.task-item');
+    let retryFound = false;
+  
+    retryElements.forEach(el => {
+      const elId = String(el.dataset.taskId || '').trim();
+      const elList = String(el.dataset.list || '').trim().toLowerCase();
+  
+      if (elId === String(task._id).trim() && elList === selectedList) {
+        el.classList.add('selected', 'bg-dark-hover');
+        retryFound = true;
+      }
+    });
+  
+    console.log(retryFound
+      ? '🟢 [setSelectedTaskUI] Retry highlight success'
+      : '🔴 [setSelectedTaskUI] Retry highlight failed again');
+  }, 250); // Slightly longer delay than requestAnimationFrame
+  
 
   // ✅ Sync global state
   window.selectedTaskId = task._id;
