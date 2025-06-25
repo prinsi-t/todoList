@@ -6,7 +6,7 @@ function fixSidebarNavigation() {
     const listName = item.dataset.list;
 
     if (listName) {
-      //console.log('Setting up click handler for list:', listName);
+  console.log('Setting up click handler for list:', listName);
 
       const newItem = item.cloneNode(true);
       item.parentNode.replaceChild(newItem, item);
@@ -22,13 +22,14 @@ function fixSidebarNavigation() {
           return;
         }
 
-        //console.log(`List clicked: ${listName}`);
+        console.log(`List clicked: ${listName}`);
         
-        const currentActiveList = localStorage.getItem('activeList');
+        const currentActiveList = getActiveList();
+
         const isDeselecting = currentActiveList === listName;
         
         if (isDeselecting) {
-          //console.log(`${listName} is already selected, keeping it selected`);
+          console.log(`${listName} is already selected, keeping it selected`);
           highlightActiveList(listName);
         } else {
           localStorage.setItem('activeList', listName);
@@ -51,11 +52,7 @@ function fixSidebarNavigation() {
             window.updatePanelOnListChange(listName);
           }
 
-          if (typeof window.filterTasks === 'function') {
-            window.filterTasks(listName, false);
-          } else {
-            console.error('filterTasks function not found');
-          }
+
         }
       });
     }
@@ -64,157 +61,18 @@ function fixSidebarNavigation() {
 
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-  
     createPanelsForAllLists();
-    
-    const activeList = localStorage.getItem('activeList') || 'Personal';
-    //console.log('DOMContentLoaded - Showing panel for active list:', activeList);
-    
-    const selectedTaskId = localStorage.getItem('selectedTaskId');
-showPanelForList(activeList, selectedTaskId);
 
-    
-    highlightActiveList(activeList);
+    if (typeof getActiveList === 'function') {
+      const activeList = getActiveList(); // from sessionState
+      const selectedTaskId = getSelectedTaskId?.();
+      showPanelForList(activeList, selectedTaskId);
+      highlightActiveList(activeList);
+    }
   }, 500);
 });
-  
-function fixAddTaskForm() {
-  //console.log('Fixing add task form...');
 
-  const addTaskForm = document.getElementById('addTaskForm');
-  if (!addTaskForm) {
-    console.error('Add task form not found');
-    return;
-  }
 
-  const newForm = addTaskForm.cloneNode(true);
-  addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
-
-  newForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const input = document.getElementById('newTaskInput');
-    if (!input) {
-      console.error('Task input not found');
-      return;
-    }
-
-    const taskText = input.value.trim();
-    if (!taskText) {
-    //  console.log('Empty task, ignoring');
-      return;
-    }
-
-    const activeList = localStorage.getItem('activeList') || 'Personal';
-
-   // console.log('Adding task to list:', activeList);
-   // console.log('Task text:', taskText);
-
-    const newTask = {
-      _id: 'local_' + Date.now(),
-      title: taskText,
-      list: activeList,
-      completed: false,
-      subtasks: [],
-      attachments: []
-    };
-
-    if (typeof window.localTaskCache === 'undefined') {
-   //   console.log('Creating new local task cache');
-      window.localTaskCache = [];
-    }
-
-    localTaskCache.push(newTask);
-
-    try {
-      localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-   //   console.log('Task saved to localStorage cache');
-
-      updateTaskCount(activeList, 1);
-      
-      const rightPanelsContainer = document.getElementById('right-panels-container');
-      if (rightPanelsContainer) {
-        rightPanelsContainer.classList.remove('hidden');
-   //     console.log('Forced right panel container to be visible');
-      }
-      
-      if (typeof window.showPanelForTask === 'function') {
-    //    console.log('Directly showing panel for new task:', newTask);
-        window.showPanelForTask(newTask);
-      } else {
-        console.error('showPanelForTask function not available');
-      }
-      if (typeof window.setSelectedTaskUI === 'function') {
-        setSelectedTaskUI(newTask);
-      }
-      if (typeof window.showPanelForList === 'function') {
-        showPanelForList(activeList, newTask._id);
-      }
-      setTimeout(() => {
-        const taskElements = document.querySelectorAll('.task-item');
-        taskElements.forEach(el => {
-          el.classList.remove('selected', 'bg-dark-hover');
-          if (el.dataset.taskId === newTask._id) {
-            el.classList.add('selected', 'bg-dark-hover');
-          }
-        });
-      }, 50);
-            
-      
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-
-    const listId = activeList.toLowerCase().replace(/\s+/g, '-');
-    const panelId = `right-panel-${listId}`;
-    const panel = document.getElementById(panelId);
-
-    if (panel) {
-      const titleElement = panel.querySelector('h2');
-      if (titleElement) {
-        titleElement.textContent = taskText;
-     //   console.log(`Directly updated panel title to: ${taskText}`);
-      }
-
-      if (typeof updatePanelWithTask === 'function') {
-        updatePanelWithTask(panel, newTask);
-    //    console.log('Updated panel with new task using updatePanelWithTask');
-      }
-
-      document.dispatchEvent(new CustomEvent('taskSelected', {
-        detail: { taskId: newTask._id, listName: activeList }
-      }));
-
-      window.currentTaskId = newTask._id;
-
-      localStorage.setItem('selectedTaskId', newTask._id);
-      localStorage.setItem('lastSelectedList', activeList);
-      
-      if (typeof window.updatePanelOnListChange === 'function') {
-        window.updatePanelOnListChange(activeList);
-      }
-      
-      document.dispatchEvent(new CustomEvent('taskAdded', {
-        detail: { task: newTask }
-      }));
-    }
-
-    if (typeof window.refreshTaskList === 'function') {
-      refreshTaskList(activeList);
-    //  console.log('Task list refreshed');
-    } else if (typeof window.filterTasks === 'function') {
-      window.filterTasks(activeList, true);
-    //  console.log('Tasks filtered for current list');
-    } else {
-      console.error('No refresh function found');
-      window.location.reload();
-    }
-
-    input.value = '';
-  });
-
- // console.log('Add task form fixed!');
-}
   
   function debugActiveList() {
     //console.log('Current active list:', localStorage.getItem('activeList'));
@@ -332,7 +190,7 @@ function fixAddTaskForm() {
 
   
 function ensureCountElementsExist() {
-  const defaultLists = ['Personal', 'Work', 'Grocery List', 'hh', 'ddd', 'kk'];
+  const defaultLists = ['Personal', 'Work', 'Grocery List'];
   
   defaultLists.forEach(listName => {
     const listSelector = listName.toLowerCase().replace(/\s+/g, '-');
@@ -393,26 +251,22 @@ function ensureCountElementsExist() {
 window.ensureCountElementsExist = ensureCountElementsExist;
   
   function highlightActiveList(activeList) {
-    //console.log('Highlighting active list:', activeList);
+    console.log('Highlighting active list:', activeList);
   
     const sidebarItems = document.querySelectorAll('.sidebar-item');
-    //console.log(`Found ${sidebarItems.length} sidebar items to check`);
+    console.log(`Found ${sidebarItems.length} sidebar items to check`);
   
-    // const listColorMap = {
-    //   Personal: 'text-purple-400',
-    //   Work: 'text-orange-400',
-    //   'Grocery List': 'text-cyan-400'
-    // };
+   
   
     sidebarItems.forEach(item => {
       const listName = item.getAttribute('data-list');
-      //const icon = item.querySelector('i');
+    
       const span = item.querySelector('span.flex-grow');
   
-      //console.log(`Checking sidebar item: ${listName} against active list: ${activeList}`);
+      console.log(`Checking sidebar item: ${listName} against active list: ${activeList}`);
   
       if (listName === activeList) {
-       // console.log(`✅ Matching list found: ${listName} - applying active styles`);
+        console.log(`✅ Matching list found: ${listName} - applying active styles`);
   
         item.classList.add('active-list', 'bg-dark-hover', 'text-white');
         item.setAttribute('style', 'background-color:rgb(55, 111, 201) !important; padding-left: 14px; transition: all 0.2s ease-in-out;');
@@ -423,13 +277,10 @@ window.ensureCountElementsExist = ensureCountElementsExist;
           span.style.color = 'white';
         }
   
-        // if (icon) {
-        //   // 🛠️ Remove any existing text-* color class
-        //   icon.className = icon.className.replace(/\btext-\w+-\d{3}\b/g, '').trim();
-        // }
+       
   
       } else {
-       // console.log(`Removing active styles from: ${listName}`);
+     console.log(`Removing active styles from: ${listName}`);
         item.classList.remove('active-list', 'bg-dark-hover', 'text-white');
         item.style.paddingLeft = '16px';
         item.style.backgroundColor = '';
@@ -440,14 +291,7 @@ window.ensureCountElementsExist = ensureCountElementsExist;
           span.style.color = '';
         }
   
-        // if (icon) {
-        //   const defaultColor = listColorMap[listName];
-        //   if (defaultColor) {
-        //     icon.className = icon.className
-        //       .replace(/\btext-\w+-\d{3}\b/g, '') // remove old color
-        //       .trim() + ` ${defaultColor}`;
-        //   }
-        // }
+
       }
     });
   }
@@ -663,14 +507,12 @@ function clearExistingCustomLists() {
       saveCustomListToLocalStorage(listName);
     }
     
- //   console.log(`Creating right panel for new list: ${listName}`);
+   console.log(`Creating right panel for new list: ${listName}`);
     
-    const panel = createPanelForList(listName);
+ const panel = null; // Don't create dummy panels for new lists anymore
+
     
-    if (!panel) {
-      console.error('Failed to create panel for new list');
-      return;
-    }
+   
     
     if (saveToStorage) {
       const allPanels = document.querySelectorAll('.right-panel');
@@ -943,12 +785,13 @@ function initPanelManager() {
  // console.log('Initializing Panel Manager');
   panelManagerInitialized = true;
 
-  createPanelsForAllLists();
+  
 
   setupListSwitchListeners();
 
-  const activeList = localStorage.getItem('activeList') || 'Personal';
-  //console.log(`Active list from localStorage in initPanelManager: ${activeList}`);
+  const activeList = getActiveList() || 'Personal';
+
+  console.log(`Active list from localStorage in initPanelManager: ${activeList}`);
 
   const selectedTaskId = localStorage.getItem('selectedTaskId');
   
@@ -1019,68 +862,10 @@ function createPanelsForAllLists() {
   }
 }
 
-function createPanelForList(listName) {
-  if (!listName) return null;
-
-  const listId = listName.toLowerCase().replace(/\s+/g, '-');
-  const panelId = `right-panel-${listId}`;
-
-  let panel = document.getElementById(panelId);
-  if (panel) {
-  //  console.log(`Panel for ${listName} already exists`);
-    return panel;
-  }
-
- // console.log(`Creating panel for list: ${listName}`);
-
-  let template = document.getElementById('right-panel-personal');
-  if (!template) {
-    template = document.querySelector('.right-panel');
-  }
-  
-  if (!template) {
-    console.error('No panel template found');
-    return null;
-  }
-
-  const newPanel = template.cloneNode(true);
-  newPanel.id = panelId;
-  newPanel.setAttribute('data-list', listName);
-  newPanel.classList.add('hidden');
-  newPanel.style.display = 'none';
-
-  const listNameElement = newPanel.querySelector('.text-sm.text-gray-400');
-  if (listNameElement) {
-    listNameElement.textContent = listName;
-  }
-
-  const completeBtn = newPanel.querySelector('.complete-btn');
-  if (completeBtn) {
-    completeBtn.setAttribute('onclick', `markSelectedTaskComplete('${listName}')`);
-    completeBtn.setAttribute('data-list', listName);
-  }
-
-  const addSubtaskBtn = newPanel.querySelector('.add-subtask-btn');
-  if (addSubtaskBtn) {
-    addSubtaskBtn.setAttribute('data-list', listName);
-  }
-
-  const dropZone = newPanel.querySelector('.drop-zone');
-  if (dropZone) {
-    dropZone.setAttribute('data-list', listName);
-  }
-
-  const container = document.getElementById('right-panels-container');
-  if (container) {
-    container.appendChild(newPanel);
-   // console.log(`Added panel to container: ${panelId}`);
-  } else {
-    console.error('Right panels container not found');
-    return null;
-  }
-
-  return newPanel;
+function createPanelForList() {
+  return null; // Stop creating dummy base panels
 }
+
 
 /**
  * Show the panel for a specific list
@@ -1089,73 +874,67 @@ function createPanelForList(listName) {
  */
 
 function showPanelForList(listName, selectedTaskId = null) {
-  if (!listName) {
-    console.error('No list name provided to showPanelForList');
-    return;
-  }
+  if (!listName) return;
 
-  const currentActiveList = localStorage.getItem('activeList');
-  if (currentActiveList !== listName) {
-    localStorage.setItem('activeList', listName);
-  }
+  const rightPanelsContainer = document.getElementById('right-panels-container');
 
-  const panels = document.querySelectorAll('.right-panel');
-  panels.forEach(panel => {
+  // 🧼 Hide all panels first
+  document.querySelectorAll('.right-panel.task-panel').forEach(panel => {
     panel.classList.add('hidden');
     panel.style.display = 'none';
   });
 
-  const listId = listName.toLowerCase().replace(/\s+/g, '-');
-  const panelId = `right-panel-${listId}`;
+  const task = selectedTaskId
+    ? findTaskById(selectedTaskId)
+    : findMostRecentTask(listName);
 
-  // ✅ Declare panel first
-  let panel = document.getElementById(panelId);
-  if (!panel) {
-    panel = createPanelForList(listName);
-  }
-
-  const hasVisibleTasks = document.querySelector(`.task-item[data-list="${listName}"]`);
-
-  const rightPanelsContainer = document.getElementById('right-panels-container');
-
-  if (!hasVisibleTasks || !panel) {
-    console.warn(`No task found to show in panel for list: ${listName} - hiding panel`);
-
-    if (panel) {
-      panel.classList.add('hidden');
-      panel.style.display = 'none';
-    }
-
+  if (!task || task.list !== listName) {
     if (rightPanelsContainer) {
       rightPanelsContainer.classList.add('hidden');
+      rightPanelsContainer.style.display = 'none';
     }
-
     return;
   }
 
-  // ✅ Show the panel and container if valid
+  const panelId = `right-panel-${task.list.toLowerCase().replace(/\s+/g, '-')}-${task._id}`;
+  let panel = document.getElementById(panelId);
+
+  if (!panel && typeof createPanelForTask === 'function') {
+    panel = createPanelForTask(task);
+  }
+
+  if (!panel) return;
+
   panel.classList.remove('hidden');
   panel.style.display = 'block';
 
   if (rightPanelsContainer) {
     rightPanelsContainer.classList.remove('hidden');
+    rightPanelsContainer.style.display = 'block';
   }
 
-  if (selectedTaskId) {
-    const selectedTask = findTaskById(selectedTaskId);
-    if (selectedTask && selectedTask.list === listName) {
-      updatePanelWithTask(panel, selectedTask);
-    } else {
-      updatePanelWithRecentTask(listName, panel);
-    }
-  } else {
-    updatePanelWithRecentTask(listName, panel);
+  if (typeof setSelectedTaskUI === 'function') {
+    setSelectedTaskUI(task);
   }
+
+  if (typeof updatePanelBlurUI === 'function') {
+    updatePanelBlurUI(task);
+  }
+
+  // ✅ Sync selection state to prevent resets
+  window.selectedTaskId = task._id;
+  window.currentTaskId = task._id;
+  window.selectionLocked = true;
 
   document.dispatchEvent(new CustomEvent('listChanged', {
     detail: { listName }
   }));
+
+  console.log('📌 showPanelForList → locked selection for:', task.title);
 }
+
+
+
 
 
 
@@ -1167,12 +946,14 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     addCustomStyles();
     fixSidebarNavigation();
-    fixAddTaskForm();
     setupAddListButton();
     loadCustomListsFromLocalStorage();
 
-    // Get the current active list WITHOUT changing it
-    const activeList = localStorage.getItem('activeList') || 'Personal';
+    const activeList = getActiveList();
+
+
+    //console.log('DOMContentLoaded - Active list:', activeList);
+   
 
  //   console.log('DOMContentLoaded - Using existing active list:', activeList);
   //  

@@ -12,7 +12,7 @@ const ensureAuthenticated = (req, res, next) => {
 
 router.get('/all', ensureAuthenticated, async (req, res) => {
   try {
-    const tasks = await Todo.find({ user: req.user._id }).sort({ createdAt: -1 }).lean();
+    const tasks = await Todo.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
     res.json(tasks);
   } catch (err) {
     console.error(err);

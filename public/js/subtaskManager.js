@@ -705,7 +705,7 @@ document.addEventListener('taskSelected', function (e) {
         const taskIndex = localTaskCache.findIndex(t => t._id === e.detail.taskId);
         if (taskIndex !== -1) {
           localTaskCache[taskIndex] = task;
-          saveTaskCacheToLocalStorage();
+  
           updateTaskSubtasksInLocalStorage(task);
         }
       }
