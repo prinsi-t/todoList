@@ -989,20 +989,7 @@ function findTaskById(taskId) {
   return window.localTaskCache.find(task => task._id === taskId);
 }
 
-function findMostRecentTask(listName) {
-  if (!listName || !window.localTaskCache) return null;
-  
-  const listTasks = window.localTaskCache
-    .filter(task => task.list === listName)
-    .sort((a, b) => {
-      const aId = a._id.includes('_') ? parseInt(a._id.split('_')[1]) : a._id;
-      const bId = b._id.includes('_') ? parseInt(b._id.split('_')[1]) : b._id;
-      
-      return bId - aId;
-    });
-  
-  return listTasks.length > 0 ? listTasks[0] : null;
-}
+
 
 function updatePanelWithRecentTask(listName, panel) {
   if (!listName || !panel) return;

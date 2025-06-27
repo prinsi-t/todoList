@@ -164,6 +164,16 @@ function refreshTaskList(listName) {
   }
 
   updateAllTaskCounts();
+  setTimeout(() => {
+    const selectedId = window.selectedTaskId;
+    if (!selectedId) return;
+  
+    const selectedEl = document.querySelector(`.task-item[data-task-id="${selectedId}"]`);
+    if (selectedEl) {
+      selectedEl.classList.add('selected', 'bg-dark-hover');
+    }
+  }, 100);
+  
 }
 
 function createTaskElement(task) {
@@ -858,9 +868,18 @@ window.filterTasks = function (listName, preserveSelection = false) {
   }
 
   if (window.selectionLocked && preserveSelection) {
-    console.log('🚫 [filterTasks] Skipped — selection is locked and preserveSelection is true');
-    return;
+    const preservedTask = window.localTaskCache.find(t => String(t._id) === String(window.selectedTaskId));
+    if (preservedTask && preservedTask.list === listName) {
+      console.log('✅ [filterTasks] Restoring preserved task:', preservedTask.title);
+      setSelectedTaskUI(preservedTask);
+      return;
+    }
+  
+    console.log('⚠️ [filterTasks] No valid preserved task — unlocking selection');
+    window.selectionLocked = false; // force fallback to recent task
   }
+  
+  
 
   window.activeList = listName;
   console.log('📌 [filterTasks] Setting active list to:', listName);
@@ -923,12 +942,30 @@ window.filterTasks = function (listName, preserveSelection = false) {
     }
   }
 
-  if (!taskToSelect && !window.selectionLocked) {
+
+
+  if (!taskToSelect) {
     taskToSelect = findMostRecentTask(listName);
     if (taskToSelect) {
-      console.log('🕘 [filterTasks] Using most recent task:', taskToSelect.title);
+      console.log('🧭 [filterTasks] Fallback to most recent task:', taskToSelect.title);
+  
+      // 🛠 FIXED: Call setSelectedTaskUI after DOM updates + retry if needed
+      requestAnimationFrame(() => {
+        setSelectedTaskUI(taskToSelect);
+      });
+  
+      return;
     }
   }
+  
+  
+  
+
+  if (!taskToSelect || !document.querySelector(`.task-item[data-task-id="${taskToSelect._id}"]`)) {
+    taskToSelect = findMostRecentTask(listName);
+    console.log('🧭 [filterTasks] Fallback to most recent task:', taskToSelect?.title || 'None');
+  }
+  
 
   if (!taskToSelect && preserveSelection === false) {
     taskToSelect = tasksInList[0];
@@ -1150,39 +1187,22 @@ function resetRightPanel(forceReset = false) {
 }
 
 function findMostRecentTask(listName) {
-  if (!window.localTaskCache || window.localTaskCache.length === 0) {
-    return null;
-  }
+  if (!window.localTaskCache || window.localTaskCache.length === 0) return null;
 
-  const listTasks = window.localTaskCache.filter(task => task.list === listName);
-  if (listTasks.length === 0) {
-    return null;
-  }
+  const listTasks = window.localTaskCache
+    .filter(task => task.list === listName && !task.deleted);
 
-  const sortedTasks = listTasks.sort((a, b) => {
-    if (a._id.startsWith('local_') && b._id.startsWith('local_')) {
-      const aTime = parseInt(a._id.replace('local_', ''));
-      const bTime = parseInt(b._id.replace('local_', ''));
-      return bTime - aTime;
-    }
-    else if (a._id.startsWith('local_')) {
-      return -1;
-    }
-    else if (b._id.startsWith('local_')) {
-      return 1;
-    }
-    else {
-      const aNum = parseInt(a._id.replace(/\D/g, ''));
-      const bNum = parseInt(b._id.replace(/\D/g, ''));
-      if (!isNaN(aNum) && !isNaN(bNum)) {
-        return bNum - aNum;
-      }
-    }
-    return -1;
+  if (listTasks.length === 0) return null;
+
+  const sorted = listTasks.sort((a, b) => {
+    const aTime = new Date(a.createdAt || 0);
+    const bTime = new Date(b.createdAt || 0);
+    return bTime - aTime;
   });
 
-  return sortedTasks[0];
+  return sorted[0];
 }
+
 
 function ensureRightPanelContainerExists() {
   const container = document.getElementById('right-panels-container');
