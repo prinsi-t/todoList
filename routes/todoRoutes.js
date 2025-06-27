@@ -278,6 +278,18 @@ router.post('/todos/:id/attachments', ensureAuthenticated, upload.single('file')
 });
 
 
+// DELETE all tasks for a given list (custom list delete cleanup)
+router.delete('/list/:listName', ensureAuthenticated, async (req, res) => {
+  const { listName } = req.params;
+
+  try {
+    const result = await Todo.deleteMany({ userId: req.user._id, list: listName });
+    res.status(200).json({ deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error('Error deleting tasks for list:', error);
+    res.status(500).json({ error: 'Failed to delete tasks for list' });
+  }
+});
 
 
 

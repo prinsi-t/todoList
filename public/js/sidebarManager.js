@@ -561,38 +561,43 @@ function clearExistingCustomLists() {
   }
  
   function deleteList(listName) {
-    const customLists = JSON.parse(localStorage.getItem('customLists') || '[]');
-    const updatedLists = customLists.filter(list => list !== listName);
+    const item = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
+    if (item) {
+      item.remove();
+    }
+  
+    // Remove count
+    const countEl = document.getElementById(`count-${listName.toLowerCase().replace(/\s+/g, '-')}`);
+    if (countEl) {
+      countEl.remove();
+    }
+  
+    // Remove from localStorage custom lists
+    const savedLists = JSON.parse(localStorage.getItem('customLists') || '[]');
+    const updatedLists = savedLists.filter(list => list !== listName);
     localStorage.setItem('customLists', JSON.stringify(updatedLists));
   
-    if (typeof localTaskCache !== 'undefined') {
-      const tasksToRemove = localTaskCache.filter(task => task.list === listName);
+    // 👇 Backend cleanup: delete tasks from DB for that list
+    fetch(`/todos/list/${encodeURIComponent(listName)}`, {
+      method: 'DELETE'
+    })
+      .then(res => res.json())
+      .then(data => {
+        console.log(`✅ Deleted ${data.deletedCount} tasks from list "${listName}"`);
+      })
+      .catch(err => {
+        console.error('❌ Failed to delete tasks from backend for list:', listName, err);
+      });
   
-      window.localTaskCache = localTaskCache.filter(task => task.list !== listName);
-      localStorage.setItem('taskCache', JSON.stringify(localTaskCache));
-  
-      const allTasksCount = document.getElementById('allTasksCount');
-      if (allTasksCount && tasksToRemove.length > 0) {
-        const currentTotal = parseInt(allTasksCount.textContent, 10) || 0;
-        allTasksCount.textContent = Math.max(0, currentTotal - tasksToRemove.length);
-      }
-    }
-  
-    if (localStorage.getItem('activeList') === listName) {
-      localStorage.setItem('activeList', 'Personal');
-    }
-  
-    const sidebarItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
-    if (sidebarItem) {
-      sidebarItem.remove();
-    }
-  
-    if (localStorage.getItem('activeList') === 'Personal') {
-      if (typeof window.filterTasks === 'function') {
-        window.filterTasks('Personal');
-      }
+    // Reapply filter and UI
+    const firstSidebarItem = document.querySelector('.sidebar-item');
+    if (firstSidebarItem) {
+      const fallbackList = firstSidebarItem.getAttribute('data-list');
+      highlightActiveList(fallbackList);
+      window.filterTasks(fallbackList, false);
     }
   }
+  
   
   window.deleteList = deleteList;
   
