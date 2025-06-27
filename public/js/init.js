@@ -174,6 +174,14 @@ async function initApp() {
     } else if (typeof findMostRecentTask === 'function') {
       task = findMostRecentTask(currentList);
       console.log('🕘 No session task — fallback to most recent task:', task?.title || 'No Title');
+
+      if (task && !selectedTaskId) {
+        sessionState.selectedTaskId = task._id;
+        window.selectedTaskId = task._id;
+        window.currentTaskId = task._id;
+        console.log('✅ [initApp] Set selectedTaskId to most recent task:', task.title);
+      }
+      
     }
 
     if (window.selectionLocked) {
