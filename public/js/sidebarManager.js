@@ -425,11 +425,11 @@ function clearExistingCustomLists() {
   
 
   function addNewList(listName, saveToStorage = true) {
-    //console.log('Adding new list:', listName);
+    console.log('Adding new list:', listName);
   
     const existingItem = document.querySelector(`.sidebar-item[data-list="${listName}"]`);
     if (existingItem) {
-   //   console.log(`List ${listName} already exists in the sidebar, not adding again`);
+        console.log(`List ${listName} already exists in the sidebar, not adding again`);
       return;
     }
   
@@ -489,9 +489,20 @@ function clearExistingCustomLists() {
         return;
       }
   
-    //  console.log(`Custom list clicked: ${listName}`);
+     console.log(`Custom list clicked: ${listName}`);
       localStorage.setItem('activeList', listName);
-    //  console.log(`Set active list in localStorage to: ${listName} (from custom list click)`);
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      console.log(`Set active list in localStorage to: ${listName} (from custom list click)`);
   
       localStorage.removeItem('selectedTaskId');
   
@@ -523,15 +534,21 @@ function clearExistingCustomLists() {
         }
       });
       
-      panel.classList.remove('hidden');
-      panel.style.display = 'block';
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.style.display = 'block';
+      }
       
-  //    console.log(`Panel for ${listName} is now visible`);
+      
+     console.log(`Panel for ${listName} is now visible`);
       
       localStorage.setItem('activeList', listName);
       highlightActiveList(listName);
       
-      clearPanel(panel, listName);
+      if (panel) {
+        clearPanel(panel, listName);
+      }
+      
       
       document.dispatchEvent(new CustomEvent('listChanged', {
         detail: { listName }
