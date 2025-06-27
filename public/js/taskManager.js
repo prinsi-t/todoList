@@ -138,7 +138,10 @@ function refreshTaskList(listName) {
   taskList.innerHTML = '';
 
   const normalizedList = listName.trim().toLowerCase();
-  const filteredTasks = window.localTaskCache.filter(task => task.list.trim().toLowerCase() === normalizedList);
+  const filteredTasks = window.localTaskCache.filter(
+    task => task && typeof task.list === 'string' && task.list.trim().toLowerCase() === normalizedList
+  );
+  
   console.log(`Filtered ${filteredTasks.length} tasks for list: "${listName}"`);
   console.table(filteredTasks);
 
@@ -310,8 +313,8 @@ async function toggleTaskCompletion(taskId) {
   if (taskIndex === -1) return;
 
   const newCompletedState = !window.localTaskCache[taskIndex].completed;
-  
-  // Update local cache optimistically
+
+  // ✅ Optimistic update
   window.localTaskCache[taskIndex].completed = newCompletedState;
 
   const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
@@ -333,9 +336,25 @@ async function toggleTaskCompletion(taskId) {
   }
 
   const selectedTask = document.querySelector('.task-item.selected');
-  if (selectedTask && selectedTask.dataset.taskId === taskId) {
-    const updatedTask = window.localTaskCache[taskIndex];
-    applyBlurEffect(updatedTask, true);
+  const isCurrentTask = selectedTask && selectedTask.dataset.taskId === taskId;
+  const updatedTask = window.localTaskCache[taskIndex];
+
+  if (isCurrentTask) {
+    if (newCompletedState) {
+      applyBlurEffect(updatedTask, true);
+    } else {
+      const panel = document.querySelector(`.right-panel[data-current-task-id="${taskId}"]`);
+      if (panel) {
+        const blurTarget = panel.querySelector('.task-blur-content');
+        if (blurTarget) {
+          blurTarget.classList.remove('blurred');
+          blurTarget.style.filter = 'none !important';
+          blurTarget.style.pointerEvents = 'auto';
+        }
+        panel.classList.remove('selection-locked');
+      }
+    }
+
     updatePanelBlurUI(updatedTask);
 
     const completeBtn = document.getElementById('complete-btn');
@@ -349,31 +368,35 @@ async function toggleTaskCompletion(taskId) {
 
   try {
     const response = await fetch(`/todos/${taskId}/complete`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: newCompletedState })
     });
 
     if (!response.ok) {
       console.error(`Server error when updating task completion status: ${response.status}`);
-      // Revert optimistic update
       window.localTaskCache[taskIndex].completed = !newCompletedState;
       return;
     }
 
-    const updatedTask = await response.json();
-    if (updatedTask) {
-      const taskIndex = window.localTaskCache.findIndex(task => task._id === taskId);
-      if (taskIndex !== -1) {
-        window.localTaskCache[taskIndex] = updatedTask;
+    const data = await response.json();
+    const updated = data.task;
+
+    if (updated) {
+      const updatedIndex = window.localTaskCache.findIndex(task => task._id === updated._id);
+      if (updatedIndex !== -1) {
+        window.localTaskCache[updatedIndex] = updated;
+        // 🔁 Re-run filterTasks to refresh all UI (highlight, blur, etc.)
+        window.filterTasks(updated.list, true);
       }
     }
   } catch (error) {
     console.error('Error syncing task completion status:', error);
-    // Revert optimistic update
     window.localTaskCache[taskIndex].completed = !newCompletedState;
   }
 }
+
+
 
 async function selectTask(taskId) {
   console.log('👉 selectTask CALLED for ID:', taskId);
@@ -874,12 +897,9 @@ window.filterTasks = function (listName, preserveSelection = false) {
       setSelectedTaskUI(preservedTask);
       return;
     }
-  
     console.log('⚠️ [filterTasks] No valid preserved task — unlocking selection');
-    window.selectionLocked = false; // force fallback to recent task
+    window.selectionLocked = false;
   }
-  
-  
 
   window.activeList = listName;
   console.log('📌 [filterTasks] Setting active list to:', listName);
@@ -899,9 +919,7 @@ window.filterTasks = function (listName, preserveSelection = false) {
   refreshTaskList(listName);
 
   const normalizedList = listName.trim().toLowerCase();
-  const tasksInList = window.localTaskCache.filter(task =>
-    task.list.trim().toLowerCase() === normalizedList && !task.deleted
-  );
+  let tasksInList = window.localTaskCache.filter(task => task?.list?.trim().toLowerCase() === normalizedList && !task.deleted);
 
   console.log(`🔍 [filterTasks] Found ${tasksInList.length} tasks in "${listName}"`);
 
@@ -932,9 +950,7 @@ window.filterTasks = function (listName, preserveSelection = false) {
   }
 
   if (!taskToSelect && window.lastMovedTaskId) {
-    const movedTask = window.localTaskCache.find(t =>
-      String(t._id) === String(window.lastMovedTaskId) && t.list === listName
-    );
+    const movedTask = window.localTaskCache.find(t => String(t._id) === String(window.lastMovedTaskId) && t.list === listName);
     if (movedTask) {
       taskToSelect = movedTask;
       window.lastMovedTaskId = null;
@@ -942,30 +958,19 @@ window.filterTasks = function (listName, preserveSelection = false) {
     }
   }
 
-
-
   if (!taskToSelect) {
     taskToSelect = findMostRecentTask(listName);
     if (taskToSelect) {
       console.log('🧭 [filterTasks] Fallback to most recent task:', taskToSelect.title);
-  
-      // 🛠 FIXED: Call setSelectedTaskUI after DOM updates + retry if needed
-      requestAnimationFrame(() => {
-        setSelectedTaskUI(taskToSelect);
-      });
-  
+      requestAnimationFrame(() => setSelectedTaskUI(taskToSelect));
       return;
     }
   }
-  
-  
-  
 
   if (!taskToSelect || !document.querySelector(`.task-item[data-task-id="${taskToSelect._id}"]`)) {
     taskToSelect = findMostRecentTask(listName);
     console.log('🧭 [filterTasks] Fallback to most recent task:', taskToSelect?.title || 'None');
   }
-  
 
   if (!taskToSelect && preserveSelection === false) {
     taskToSelect = tasksInList[0];
@@ -1008,86 +1013,56 @@ window.filterTasks = function (listName, preserveSelection = false) {
     rightPanelsContainer.classList.remove('hidden');
     rightPanelsContainer.style.display = 'block';
   }
+
   setTimeout(() => {
     refreshTaskList(listName);
-if (tasksInList.length === 1 && !preserveSelection) {
-  console.log('🛠 [filterTasks] First task in list — defer and retry highlighting');
-  return setTimeout(() => window.filterTasks(listName, true), 60);
-}
+    tasksInList = window.localTaskCache.filter(task => task?.list?.trim().toLowerCase() === normalizedList && !task.deleted);
 
-  
-    // Defer the rest until task DOM is ready
+    if (tasksInList.length === 1 && !preserveSelection) {
+      console.log('🛠 [filterTasks] First task in list — defer and retry highlighting');
+      return setTimeout(() => window.filterTasks(listName, true), 60);
+    }
+
     setTimeout(() => {
-      // 🔁 Continue from here
-      const tasksInList = window.localTaskCache.filter(task =>
-        task.list.trim().toLowerCase() === normalizedList && !task.deleted
-      );
-  
-      // ⏩ REPLACE everything after refreshTaskList(...) with all the selection + highlighting code
-      // (move the rest of your current filterTasks logic here)
-  
-    }, 60); // enough delay for DOM update from refreshTaskList
+      setSelectedTaskUI(taskToSelect);
+      window.selectedTaskId = taskToSelect._id;
+      window.currentTaskId = taskToSelect._id;
+
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          const taskElements = document.querySelectorAll('.task-item');
+          let found = false;
+
+          console.log(`🔍 [Highlight Retry] Scanning ${taskElements.length} task-item elements`);
+
+          taskElements.forEach(el => {
+            const elId = String(el.dataset.taskId || '').trim();
+            const elList = String(el.dataset.list || '').trim().toLowerCase();
+            if (elId === String(taskToSelect._id).trim() && elList === normalizedList) {
+              el.classList.add('selected', 'bg-dark-hover');
+              found = true;
+              console.log(`✅ [Highlight Retry] Task item matched: ${taskToSelect.title}`);
+            }
+          });
+
+          console.log(found ? '🟢 [Highlight Retry] Success — task highlighted' : '🔴 [Highlight Retry] Still failed — no DOM match');
+          window.selectionLocked = true;
+        });
+      }, 150);
+
+      setTimeout(() => {
+        const retryElements = document.querySelectorAll('.task-item');
+        let retryFound = false;
+        retryElements.forEach(el => {
+          if (el.dataset.taskId === taskToSelect._id && el.dataset.list === listName.toLowerCase()) {
+            el.classList.add('selected', 'bg-dark-hover');
+            retryFound = true;
+          }
+        });
+        console.log(retryFound ? '🟢 [filterTasks] Retry highlight success' : '🔴 [filterTasks] Retry highlight still failed');
+      }, 300);
+    }, 60);
   }, 0);
-  
-
-  // 🐛 FIX: Single task case (list was empty → now has 1 task)
-  if (tasksInList.length === 1 && !preserveSelection) {
-    console.log('🛠 [filterTasks] Single task after empty list — forcing re-call for highlight');
-    return setTimeout(() => window.filterTasks(listName, true), 30);
-  }
-  
-
-  setTimeout(() => {
-    console.log('⏳ [filterTasks] Delayed setSelectedTaskUI call for:', taskToSelect.title);
-    setSelectedTaskUI(taskToSelect);
-    window.selectedTaskId = taskToSelect._id;
-    window.currentTaskId = taskToSelect._id;
-
-   setTimeout(() => {
-  requestAnimationFrame(() => {
-    const taskElements = document.querySelectorAll('.task-item');
-    let found = false;
-
-    console.log(`🔍 [Highlight Retry] Scanning ${taskElements.length} task-item elements`);
-
-    taskElements.forEach(el => {
-      const elId = String(el.dataset.taskId || '').trim();
-      const elList = String(el.dataset.list || '').trim().toLowerCase();
-
-      if (elId === String(taskToSelect._id).trim() && elList === normalizedList) {
-        el.classList.add('selected', 'bg-dark-hover');
-        found = true;
-        console.log(`✅ [Highlight Retry] Task item matched: ${taskToSelect.title}`);
-      }
-    });
-
-    console.log(found
-      ? '🟢 [Highlight Retry] Success — task highlighted'
-      : '🔴 [Highlight Retry] Still failed — no DOM match');
-
-    window.selectionLocked = true;
-  });
-}, 150); // Allows DOM task-item to fully render before highlight
-
-
-    // 🛠 Retry fallback
-    setTimeout(() => {
-      const retryElements = document.querySelectorAll('.task-item');
-      let retryFound = false;
-      retryElements.forEach(el => {
-        if (
-          el.dataset.taskId === taskToSelect._id &&
-          el.dataset.list === listName.toLowerCase()
-        ) {
-          el.classList.add('selected', 'bg-dark-hover');
-          retryFound = true;
-        }
-      });
-      console.log(retryFound
-        ? '🟢 [filterTasks] Retry highlight success'
-        : '🔴 [filterTasks] Retry highlight still failed');
-    }, 300);
-  }, 100);
 
   window.lastSelectedList = listName;
   console.log('📌 [filterTasks] Updated lastSelectedList to:', listName);
@@ -1107,20 +1082,31 @@ if (tasksInList.length === 1 && !preserveSelection) {
         console.log(`🎯 Immediate highlight matched → Task: ${taskToSelect.title}`);
       }
     });
-
-    console.log(found
-      ? '✅ [filterTasks] Immediate highlight success'
-      : '⚠️ [filterTasks] Immediate highlight task DOM not found');
+    console.log(found ? '✅ [filterTasks] Immediate highlight success' : '⚠️ [filterTasks] Immediate highlight task DOM not found');
     window.selectionLocked = true;
   });
 
   console.log(`🌫 [filterTasks] Applying blur to ${tasksInList.length} tasks`);
   tasksInList.forEach(task => {
-    applyBlurEffect(task, true);
+    if (task.completed) {
+      applyBlurEffect(task, true);
+    } else {
+      const panel = document.querySelector(`.right-panel[data-current-task-id="${task._id}"]`);
+      if (panel) {
+        const blurTarget = panel.querySelector('.task-blur-content');
+        if (blurTarget) {
+          blurTarget.classList.remove('blurred');
+          blurTarget.style.filter = 'none !important';
+          blurTarget.style.pointerEvents = 'auto';
+        }
+        panel.classList.remove('selection-locked');
+      }
+    }
   });
 
   console.log('✅ [filterTasks] Completed for list:', listName);
 };
+
 
 
 
