@@ -69,13 +69,19 @@ function attachDeleteListener(el) {
       .then(res => res.ok ? res.json() : Promise.reject(res))
       .then(() => {
         el.remove();
-        if (document.querySelectorAll('[data-subtask-id]').length === 0) {
-          showNoSubtasksMessage();
+
+        // ✅ Check if no more subtasks remain
+        const panel = document.querySelector('.right-panel:not([data-template])');
+        const container = panel?.querySelector('#subtasksList');
+
+        if (container && container.querySelectorAll('[data-subtask-id]').length === 0) {
+          showNoSubtasksMessage(container, true);
         }
       })
       .catch(console.error);
   });
 }
+
 
 function toggleSubtaskComplete(taskId, subtaskId, completed) {
   const task = localTaskCache.find(t => t._id === taskId);
@@ -154,12 +160,26 @@ function loadSubtasks(subtasks) {
 }
 
 
-function showNoSubtasksMessage(container) {
+function showNoSubtasksMessage(container, animated = false) {
   const msg = document.createElement('div');
   msg.className = 'no-subtasks-message text-gray-500 mt-2';
+
   msg.textContent = 'No subtasks added yet.';
-  container.appendChild(msg);
+
+  if (animated) {
+    msg.classList.add('opacity-0', 'scale-95', 'transition-all', 'duration-500');
+    container.appendChild(msg);
+
+    requestAnimationFrame(() => {
+      msg.classList.remove('opacity-0', 'scale-95');
+      msg.classList.add('opacity-100', 'scale-100');
+    });
+  } else {
+    container.appendChild(msg);
+  }
 }
+
+
 
 
 document.addEventListener('taskSelected', e => {
