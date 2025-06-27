@@ -130,6 +130,27 @@ router.delete('/:id', ensureAuthenticated, async (req, res) => {
   }
 });
 
+// PATCH: Toggle task completion
+router.patch('/:taskId/complete', ensureAuthenticated, async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    const task = await Todo.findOne({ _id: taskId, userId: req.user._id });
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    task.completed = !task.completed;
+    await task.save();
+
+    res.status(200).json({ message: 'Task completion status updated', task });
+  } catch (err) {
+    console.error('Toggle complete error:', err);
+    res.status(500).json({ error: 'Failed to update completion status' });
+  }
+});
+
 router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
   // Accept either 'text' or 'title' for compatibility with client-side code
   const subtaskText = req.body.text || req.body.title;
