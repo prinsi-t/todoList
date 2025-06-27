@@ -225,7 +225,7 @@ router.put('/:id/subtasks/:index/complete', ensureAuthenticated, async (req, res
     const { id, index } = req.params;
     const { completed } = req.body;
 
-    const todo = await Todo.findOne({ _id: id, user: req.user._id });
+    const todo = await Todo.findOne({ _id: id, userId: req.user._id }); // ✅ fixed here
     if (!todo) return res.status(404).json({ error: 'Todo not found' });
 
     if (!todo.subtasks || todo.subtasks.length <= index) {
@@ -233,15 +233,14 @@ router.put('/:id/subtasks/:index/complete', ensureAuthenticated, async (req, res
     }
 
     todo.subtasks[index].completed = completed;
-
     await todo.save();
 
-    // Transform the response to include both title and text properties
+    // Optional: include both `title` and `text` for frontend compatibility
     const response = todo.toObject();
     if (response.subtasks && Array.isArray(response.subtasks)) {
       response.subtasks = response.subtasks.map(subtask => ({
         ...subtask,
-        text: subtask.title || subtask.text || 'Untitled subtask'
+        text: subtask.title || subtask.text || 'Untitled subtask',
       }));
     }
 
@@ -251,6 +250,7 @@ router.put('/:id/subtasks/:index/complete', ensureAuthenticated, async (req, res
     res.status(500).json({ error: 'Failed to update subtask' });
   }
 });
+
 
 // Route to update task notes
 router.put('/:id/notes', ensureAuthenticated, async (req, res) => {
