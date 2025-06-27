@@ -151,8 +151,8 @@ router.patch('/:taskId/complete', ensureAuthenticated, async (req, res) => {
   }
 });
 
-router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
-  // Accept either 'text' or 'title' for compatibility with client-side code
+router.post('/:id/subtasks', ensureAuthenticated, async (req, res) => {
+  
   const subtaskText = req.body.text || req.body.title;
   const { id } = req.params;
 
@@ -161,7 +161,7 @@ router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
   }
 
   try {
-    const todo = await Todo.findOne({ _id: id, user: req.user._id });
+    const todo = await Todo.findOne({ _id: id, userId: req.user._id });
     if (!todo) return res.status(404).json({ error: 'Todo not found' });
 
     // Store both title and text properties to ensure compatibility
@@ -189,11 +189,18 @@ router.post('/todos/:id/subtasks', ensureAuthenticated, async (req, res) => {
   }
 });
 
-router.delete('/todos/:id/subtask', ensureAuthenticated, async (req, res) => {
+router.delete('/:id/subtasks', ensureAuthenticated, async (req, res) => {
   try {
     const { subtaskId } = req.body;
-    const todo = await Todo.findOne({ _id: req.params.id, user: req.user._id });
-    if (!todo) return res.status(404).json({ error: 'Todo not found' });
+
+    if (!subtaskId) {
+      return res.status(400).json({ error: 'Missing subtaskId in request body' });
+    }
+
+    const todo = await Todo.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!todo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
 
     todo.subtasks = todo.subtasks.filter(s => s.id !== subtaskId);
     await todo.save();
@@ -212,7 +219,8 @@ router.delete('/todos/:id/subtask', ensureAuthenticated, async (req, res) => {
 });
 
 
-router.put('/todos/:id/subtasks/:index/complete', ensureAuthenticated, async (req, res) => {
+
+router.put('/:id/subtasks/:index/complete', ensureAuthenticated, async (req, res) => {
   try {
     const { id, index } = req.params;
     const { completed } = req.body;
