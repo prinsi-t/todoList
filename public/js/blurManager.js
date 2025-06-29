@@ -90,18 +90,8 @@ function toggleBlurFromCompleteBtn() {
 
   task.completed = !task.completed;
 
-// ✅ Update the task in localStorage correctly
-const cached = localStorage.getItem('taskCache');
-if (cached) {
-  const fromStorage = JSON.parse(cached);
-  const i = fromStorage.findIndex(t => t._id === task._id);
-  if (i !== -1) {
-    fromStorage[i].completed = task.completed;
-    localStorage.setItem('taskCache', JSON.stringify(fromStorage));
-  }
-}
 
-saveTaskCacheToLocalStorage(); // still keep your usual save
+
 applyBlurEffect(task, true);
 
 

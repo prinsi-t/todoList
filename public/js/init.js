@@ -119,78 +119,74 @@ window.createPanelForTask = function (task) {
 
 
 async function initApp() {
-  console.log('🚀 initApp() called');
+  console.log('%c🚀 initApp() called', 'color: cyan; font-weight: bold;');
 
-  console.log('📝 Session ID:', sessionState?.sessionId || 'None');
-  console.log('🔑 isLoggingInNow:', isLoggingInNow);
+  console.log('%c📝 Session ID:', 'color: gray;', sessionState?.sessionId || 'None');
+  console.log('%c🔑 isLoggingInNow:', 'color: gray;', isLoggingInNow);
 
-  // Safely determine and set the active list
   const currentList = sessionState?.activeList || 'Personal';
   setActiveList(currentList);
-  console.log('📌 Active list set to:', getActiveList());
+  console.log('%c📌 Active list set to:', 'color: blue;', getActiveList());
 
   if (isLoggingInNow) {
-    console.log('🆕 New login detected — resetting selection to default');
-    sessionState.selectedTaskId = null; // Reset selection on new login
+    console.log('%c🆕 New login detected — resetting selection to default', 'color: orange;');
+    sessionState.selectedTaskId = null;
   }
 
   if (typeof loadTasksFromServer === 'function') {
-    console.log('🌐 Loading tasks from server...');
+    console.log('%c🌐 Loading tasks from server...', 'color: deepskyblue;');
     await loadTasksFromServer();
+    console.log('%c✅ Tasks loaded from server', 'color: green;');
   } else {
     console.warn('⚠️ loadTasksFromServer function is not defined');
   }
 
   window.selectionLocked = false;
-  console.log('🔓 Selection state unlocked');
+  console.log('%c🔓 Selection state unlocked', 'color: lime;');
 
   setEventListeners();
-  console.log('🎧 Event listeners successfully attached');
+  console.log('%c🎧 Event listeners successfully attached', 'color: lime;');
 
   const selectedTaskId = getSelectedTaskId();
-  console.log('🧭 Current list:', currentList, '| Selected task ID:', selectedTaskId);
+  console.log('%c🧭 Current list:', 'color: gray;', currentList, '| Selected task ID:', selectedTaskId);
 
   if (typeof filterTasks === 'function') {
-    console.log('🔄 Filtering tasks for:', currentList);
+    console.log('%c🔄 Filtering tasks for list:', 'color: magenta;', currentList);
     filterTasks(currentList, true);
   } else {
     console.warn('⚠️ filterTasks function is not defined');
   }
 
   if (typeof highlightActiveList === 'function') {
-    console.log('🎯 Highlighting active list in sidebar:', currentList);
+    console.log('%c🎯 Highlighting active list in sidebar:', 'color: magenta;', currentList);
     highlightActiveList(currentList);
   } else {
     console.warn('⚠️ highlightActiveList function is not defined');
   }
 
-  // Handle panels and tasks
-  setTimeout(() => {
-    let task = null;
+  // Immediately handle panel and task UI
+  let task = null;
 
-    if (selectedTaskId) {
-      task = localTaskCache.find(t => t._id === selectedTaskId);
-      console.log('📌 Found selected task from session:', task?.title || 'No Title');
-    } else if (typeof findMostRecentTask === 'function') {
-      task = findMostRecentTask(currentList);
-      console.log('🕘 No session task — fallback to most recent task:', task?.title || 'No Title');
+  if (selectedTaskId) {
+    task = localTaskCache.find(t => t._id === selectedTaskId);
+    console.log('%c📌 Found selected task from session:', 'color: steelblue;', task?.title || 'No Title');
+  } else if (typeof findMostRecentTask === 'function') {
+    task = findMostRecentTask(currentList);
+    console.log('%c🕘 No session task — fallback to most recent task:', 'color: steelblue;', task?.title || 'No Title');
 
-      if (task && !selectedTaskId) {
-        sessionState.selectedTaskId = task._id;
-        window.selectedTaskId = task._id;
-        window.currentTaskId = task._id;
-        console.log('✅ [initApp] Set selectedTaskId to most recent task:', task.title);
-      }
-      
+    if (task) {
+      sessionState.selectedTaskId = task._id;
+      window.selectedTaskId = task._id;
+      window.currentTaskId = task._id;
+      console.log('%c✅ Set selectedTaskId to most recent task:', 'color: green;', task.title);
     }
+  }
 
-    if (window.selectionLocked) {
-      console.log('⏭ Skipping panel setup — selection is already locked');
-      return;
-    }
-
+  if (window.selectionLocked) {
+    console.log('%c⏭ Skipping panel setup — selection is already locked', 'color: gray;');
+  } else {
     if (typeof createPanelsForAllLists === 'function') {
-      console.log('🧱 Creating panels for all lists');
+      console.log('%c🧱 Creating panels for all lists...', 'color: violet;');
       createPanelsForAllLists();
     }
 
@@ -198,52 +194,54 @@ async function initApp() {
       panel.classList.add('hidden');
       panel.style.display = 'none';
     });
-    console.log('🧼 Hid all existing right panels');
+    console.log('%c🧼 Hid all existing right panels', 'color: lightgray;');
 
     if (task) {
-      console.log('📦 Showing panel for task:', task.title);
+      console.log('%c📦 Showing panel for task:', 'color: yellow;', task.title);
       const panel = createPanelForTask(task);
 
       if (panel) {
         panel.classList.remove('hidden');
         panel.style.display = 'block';
-        console.log('✅ Panel made visible for:', task.title);
+        console.log('%c✅ Panel made visible for:', 'color: green;', task.title);
 
-        setTimeout(() => {
-          console.log('🧠 Updating task UI for:', task.title);
-          if (typeof setSelectedTaskUI === 'function') setSelectedTaskUI(task);
-          if (typeof updatePanelBlurUI === 'function') updatePanelBlurUI(task);
-        }, 200);
+        if (typeof setSelectedTaskUI === 'function') {
+          console.log('%c🧠 Updating task UI for:', 'color: orange;', task.title);
+          setSelectedTaskUI(task);
+        }
+
+        if (typeof updatePanelBlurUI === 'function') {
+          updatePanelBlurUI(task);
+        }
       } else {
         console.warn('❌ Could not create panel for:', task.title);
       }
     } else {
-      console.warn('❌ No task available to show in the panel');
+      console.warn('%c❌ No task available to show in the panel', 'color: red;');
     }
-  }, 100);
+  }
 
-  // Update task counts
   if (typeof updateAllTaskCounts === 'function') {
-    console.log('🔢 Updating task counts');
+    console.log('%c🔢 Updating task counts', 'color: orange;');
     updateAllTaskCounts();
   }
 
-  // Load subtasks
   if (typeof loadLocalSubtasks === 'function') {
     const subtasksResult = loadLocalSubtasks();
     if (subtasksResult instanceof Promise) await subtasksResult;
-    console.log('🧩 Subtasks loaded successfully');
+    console.log('%c🧩 Subtasks loaded successfully', 'color: limegreen;');
   }
 
-  // Load notes
   if (typeof loadNotesForActiveList === 'function') {
     const notesResult = loadNotesForActiveList();
     if (notesResult instanceof Promise) await notesResult;
-    console.log('📝 Notes loaded for active list');
+    console.log('%c📝 Notes loaded for active list', 'color: lightskyblue;');
   }
 
-  console.log('✅ initApp() complete');
+  console.log('%c✅ initApp() complete', 'color: green; font-weight: bold;');
 }
+
+
 
 
 
