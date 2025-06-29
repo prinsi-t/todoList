@@ -1296,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
   waitForMainContent()
     .then(() => {
       document.addEventListener('taskAdded', handleTaskAdded);
-      document.addEventListener('taskDeleted', handleTaskDeleted);
+      
 
       const activeList = window.activeList || 'Personal';
       updateRightPanelVisibility(activeList);
