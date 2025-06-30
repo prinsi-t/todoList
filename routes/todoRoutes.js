@@ -100,6 +100,33 @@ router.get('/todos/:list', ensureAuthenticated, async (req, res) => {
   }
 });
 
+// ✅ Update a task's list (used when moving between lists)
+router.put('/:id', ensureAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { list } = req.body;
+
+    if (!list || typeof list !== 'string') {
+      return res.status(400).json({ error: 'List name is required' });
+    }
+
+    const task = await Todo.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { list },
+      { new: true }
+    );
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.status(200).json(task);
+  } catch (error) {
+    console.error('Error updating task list:', error);
+    res.status(500).json({ error: 'Failed to update task list' });
+  }
+});
+
 router.put('/todos/:id/toggle', ensureAuthenticated, async (req, res) => {
   try {
     const todo = await Todo.findOne({ _id: req.params.id, user: req.user._id });

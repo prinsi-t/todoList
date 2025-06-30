@@ -481,9 +481,19 @@ function setSelectedTaskUI(task) {
   }
 
   if (!panel) {
-    console.warn(`⚠️ setSelectedTaskUI: Panel not found and couldn't be created for task "${task.title}"`);
+    console.warn(`⚠️ setSelectedTaskUI: Panel not found for "${task.title}". Retrying creation in 150ms...`);
+    setTimeout(() => {
+      const retryPanel = createPanelForTask(task);
+      if (retryPanel) {
+        console.log(`🔁 Retry successful — created panel for: ${task.title}`);
+        setSelectedTaskUI(task); // re-run fully now that panel exists
+      } else {
+        console.error(`❌ Retry failed — still no panel for: ${task.title}`);
+      }
+    }, 150);
     return;
   }
+  
 
   // ✅ Show correct panel
   panel.classList.remove('hidden');
@@ -599,6 +609,10 @@ async function moveTaskToList(taskId, newList) {
   const selectedTaskId = window.selectedTaskId;
   const isMovingSelectedTask = selectedTaskId === taskId;
 
+  // ⚡ OPTIMISTIC: Immediately update list & UI
+  task.list = newList;
+  filterTasks(sessionState.activeList, { preserveSelection: true });
+
   try {
     const response = await fetch(`/todos/${taskId}`, {
       method: 'PUT',
@@ -611,10 +625,13 @@ async function moveTaskToList(taskId, newList) {
       return;
     }
 
+    if (sessionState.selectedTaskId === taskId) {
+      sessionState.selectedTaskId = null;
+    }
+
     const updatedTask = await response.json();
-    
-    // Update local cache
-    task.list = newList;
+
+    // ✅ Overwrite with server-confirmed version
     window.localTaskCache[taskIndex] = updatedTask;
 
     window.lastMovedTaskId = taskId;
@@ -758,6 +775,7 @@ async function moveTaskToList(taskId, newList) {
     console.error('Error moving task:', error);
   }
 }
+
 
 window.moveTaskToList = moveTaskToList;
 
