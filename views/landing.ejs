@@ -39,18 +39,21 @@
 </head>
 <body class="bg-[#1B1E26] text-white min-h-screen font-sans">
   <!-- Navigation -->
-  <nav class="py-4 px-6">
-    <div class="flex justify-between items-center">
-      <div class="flex items-center ml-0 lg:ml-10">
-        <img src="/favicon.ico" alt="Todo App Logo" class="logo-img mr-2">
-        <span class="text-xl font-semibold">Todo List App</span>
-      </div>
-      <div class="flex items-center space-x-6 mr-0 lg:mr-10">
-        <a href="/login" class="text-gray-300 hover:text-white">Log in</a>
-        <a href="/register" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Start for free</a>
-      </div>
+<nav class="py-3 px-4 sm:py-4 sm:px-6">
+  <div class="flex justify-between items-center">
+    <div class="flex items-center ml-0 lg:ml-10">
+      <img src="/favicon.ico" alt="Todo App Logo" class="logo-img mr-2 w-6 h-6 sm:w-8 sm:h-8">
+      <span class="text-base sm:text-xl font-semibold">Todo List App</span>
     </div>
-  </nav>
+    <div class="flex items-center space-x-3 sm:space-x-6 mr-0 lg:mr-10">
+      <a href="/login" class="text-sm sm:text-base lg:text-lg text-gray-300 hover:text-white">Log in</a>
+      <a href="/register" class="bg-blue-500 text-white text-sm sm:text-base lg:text-lg px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-blue-600">
+        Start for free
+      </a>
+    </div>
+  </div>
+</nav>
+
 
   <!-- Hero Section -->
   <div class="flex flex-col lg:flex-row px-6 mt-20 lg:mt-36 mx-0 lg:ml-9 mb-24">
@@ -58,12 +61,12 @@
     <div class="lg:w-1/2 lg:pr-12">
       <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
         A simple to do list to manage it all</h1>
+     <p class="text-sm sm:text-lg lg:text-2xl text-gray-400 mb-8 font-cursive hero-text">
+      Easily manage your personal tasks, family projects, and team's work all in one place.</p>
+      <a href="/register" class="inline-block bg-blue-500 text-white px-5 py-3 text-lgr sm:px-6 sm:py-3 sm:text-lg rounded-lg hover:bg-blue-700">
+  Get started. It's FREE →
+</a>
 
-      <p class="text-lg sm:text-xl lg:text-3xl text-gray-400 mb-8 font-cursive hero-text">
-        Easily manage your personal tasks, family projects, and team's work all in one place.</p>
-      <a href="/register" class="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-700">
-        Get started. It's FREE →
-      </a>
     </div>
     
     <!-- Right Column -->

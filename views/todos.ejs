@@ -29,10 +29,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body class="h-screen flex">
-  <div class="main-content flex w-full h-full">
+<body class="h-screen flex flex-col md:flex-row">
+  <div class="main-content flex flex-col md:flex-row w-full h-full">
     <!-- Sidebar -->
-    <div class="w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
+    <div class="w-full md:w-64 bg-dark-sidebar border-r border-dark-border p-4 flex flex-col">
       <div class="flex items-center gap-3 mb-6 px-2">
         <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
           <span class="text-sm font-semibold"><%= user.email[0].toUpperCase() %></span>
@@ -62,14 +62,13 @@
             <span id="count-grocery-list" class="text-sm text-gray-300">0</span>
           </a>
         </div>
-        
       </div>
     </div>
 
-    <!-- Main Content and Right Panel -->
-    <div class="flex-1 flex">
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col md:flex-row">
       <!-- Task List -->
-      <div class="w-96 border-r border-dark-border p-4">
+      <div class="w-full md:w-96 border-r border-dark-border p-4 task-list-container">
         <div class="flex items-center mb-4">
           <h1 class="text-xl font-bold truncate max-w-[180px] sm:max-w-[240px] md:max-w-[280px]">Personal tasks</h1>
         </div>
@@ -105,10 +104,9 @@
         </div>
       </div>
 
-      <!-- Right Panels Container -->
-      <div id="right-panels-container" class="flex-1 hidden overflow-x-hidden max-w-full">
-        <!-- ✅ Single base template panel for cloning -->
-        <div id="right-panel-personal" class="right-panel hidden bg-dark-secondary text-white p-6 rounded-lg h-full overflow-auto flex-1 w-full" data-list="Personal" data-template="true">
+      <!-- Right Panel -->
+      <div id="right-panels-container" class="w-full md:flex-1 hidden md:flex overflow-x-hidden max-w-full">
+        <div id="right-panel-personal" class="right-panel bg-dark-secondary text-white p-4 rounded-lg h-full overflow-auto w-full md:flex-1 hidden" data-list="Personal" data-template="true">
           <div class="flex items-center justify-between mb-6">
             <div class="flex flex-col max-w-[300px]">
               <h2 class="panel-task-title text-lg text-gray-100 mb-1"></h2>
@@ -132,7 +130,8 @@
 
               <div class="subtasks-section">
                 <h3 class="text-lg text-gray-400 mb-2">SUBTASKS</h3>
-                <div class="flex items-center gap-2 mb-4">
+               <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+
                   <input
                     type="text"
                     class="subtask-input bg-dark border border-dark-border rounded-lg px-3 py-2 text-sm text-gray-200 flex-grow"
@@ -160,8 +159,8 @@
           </div>
         </div>
       </div>
-    </div> <!-- End flex-1 flex -->
-  </div> <!-- End main-content -->
+    </div> <!-- /main content wrapper -->
+  </div> <!-- /main-content -->
 
   <!-- Scripts -->
   <script src="/js/sidebarManager.js"></script>
