@@ -29,95 +29,122 @@
       line-height: 1.6;
       text-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
-    .character {
-      width: 450px;
-      height: auto;
-      position: absolute;
-      bottom: 0;
-      pointer-events: none;
-    }
-    .character-left {
-      left: 0px;
-      top: -50px;
-    }
-    .character-right {
-      width: 500px;
-      right: -60px;
-      top: 120px;
-    }
-    @media (max-width: 1280px) {
-      .character {
-        display: none;
-      }
-    }
+ .character {
+  width: 420px;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.character-left {
+  position: absolute;
+  left: -30px;
+  top: 40%; 
+  transform: translateY(-50%);
+}
+
+.character-right {
+  position: absolute;
+  right: -30px;
+  top: 53%;
+  transform: translateY(-50%);
+  width: 460px;
+}
+
+@media (max-width: 768px) {
+  .character {
+    position: static !important;
+    display: block !important;
+    width: 160px !important;
+    margin: 0 auto;
+    transform: none !important;
+  }
+
+  .character-left {
+    order: -1;
+    margin-bottom: 1rem;
+  }
+
+  .character-right {
+    order: 3;
+    margin-top: 1rem;
+  }
+}
+
+
   </style>
 </head>
-<body class="bg-[#1B1E26] text-white min-h-screen flex items-center justify-center font-sans relative overflow-hidden">
-  <!-- Left Character -->
-  <img src="/images/boy.png" alt="Boy character" class="character character-left">
+<body class="bg-[#1B1E26] text-white min-h-screen flex items-center justify-center font-sans relative overflow-x-hidden overflow-y-auto">
 
-  <!-- Right Character -->
-  <img src="/images/girl.png" alt="Girl character" class="character character-right">
 
-  <!-- Main Form Container -->
-  <div class="w-full max-w-md bg-[#22252D] rounded-lg shadow-lg p-6 relative z-10">
-    <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
-    
-    <!-- Google Sign Up Button -->
-    <a href="/auth/google" class="w-full flex items-center justify-center gap-2 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-100 mb-4">
-      <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
-      <span>Sign up with Google</span>
-    </a>
 
-    <div class="relative my-4">
-      <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-600"></div>
-      </div>
-      <div class="relative flex justify-center text-sm">
-        <span class="px-2 bg-[#22252D] text-gray-400">Or continue with email</span>
-      </div>
-    </div>
+  <div class="w-full flex flex-col items-center lg:flex-row lg:justify-center lg:items-center">
+    <!-- Boy Image (Above form on mobile, left on desktop) -->
+    <img src="/images/boy.png" alt="Boy character" class="character character-left">
 
-    <form action="/register" method="POST" class="space-y-4">
-      <!-- Hidden dummy fields -->
-      <input type="text" name="dummy-email" style="display: none;" autocomplete="off">
-      <input type="password" name="dummy-password" style="display: none;" autocomplete="off">
-
-      <!-- Actual fields -->
-      <div>
-        <input 
-          type="email" 
-          name="email" 
-          id="email"
-          placeholder="Enter your email" 
-          class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-          autocomplete="off" 
-          required>
-      </div>
+    <!-- Form Container -->
+<div class="w-[90%] max-w-sm sm:max-w-md bg-[#22252D] rounded-lg shadow-lg p-6 relative z-10">
+      <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
       
-      <div>
-        <input 
-          type="password" 
-          name="password" 
-          id="password"
-          placeholder="Create password" 
-          class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-          autocomplete="new-password" 
-          required>
+      <a href="/auth/google" class="w-full flex items-center justify-center gap-2 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-100 mb-4">
+        <img src="https://www.google.com/favicon.ico" alt="Google" class="w-5 h-5">
+        <span>Sign up with Google</span>
+      </a>
+
+      <div class="relative my-4">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-600"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-[#22252D] text-gray-400">Or continue with email</span>
+        </div>
       </div>
 
-      <button 
-        type="submit" 
-        class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
-        Create Account
-      </button>
-    </form>
+      <form action="/register" method="POST" class="space-y-4">
+        <input type="text" name="dummy-email" style="display: none;" autocomplete="off">
+        <input type="password" name="dummy-password" style="display: none;" autocomplete="off">
 
-    <div class="mt-4 text-center">
-      <p class="text-gray-400 mt-10">Already have an account? 
-        <a href="/login" class="text-blue-400 hover:underline">Login</a>
-      </p>
+        <div>
+          <input 
+            type="email" 
+            name="email" 
+            id="email"
+            placeholder="Enter your email" 
+            class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+            autocomplete="off" 
+            required>
+        </div>
+        
+        <div>
+          <input 
+            type="password" 
+            name="password" 
+            id="password"
+            placeholder="Create password" 
+            class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+            autocomplete="new-password" 
+            required>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+          Create Account
+        </button>
+      </form>
+
+      <div class="mt-4 text-center">
+        <p class="text-gray-400 mt-10">Already have an account? 
+          <a href="/login" class="text-blue-400 hover:underline">Login</a>
+        </p>
+      </div>
     </div>
+
+    <!-- Girl Image (Below form on mobile, right on desktop) -->
+    <img src="/images/girl.png" alt="Girl character" class="character character-right">
   </div>
+
 </body>
+
+
 </html>
