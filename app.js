@@ -1,91 +1,242 @@
 import 'dotenv/config';
 import express from 'express';
-import path from 'path';
-import expressLayouts from 'express-ejs-layouts';
-import session from 'express-session';
 import mongoose from 'mongoose';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import todoRoutes from './routes/todoRoutes.js';
-import passport from 'passport';
-import authRoutes from './routes/authRoutes.js';
-import User from './models/user.js';
-import './config/passport.js';
+import cors from 'cors';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-
-
-// Define __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Initialize the Express app
 const app = express();
+const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
 
-// Connect to MongoDB
 const mongoURI = process.env.MONGO_URI;
 mongoose
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(mongoURI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-  app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
-
-  // Middleware: Body parser
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  })
+);
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Middleware: Session management
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-  })
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true });
+});
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    passwordHash: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
 );
 
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
+const todoSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    list: {
+      type: String,
+      default: 'Personal',
+    },
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
-// Middleware: Static files
-app.use(express.static(path.resolve(__dirname, 'public')));
+const User = mongoose.model('User', userSchema);
+const Todo = mongoose.model('Todo', todoSchema);
 
+const createToken = (user) =>
+  jwt.sign(
+    {
+      sub: user._id.toString(),
+      email: user.email,
+      name: user.name,
+    },
+    jwtSecret,
+    { expiresIn: '7d' }
+  );
 
-// View Engine: EJS with layouts
-app.use(expressLayouts);
-app.set('view engine', 'ejs');
-app.set('layout', 'layouts/main');
-app.set('views', path.join(__dirname, 'views'));
+const authRequired = (req, res, next) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : null;
 
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
-// Middleware: Make authentication status available in views
-app.use((req, res, next) => {
-  res.locals.isAuthenticated = req.isAuthenticated?.() || false;
-  next();
-});
-
-// Middleware: Authentication Routes
-app.use(authRoutes);
-
-// Use the todo routes
-app.use('/todos', todoRoutes);
-
-// Landing page route
-app.get('/', (req, res) => {
-  res.render('landing', { title: 'Todo App - Organize Your Life' });
-});
-
-// Middleware to ensure the user is authenticated
-const ensureAuthenticated = (req, res, next) => {
-  if (req.isAuthenticated()) return next();
-  res.redirect('/login');
+  try {
+    const payload = jwt.verify(token, jwtSecret);
+    req.user = { id: payload.sub, email: payload.email, name: payload.name };
+    next();
+  } catch (_error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 };
 
-// Redirect authenticated users from root to todos
-app.get('/', ensureAuthenticated, (req, res) => {
-  res.redirect('/todos');
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(409).json({ error: 'Email is already registered' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      passwordHash,
+    });
+
+    const token = createToken(user);
+    res.status(201).json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to register' });
+  }
 });
 
-// Start the server
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = createToken(user);
+    res.json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+app.get('/api/auth/me', authRequired, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('_id name email');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ user: { id: user._id, name: user.name, email: user.email } });
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+app.get('/api/todos', authRequired, async (req, res) => {
+  try {
+    const todos = await Todo.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    res.json(todos);
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to fetch todos' });
+  }
+});
+
+app.post('/api/todos', authRequired, async (req, res) => {
+  try {
+    const { title, list = 'Personal' } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    const todo = await Todo.create({
+      userId: req.user.id,
+      title: title.trim(),
+      list,
+      completed: false,
+    });
+
+    res.status(201).json(todo);
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to create todo' });
+  }
+});
+
+app.patch('/api/todos/:id/toggle', authRequired, async (req, res) => {
+  try {
+    const todo = await Todo.findOne({ _id: req.params.id, userId: req.user.id });
+
+    if (!todo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    todo.completed = !todo.completed;
+    await todo.save();
+    res.json(todo);
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to toggle todo' });
+  }
+});
+
+app.delete('/api/todos/:id', authRequired, async (req, res) => {
+  try {
+    const deleted = await Todo.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    res.json({ success: true });
+  } catch (_error) {
+    res.status(500).json({ error: 'Failed to delete todo' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
