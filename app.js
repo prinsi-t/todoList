@@ -67,6 +67,10 @@ const todoSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    due_date: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -189,7 +193,7 @@ app.get('/api/todos', authRequired, async (req, res) => {
 
 app.post('/api/todos', authRequired, async (req, res) => {
   try {
-    const { title, list = 'Personal' } = req.body;
+    const { title, list = 'Personal', due_date = null } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Title is required' });
@@ -199,6 +203,7 @@ app.post('/api/todos', authRequired, async (req, res) => {
       userId: req.user.id,
       title: title.trim(),
       list,
+      due_date,
       completed: false,
     });
 
