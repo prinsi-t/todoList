@@ -34,12 +34,24 @@ export default function TodayView({ token }) {
     if (!title.trim()) return
     const body = { title }
     if (dueDate) body.due_date = dueDate
-    const res = await fetch('/api/todos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    })
-    if (res.ok) { setTitle(''); setDueDate(''); fetchTodos() }
+    try {
+      const res = await fetch('/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      console.log('Add todo response:', res.status, data)
+      if (res.ok) { 
+        setTitle(''); 
+        setDueDate(''); 
+        fetchTodos() 
+      } else {
+        console.error('Failed to add todo:', data)
+      }
+    } catch (err) {
+      console.error('Error adding todo:', err)
+    }
   }
 
   const toggleTodo = async (id) => {
