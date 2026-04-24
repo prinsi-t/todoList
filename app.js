@@ -4,16 +4,24 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
 
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// MongoDB connection
 const mongoURI = process.env.MONGO_URI;
 mongoose
   .connect(mongoURI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
+// Middleware
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -22,55 +30,33 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+// Root route (fixes "Cannot GET /")
+app.get('/', (_req, res) => {
+  res.send('API is running 🚀');
+});
+
+// Health check
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// Schemas
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    passwordHash: {
-      type: String,
-      required: true,
-    },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
   },
   { timestamps: true }
 );
 
 const todoSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      index: true,
-    },
-    title: {
-      type: String,
-      required: true,
-    },
-    list: {
-      type: String,
-      default: 'Personal',
-    },
-    completed: {
-      type: Boolean,
-      default: false,
-    },
-    due_date: {
-      type: String,
-      default: null,
-    },
+    userId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    title: { type: String, required: true },
+    list: { type: String, default: 'Personal' },
+    completed: { type: Boolean, default: false },
+    due_date: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -78,6 +64,7 @@ const todoSchema = new mongoose.Schema(
 const User = mongoose.model('User', userSchema);
 const Todo = mongoose.model('Todo', todoSchema);
 
+// JWT
 const createToken = (user) =>
   jwt.sign(
     {
@@ -89,41 +76,38 @@ const createToken = (user) =>
     { expiresIn: '7d' }
   );
 
+// Auth middleware
 const authRequired = (req, res, next) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ')
     ? authHeader.slice(7)
     : null;
 
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const payload = jwt.verify(token, jwtSecret);
     req.user = { id: payload.sub, email: payload.email, name: payload.name };
     next();
-  } catch (_error) {
+  } catch {
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
 
+// Auth routes
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password)
       return res.status(400).json({ error: 'Name, email, and password are required' });
-    }
 
-    if (password.length < 6) {
+    if (password.length < 6)
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
 
     const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) {
+    if (existing)
       return res.status(409).json({ error: 'Email is already registered' });
-    }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
@@ -137,7 +121,7 @@ app.post('/api/auth/register', async (req, res) => {
       token,
       user: { id: user._id, name: user.name, email: user.email },
     });
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to register' });
   }
 });
@@ -146,26 +130,23 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ error: 'Email and password are required' });
-    }
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
+    if (!user)
       return res.status(401).json({ error: 'Invalid email or password' });
-    }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
+    if (!isMatch)
       return res.status(401).json({ error: 'Invalid email or password' });
-    }
 
     const token = createToken(user);
     res.json({
       token,
       user: { id: user._id, name: user.name, email: user.email },
     });
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to login' });
   }
 });
@@ -173,20 +154,20 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', authRequired, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('_id name email');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
     res.json({ user: { id: user._id, name: user.name, email: user.email } });
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
 
+// Todos
 app.get('/api/todos', authRequired, async (req, res) => {
   try {
     const todos = await Todo.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(todos);
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to fetch todos' });
   }
 });
@@ -195,9 +176,8 @@ app.post('/api/todos', authRequired, async (req, res) => {
   try {
     const { title, list = 'Personal', due_date = null } = req.body;
 
-    if (!title || !title.trim()) {
+    if (!title || !title.trim())
       return res.status(400).json({ error: 'Title is required' });
-    }
 
     const todo = await Todo.create({
       userId: req.user.id,
@@ -208,7 +188,7 @@ app.post('/api/todos', authRequired, async (req, res) => {
     });
 
     res.status(201).json(todo);
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to create todo' });
   }
 });
@@ -217,31 +197,46 @@ app.patch('/api/todos/:id/toggle', authRequired, async (req, res) => {
   try {
     const todo = await Todo.findOne({ _id: req.params.id, userId: req.user.id });
 
-    if (!todo) {
-      return res.status(404).json({ error: 'Todo not found' });
-    }
+    if (!todo) return res.status(404).json({ error: 'Todo not found' });
 
     todo.completed = !todo.completed;
     await todo.save();
     res.json(todo);
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to toggle todo' });
   }
 });
 
 app.delete('/api/todos/:id', authRequired, async (req, res) => {
   try {
-    const deleted = await Todo.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    const deleted = await Todo.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
 
-    if (!deleted) {
-      return res.status(404).json({ error: 'Todo not found' });
-    }
+    if (!deleted) return res.status(404).json({ error: 'Todo not found' });
 
     res.json({ success: true });
-  } catch (_error) {
+  } catch {
     res.status(500).json({ error: 'Failed to delete todo' });
   }
 });
 
+// ✅ Serve React (Vite build)
+app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+});
+
+// ✅ Start server locally only
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () =>
+    console.log(`🚀 Server running on http://localhost:${PORT}`)
+  );
+}
+
+// ✅ Export for Vercel
+export default app;
