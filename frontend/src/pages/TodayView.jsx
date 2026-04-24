@@ -118,7 +118,7 @@ export default function TodayView({ token }) {
       )}
 
       {/* Add task form */}
-      <form onSubmit={addTodo} className="mb-5 space-y-2">
+      <form onSubmit={addTodo} className="mb-6 space-y-3">
         <div className="flex gap-2">
           <input
             value={title}
@@ -134,31 +134,31 @@ export default function TodayView({ token }) {
           </button>
         </div>
 
-        {/* Due date picker */}
-        <div className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-2.5">
-          <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4 text-neutral-500 flex-shrink-0" stroke="currentColor" strokeWidth={1.5}>
-            <rect x="3" y="4" width="14" height="14" rx="2" />
-            <path d="M7 2v4M13 2v4M3 9h14" strokeLinecap="round" />
-          </svg>
-          <label className="text-xs text-neutral-500 flex-shrink-0">Due date</label>
+        {/* Simplified due date picker */}
+        <div className="flex items-center gap-3">
           <input
             type="date"
             value={dueDate}
             min={todayStr}
             onChange={(e) => setDueDate(e.target.value)}
-            className="flex-1 bg-transparent text-xs text-white outline-none [color-scheme:dark] cursor-pointer"
+            className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs text-white outline-none focus:border-neutral-500 transition-colors [color-scheme:dark]"
+            style={{
+              cursor: 'text'
+            }}
           />
+          <style>{`
+            input[type="date"]::-webkit-calendar-picker-indicator {
+              cursor: pointer;
+            }
+          `}</style>
           {dueDate && (
             <button
               type="button"
               onClick={() => setDueDate('')}
-              className="text-xs text-neutral-600 hover:text-red-400 transition-colors flex-shrink-0"
+              className="text-xs px-3 py-2 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-colors"
             >
-              ✕ Clear
+              Clear date
             </button>
-          )}
-          {!dueDate && (
-            <span className="text-xs text-neutral-700 flex-shrink-0">Optional</span>
           )}
         </div>
       </form>
