@@ -6,8 +6,11 @@ import UpcomingView from './UpcomingView'
 import StickyWallView from './StickyWallView'
 import CalendarView from './CalendarView'
 
+const DEFAULT_SIDEBAR_WIDTH = 240
+
 export default function Dashboard({ token, user, onLogout }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH)
 
   return (
     <div className="flex min-h-screen bg-neutral-950 text-white">
@@ -16,6 +19,8 @@ export default function Dashboard({ token, user, onLogout }) {
         onLogout={onLogout}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
       />
       <div className="flex-1 overflow-y-auto">
         <Routes>

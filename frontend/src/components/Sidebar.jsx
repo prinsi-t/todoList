@@ -1,4 +1,9 @@
+import { useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
+
+const MIN_WIDTH = 160
+const MAX_WIDTH = 400
+const COLLAPSED_WIDTH = 64
 
 const NAV_ITEMS = [
   {
@@ -43,13 +48,49 @@ const NAV_ITEMS = [
   },
 ]
 
-export default function Sidebar({ user, onLogout, collapsed, setCollapsed }) {
+export default function Sidebar({ user, onLogout, collapsed, setCollapsed, width, onWidthChange }) {
+  const handleResizeStart = useCallback(
+    (e) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const startWidth = width
+
+      const onMouseMove = (moveEvent) => {
+        const nextWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + moveEvent.clientX - startX))
+        onWidthChange(nextWidth)
+      }
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    [width, onWidthChange],
+  )
+
   return (
     <aside
-      className={`flex flex-col bg-neutral-900 border-r border-neutral-800 transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-60'
-      } min-h-screen sticky top-0`}
+      className="relative flex flex-col flex-shrink-0 bg-neutral-900 border-r border-neutral-800 min-h-screen sticky top-0"
+      style={{ width: collapsed ? COLLAPSED_WIDTH : width }}
     >
+      {!collapsed && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          className="absolute top-0 -right-1 z-10 h-full w-2 cursor-col-resize group"
+          onMouseDown={handleResizeStart}
+        >
+          <div className="absolute inset-y-0 right-1 w-px bg-transparent transition-colors group-hover:bg-neutral-500/70 group-active:bg-neutral-400" />
+        </div>
+      )}
       {/* Logo */}
       <div className={`flex items-center gap-3 px-4 py-5 border-b border-neutral-800 ${collapsed ? 'justify-center' : ''}`}>
         <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-bold text-sm">
