@@ -1,29 +1,55 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import AuthPage from './pages/AuthPage' 
-import Dashboard from './pages/Dashboard'  
-import LandingPage from './pages/LandingPage' 
+import AuthPage from './pages/AuthPage'
+import Dashboard from './pages/Dashboard'
+import LandingPage from './pages/LandingPage'
+
+function AuthLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-500 text-sm">
+      Checking session...
+    </div>
+  )
+}
 
 export default function App() {
   const navigate = useNavigate()
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [user, setUser] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
 
+  const isAuthenticated = Boolean(token && user)
+
   useEffect(() => {
     const fetchMe = async () => {
-      if (!token) { setUser(null); return }
-      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) {
+      if (!token) {
+        setUser(null)
+        setAuthChecked(true)
+        return
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        if (!res.ok) {
+          localStorage.removeItem('token')
+          setToken('')
+          setUser(null)
+          return
+        }
+        const data = await res.json()
+        setUser(data.user)
+      } catch {
         localStorage.removeItem('token')
         setToken('')
         setUser(null)
-        return
+      } finally {
+        setAuthChecked(true)
       }
-      const data = await res.json()
-      setUser(data.user)
     }
+
+    setAuthChecked(false)
     fetchMe()
   }, [token])
 
@@ -43,10 +69,15 @@ export default function App() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) { setAuthError(data.error || 'Authentication failed'); return }
+      if (!res.ok) {
+        setAuthError(data.error || 'Authentication failed')
+        return
+      }
+
       localStorage.setItem('token', data.token)
       setToken(data.token)
       setUser(data.user)
+      setAuthChecked(true)
       navigate('/app')
     } catch {
       setAuthError('Something went wrong. Try again.')
@@ -59,6 +90,7 @@ export default function App() {
     localStorage.removeItem('token')
     setToken('')
     setUser(null)
+    setAuthChecked(true)
     navigate('/login')
   }
 
@@ -68,25 +100,37 @@ export default function App() {
       <Route
         path="/login"
         element={
-          token
-            ? <Navigate to="/app" replace />
-            : <AuthPage mode="login" onSubmit={handleAuthSubmit} loading={authLoading} error={authError} />
+          !authChecked ? (
+            <AuthLoading />
+          ) : isAuthenticated ? (
+            <Navigate to="/app" replace />
+          ) : (
+            <AuthPage mode="login" onSubmit={handleAuthSubmit} loading={authLoading} error={authError} />
+          )
         }
       />
       <Route
         path="/register"
         element={
-          token
-            ? <Navigate to="/app" replace />
-            : <AuthPage mode="register" onSubmit={handleAuthSubmit} loading={authLoading} error={authError} />
+          !authChecked ? (
+            <AuthLoading />
+          ) : isAuthenticated ? (
+            <Navigate to="/app" replace />
+          ) : (
+            <AuthPage mode="register" onSubmit={handleAuthSubmit} loading={authLoading} error={authError} />
+          )
         }
       />
       <Route
         path="/app/*"
         element={
-          token
-            ? <Dashboard token={token} user={user} onLogout={logout} />
-            : <Navigate to="/login" replace />
+          !authChecked ? (
+            <AuthLoading />
+          ) : isAuthenticated ? (
+            <Dashboard token={token} user={user} onLogout={logout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
