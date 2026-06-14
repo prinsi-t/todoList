@@ -26,7 +26,7 @@ export default function Dashboard({ token, user, onLogout }) {
         <Routes>
           <Route index element={<TodayView token={token} />} />
           <Route path="upcoming" element={<UpcomingView token={token} />} />
-          <Route path="sticky" element={<StickyWallView />} />
+          <Route path="sticky" element={<StickyWallView token={token} />} />
           <Route path="calendar" element={<CalendarView token={token} />} />
         </Routes>
       </div>

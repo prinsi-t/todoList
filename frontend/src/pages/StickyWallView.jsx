@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const COLORS = [
   { bg: 'bg-yellow-950/60', border: 'border-yellow-800/60', text: 'text-yellow-200', label: 'Yellow' },
@@ -8,44 +8,69 @@ const COLORS = [
   { bg: 'bg-rose-950/60', border: 'border-rose-800/60', text: 'text-rose-200', label: 'Pink' },
 ]
 
-const STORAGE_KEY = 'taskflow_stickies'
-
-function loadStickies() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveStickies(stickies) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stickies))
-  } catch {}
-}
-
-let idCounter = Date.now()
-
-export default function StickyWallView() {
-  const [stickies, setStickies] = useState(() => loadStickies())
+export default function StickyWallView({ token }) {
+  const [stickies, setStickies] = useState([])
   const [colorIdx, setColorIdx] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const saveTimers = useRef({})
 
-  useEffect(() => { saveStickies(stickies) }, [stickies])
+  const fetchStickies = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/stickies', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) return
+      setStickies(await res.json())
+    } finally {
+      setLoading(false)
+    }
+  }, [token])
 
-  const addSticky = () => {
-    setStickies((prev) => [
-      ...prev,
-      { id: ++idCounter, text: '', colorIdx },
-    ])
+  useEffect(() => {
+    fetchStickies()
+    return () => {
+      Object.values(saveTimers.current).forEach(clearTimeout)
+    }
+  }, [fetchStickies])
+
+  const addSticky = async () => {
+    const res = await fetch('/api/stickies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ text: '', colorIdx }),
+    })
+    if (res.ok) {
+      const sticky = await res.json()
+      setStickies((prev) => [sticky, ...prev])
+    }
   }
 
   const updateSticky = (id, text) => {
-    setStickies((prev) => prev.map((s) => s.id === id ? { ...s, text } : s))
+    setStickies((prev) => prev.map((s) => (s._id === id ? { ...s, text } : s)))
+
+    if (saveTimers.current[id]) clearTimeout(saveTimers.current[id])
+    saveTimers.current[id] = setTimeout(async () => {
+      await fetch(`/api/stickies/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+      })
+      delete saveTimers.current[id]
+    }, 400)
   }
 
-  const deleteSticky = (id) => {
-    setStickies((prev) => prev.filter((s) => s.id !== id))
+  const deleteSticky = async (id) => {
+    if (saveTimers.current[id]) {
+      clearTimeout(saveTimers.current[id])
+      delete saveTimers.current[id]
+    }
+
+    const res = await fetch(`/api/stickies/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      setStickies((prev) => prev.filter((s) => s._id !== id))
+    }
   }
 
   return (
@@ -56,7 +81,6 @@ export default function StickyWallView() {
           <h1 className="text-3xl font-bold text-white">Sticky Wall</h1>
         </div>
         <div className="flex items-center gap-3">
-          {/* Color picker */}
           <div className="flex gap-1.5">
             {COLORS.map((c, i) => (
               <button
@@ -78,7 +102,9 @@ export default function StickyWallView() {
         </div>
       </div>
 
-      {stickies.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-16 text-neutral-600 text-sm">Loading...</div>
+      ) : stickies.length === 0 ? (
         <div className="rounded-xl border border-dashed border-neutral-800 p-16 text-center text-neutral-600 text-sm">
           <p className="text-4xl mb-4">📌</p>
           No sticky notes yet. Add your first one!
@@ -89,18 +115,18 @@ export default function StickyWallView() {
             const c = COLORS[s.colorIdx ?? 0] ?? COLORS[0]
             return (
               <div
-                key={s.id}
+                key={s._id}
                 className={`break-inside-avoid rounded-2xl border ${c.bg} ${c.border} p-4 group relative`}
               >
                 <textarea
                   value={s.text}
-                  onChange={(e) => updateSticky(s.id, e.target.value)}
+                  onChange={(e) => updateSticky(s._id, e.target.value)}
                   placeholder="Write anything..."
                   rows={4}
                   className={`w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-current placeholder:opacity-30 ${c.text}`}
                 />
                 <button
-                  onClick={() => deleteSticky(s.id)}
+                  onClick={() => deleteSticky(s._id)}
                   className="absolute top-3 right-3 opacity-0 group-hover:opacity-60 hover:!opacity-100 text-current transition-opacity text-xs"
                 >
                   <svg viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 ${c.text}`}>

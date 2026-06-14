@@ -61,8 +61,18 @@ const todoSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const stickySchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    text: { type: String, default: '' },
+    colorIdx: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+
 const User = mongoose.model('User', userSchema);
 const Todo = mongoose.model('Todo', todoSchema);
+const Sticky = mongoose.model('Sticky', stickySchema);
 
 // JWT
 const createToken = (user) =>
@@ -219,6 +229,63 @@ app.delete('/api/todos/:id', authRequired, async (req, res) => {
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to delete todo' });
+  }
+});
+
+// Stickies
+app.get('/api/stickies', authRequired, async (req, res) => {
+  try {
+    const stickies = await Sticky.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    res.json(stickies);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch stickies' });
+  }
+});
+
+app.post('/api/stickies', authRequired, async (req, res) => {
+  try {
+    const { text = '', colorIdx = 0 } = req.body;
+
+    const sticky = await Sticky.create({
+      userId: req.user.id,
+      text: String(text),
+      colorIdx: Number(colorIdx) || 0,
+    });
+
+    res.status(201).json(sticky);
+  } catch {
+    res.status(500).json({ error: 'Failed to create sticky' });
+  }
+});
+
+app.patch('/api/stickies/:id', authRequired, async (req, res) => {
+  try {
+    const sticky = await Sticky.findOne({ _id: req.params.id, userId: req.user.id });
+
+    if (!sticky) return res.status(404).json({ error: 'Sticky not found' });
+
+    if (req.body.text !== undefined) sticky.text = String(req.body.text);
+    if (req.body.colorIdx !== undefined) sticky.colorIdx = Number(req.body.colorIdx) || 0;
+
+    await sticky.save();
+    res.json(sticky);
+  } catch {
+    res.status(500).json({ error: 'Failed to update sticky' });
+  }
+});
+
+app.delete('/api/stickies/:id', authRequired, async (req, res) => {
+  try {
+    const deleted = await Sticky.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!deleted) return res.status(404).json({ error: 'Sticky not found' });
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete sticky' });
   }
 });
 
