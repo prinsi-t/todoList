@@ -12,6 +12,8 @@ function AuthLoading() {
   )
 }
 
+const LAST_EMAIL_KEY = 'taskflow_last_email'
+
 export default function App() {
   const navigate = useNavigate()
   const [token, setToken] = useState(localStorage.getItem('token') || '')
@@ -75,6 +77,7 @@ export default function App() {
       }
 
       localStorage.setItem('token', data.token)
+      localStorage.setItem(LAST_EMAIL_KEY, form.email.trim().toLowerCase())
       setToken(data.token)
       setUser(data.user)
       setAuthChecked(true)
@@ -87,11 +90,14 @@ export default function App() {
   }
 
   const logout = () => {
+    if (user?.email) {
+      localStorage.setItem(LAST_EMAIL_KEY, user.email)
+    }
     localStorage.removeItem('token')
     setToken('')
     setUser(null)
     setAuthChecked(true)
-    navigate('/login')
+    navigate('/login', { state: { email: user?.email || '' } })
   }
 
   return (

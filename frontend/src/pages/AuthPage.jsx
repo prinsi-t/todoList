@@ -1,10 +1,28 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+
+const LAST_EMAIL_KEY = 'taskflow_last_email'
+
+function getInitialEmail(locationEmail) {
+  return locationEmail || localStorage.getItem(LAST_EMAIL_KEY) || ''
+}
 
 export default function AuthPage({ mode, onSubmit, loading, error }) {
   const isLogin = mode === 'login'
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const location = useLocation()
+  const [form, setForm] = useState(() => ({
+    name: '',
+    email: getInitialEmail(location.state?.email),
+    password: '',
+  }))
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    const email = getInitialEmail(location.state?.email)
+    if (email) {
+      setForm((prev) => ({ ...prev, email }))
+    }
+  }, [location.state?.email, mode])
 
   const submit = (e) => {
     e.preventDefault()
@@ -56,14 +74,16 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
             </p>
           </div>
 
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} className="space-y-4" autoComplete="on">
             {!isLogin && (
               <div>
                 <label className="block text-xs font-medium text-neutral-400 mb-1.5 uppercase tracking-wider">Name</label>
                 <input
+                  name="name"
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   placeholder="Your full name"
+                  autoComplete="name"
                   className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm outline-none focus:border-white transition-colors placeholder:text-neutral-600"
                   required
                 />
@@ -72,10 +92,12 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
             <div>
               <label className="block text-xs font-medium text-neutral-400 mb-1.5 uppercase tracking-wider">Email</label>
               <input
+                name="email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
                 placeholder="you@example.com"
+                autoComplete="username"
                 className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm outline-none focus:border-white transition-colors placeholder:text-neutral-600"
                 required
               />
@@ -84,10 +106,12 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
               <label className="block text-xs font-medium text-neutral-400 mb-1.5 uppercase tracking-wider">Password</label>
               <div className="relative">
                 <input
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
                   onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
                   placeholder="••••••••"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
                   className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 pr-11 text-sm outline-none focus:border-white transition-colors placeholder:text-neutral-600"
                   required
                 />
