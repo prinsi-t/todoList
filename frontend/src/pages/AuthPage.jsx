@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 export default function AuthPage({ mode, onSubmit, loading, error }) {
   const isLogin = mode === 'login'
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
 
   const submit = (e) => {
     e.preventDefault()
@@ -81,14 +82,33 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-neutral-400 mb-1.5 uppercase tracking-wider">Password</label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm outline-none focus:border-white transition-colors placeholder:text-neutral-600"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 pr-11 text-sm outline-none focus:border-white transition-colors placeholder:text-neutral-600"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={1.8}>
+                      <path d="M3 3l18 18M10.58 10.58A2 2 0 0012 14a2 2 0 001.41-3.41M9.88 4.24A10.94 10.94 0 0112 5c4.5 0 7.5 3 9 5.5a11.62 11.62 0 01-4.12 4.12M6.1 6.1A11.6 11.6 0 003 10.5C4.5 13 7.5 16 12 16a10.9 10.9 0 003.88-.72" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={1.8}>
+                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && (
