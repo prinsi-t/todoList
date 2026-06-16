@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const LAST_EMAIL_KEY = 'taskflow_last_email'
+const LAST_PASSWORD_KEY = 'taskflow_last_password'
 
 function getInitialEmail(locationEmail) {
   return locationEmail || localStorage.getItem(LAST_EMAIL_KEY) || ''
+}
+
+function getInitialPassword() {
+  return localStorage.getItem(LAST_PASSWORD_KEY) || ''
 }
 
 export default function AuthPage({ mode, onSubmit, loading, error }) {
@@ -13,15 +18,14 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
   const [form, setForm] = useState(() => ({
     name: '',
     email: getInitialEmail(location.state?.email),
-    password: '',
+    password: getInitialPassword(),
   }))
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     const email = getInitialEmail(location.state?.email)
-    if (email) {
-      setForm((prev) => ({ ...prev, email }))
-    }
+    const password = getInitialPassword()
+    setForm((prev) => ({ ...prev, email, password }))
   }, [location.state?.email, mode])
 
   const submit = (e) => {
