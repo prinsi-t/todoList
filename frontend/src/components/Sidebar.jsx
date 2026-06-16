@@ -48,7 +48,7 @@ const NAV_ITEMS = [
   },
 ]
 
-export default function Sidebar({ user, onLogout, collapsed, setCollapsed, width, onWidthChange }) {
+export default function Sidebar({ user, onLogout, collapsed, setCollapsed, width, onWidthChange, onNavClick }) {
   const handleResizeStart = useCallback(
     (e) => {
       e.preventDefault()
@@ -106,6 +106,7 @@ export default function Sidebar({ user, onLogout, collapsed, setCollapsed, width
             key={item.to}
             to={item.to}
             end={item.end}
+            onClick={onNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive

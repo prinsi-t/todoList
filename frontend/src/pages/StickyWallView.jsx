@@ -74,8 +74,8 @@ export default function StickyWallView({ token }) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
-      <div className="flex items-end justify-between mb-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-4">
         <div>
           <p className="text-xs text-neutral-500 uppercase tracking-widest mb-1">Quick notes</p>
           <h1 className="text-3xl font-bold text-white">Sticky Wall</h1>
@@ -110,7 +110,7 @@ export default function StickyWallView({ token }) {
           No sticky notes yet. Add your first one!
         </div>
       ) : (
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {stickies.map((s) => {
             const c = COLORS[s.colorIdx ?? 0] ?? COLORS[0]
             return (
