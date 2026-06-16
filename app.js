@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
 
 const app = express();
 const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
@@ -45,7 +46,8 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String },
+    googleId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );
@@ -169,6 +171,54 @@ app.get('/api/auth/me', authRequired, async (req, res) => {
     res.json({ user: { id: user._id, name: user.name, email: user.email } });
   } catch {
     res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Google sign-in
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ error: 'Google credential is required' });
+    }
+
+    // Verify Google token
+    const googleResponse = await axios.get(
+      `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${credential}`
+    );
+    const googleUser = googleResponse.data;
+
+    if (!googleUser.email_verified) {
+      return res.status(400).json({ error: 'Google email not verified' });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email: googleUser.email.toLowerCase() });
+
+    if (user) {
+      // If user exists, update googleId if not set
+      if (!user.googleId) {
+        user.googleId = googleUser.sub;
+        await user.save();
+      }
+    } else {
+      // Create new user
+      user = await User.create({
+        name: googleUser.name,
+        email: googleUser.email.toLowerCase(),
+        googleId: googleUser.sub,
+      });
+    }
+
+    // Generate token
+    const token = createToken(user);
+    res.json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (error) {
+    console.error('Google auth error:', error.response?.data || error.message);
+    res.status(401).json({ error: 'Invalid Google credentials' });
   }
 });
 

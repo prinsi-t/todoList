@@ -91,6 +91,33 @@ export default function App() {
     }
   }
 
+  const handleGoogleSignIn = async (credential) => {
+    setAuthError('')
+    setAuthLoading(true)
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAuthError(data.error || 'Google authentication failed')
+        return
+      }
+
+      localStorage.setItem('token', data.token)
+      setToken(data.token)
+      setUser(data.user)
+      setAuthChecked(true)
+      navigate('/app')
+    } catch {
+      setAuthError('Something went wrong. Try again.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
   const logout = () => {
     if (user?.email) {
       localStorage.setItem(LAST_EMAIL_KEY, user.email)
@@ -113,7 +140,7 @@ export default function App() {
           ) : isAuthenticated ? (
             <Navigate to="/app" replace />
           ) : (
-            <AuthPage mode="login" onSubmit={handleAuthSubmit} loading={authLoading} error={authError} />
+            <AuthPage mode="login" onSubmit={handleAuthSubmit} onGoogleSignIn={handleGoogleSignIn} loading={authLoading} error={authError} />
           )
         }
       />
@@ -125,7 +152,7 @@ export default function App() {
           ) : isAuthenticated ? (
             <Navigate to="/app" replace />
           ) : (
-            <AuthPage mode="register" onSubmit={handleAuthSubmit} loading={authLoading} error={authError} />
+            <AuthPage mode="register" onSubmit={handleAuthSubmit} onGoogleSignIn={handleGoogleSignIn} loading={authLoading} error={authError} />
           )
         }
       />

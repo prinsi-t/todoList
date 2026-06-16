@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const LAST_EMAIL_KEY = 'taskflow_last_email'
@@ -12,9 +12,10 @@ function getInitialPassword() {
   return localStorage.getItem(LAST_PASSWORD_KEY) || ''
 }
 
-export default function AuthPage({ mode, onSubmit, loading, error }) {
+export default function AuthPage({ mode, onSubmit, onGoogleSignIn, loading, error }) {
   const isLogin = mode === 'login'
   const location = useLocation()
+  const googleButtonRef = useRef(null)
   const [form, setForm] = useState(() => ({
     name: '',
     email: getInitialEmail(location.state?.email),
@@ -27,6 +28,24 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
     const password = getInitialPassword()
     setForm((prev) => ({ ...prev, email, password }))
   }, [location.state?.email, mode])
+
+  useEffect(() => {
+    // Initialize Google Sign-In
+    if (window.google && googleButtonRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+        callback: (response) => {
+          onGoogleSignIn(response.credential)
+        },
+      })
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: '100%',
+        text: isLogin ? 'signin_with' : 'signup_with',
+      })
+    }
+  }, [isLogin, onGoogleSignIn])
 
   const submit = (e) => {
     e.preventDefault()
@@ -152,6 +171,16 @@ export default function AuthPage({ mode, onSubmit, loading, error }) {
             >
               {loading ? 'Please wait...' : isLogin ? 'Sign in' : 'Create account'}
             </button>
+
+            {/* Divider */}
+            <div className="flex items-center my-6">
+              <div className="flex-1 h-px bg-neutral-700"></div>
+              <span className="px-4 text-sm text-neutral-500">or</span>
+              <div className="flex-1 h-px bg-neutral-700"></div>
+            </div>
+
+            {/* Google Sign-In Button */}
+            <div ref={googleButtonRef} className="w-full"></div>
           </form>
 
           <p className="mt-6 text-sm text-neutral-500 text-center">
