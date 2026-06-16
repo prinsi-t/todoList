@@ -142,7 +142,10 @@ export default function CalendarView({ token }) {
                     {hasTodos && (
                       <div className="flex gap-0.5 flex-wrap">
                         {todosByDay[day].slice(0, 3).map((t) => (
-                          <div key={t._id} className={`h-1 w-1 rounded-full ${isSelected ? 'bg-black/40' : 'bg-neutral-400'}`} />
+                          <div key={t._id} className={`h-1 w-1 rounded-full ${
+                            isSelected ? 'bg-black/40' :
+                            t.completed ? 'bg-neutral-500' : 'bg-green-400'
+                          }`} />
                         ))}
                       </div>
                     )}

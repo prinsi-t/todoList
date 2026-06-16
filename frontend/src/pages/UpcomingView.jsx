@@ -65,12 +65,12 @@ export default function UpcomingView({ token }) {
     if (res.ok) fetchTodos()
   }
 
-  // Separate tasks with and without due dates
+  // Separate tasks with and without due dates, excluding completed tasks
   const withDate = todos
-    .filter((t) => t.due_date)
+    .filter((t) => t.due_date && !t.completed)
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
 
-  const undated = todos.filter((t) => !t.due_date)
+  const undated = todos.filter((t) => !t.due_date && !t.completed)
 
   // Group by date bucket label
   const groups = withDate.reduce((acc, todo) => {
