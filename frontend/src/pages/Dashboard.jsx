@@ -29,6 +29,9 @@ export default function Dashboard({ token, user, onLogout }) {
         />
       )}
 
+
+      
+
       {/* Sidebar */}
       <div className={`
         fixed lg:static z-50 h-full transition-transform duration-300
