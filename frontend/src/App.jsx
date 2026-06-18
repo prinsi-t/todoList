@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { apiCall } from './api'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import LandingPage from './pages/LandingPage'
@@ -34,7 +35,7 @@ export default function App() {
       }
 
       try {
-        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        const res = await apiCall('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         if (!res.ok) {
           localStorage.removeItem('token')
           setToken('')
@@ -66,7 +67,7 @@ export default function App() {
           ? { email: form.email, password: form.password }
           : { name: form.name, email: form.email, password: form.password }
 
-      const res = await fetch(endpoint, {
+      const res = await apiCall(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -95,7 +96,7 @@ export default function App() {
     setAuthError('')
     setAuthLoading(true)
     try {
-      const res = await fetch('/api/auth/google', {
+      const res = await apiCall('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
