@@ -339,11 +339,8 @@ app.delete('/api/stickies/:id', authRequired, async (req, res) => {
   }
 });
 
-// ✅ Serve React (Vite build)
-app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+app.get('/', (req, res) => {
+  res.json({ message: 'API is running 🚀' });
 });
 
 const PORT = process.env.PORT || 3000;
