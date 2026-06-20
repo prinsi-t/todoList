@@ -23,9 +23,17 @@ mongoose
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Middleware
-app.use(
+/* app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  })
+); */
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 app.use(express.urlencoded({ extended: false }));
