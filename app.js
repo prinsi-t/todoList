@@ -41,6 +41,14 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/debug', (req, res) => {
+  res.json({
+    message: 'LATEST CODE',
+    loginExists: true,
+    googleExists: true
+  });
+});
+
 // Schemas
 const userSchema = new mongoose.Schema(
   {
