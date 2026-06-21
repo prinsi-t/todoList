@@ -23,28 +23,17 @@ mongoose
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Middleware
-/* app.use(
-  cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  })
-); */
-/* app.use(
-  cors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-); */
 app.use(
   cors({
     origin: [
       'https://taskflow-sooty-eight.vercel.app',
+      'https://taskflow-r0x33cpay-prinsis-projects.vercel.app',
       'http://localhost:5173',
     ],
     credentials: true,
   })
 );
+app.options('*', cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -65,20 +54,7 @@ app.get('/api/debug', (req, res) => {
     googleExists: true
   });
 });
-app.get('/api/todos', authRequired, async (req, res) => {
-  try {
-    console.log('GET /api/todos user:', req.user.id)
 
-    const todos = await Todo.find({ userId: req.user.id }).sort({ createdAt: -1 })
-
-    console.log('Todos found:', todos.length)
-
-    res.json(todos)
-  } catch (err) {
-    console.error('GET /api/todos ERROR:', err)
-    res.status(500).json({ error: 'Failed to fetch todos' })
-  }
-})
 // Schemas
 const userSchema = new mongoose.Schema(
   {
@@ -377,9 +353,7 @@ app.delete('/api/stickies/:id', authRequired, async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  res.json({ message: 'API is running 🚀' });
-});
+
 
 const PORT = process.env.PORT || 3000;
 
