@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { apiCall } from '../api'
 
 export default function TodayView({ token }) {
   const [todos, setTodos] = useState([])
@@ -19,7 +20,7 @@ export default function TodayView({ token }) {
   const fetchTodos = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/todos', { headers: { Authorization: `Bearer ${token}` } })
+      const res = await apiCall('/api/todos', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) return
       setTodos(await res.json())
     } finally {
@@ -35,7 +36,7 @@ export default function TodayView({ token }) {
     const body = { title }
     if (dueDate) body.due_date = dueDate
     try {
-      const res = await fetch('/api/todos', {
+      const res = await apiCall('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
@@ -55,7 +56,7 @@ export default function TodayView({ token }) {
   }
 
   const toggleTodo = async (id) => {
-    const res = await fetch(`/api/todos/${id}/toggle`, {
+    const res = await apiCall(`/api/todos/${id}/toggle`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -63,7 +64,7 @@ export default function TodayView({ token }) {
   }
 
   const deleteTodo = async (id) => {
-    const res = await fetch(`/api/todos/${id}`, {
+    const res = await apiCall(`/api/todos/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
