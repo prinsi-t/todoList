@@ -1,33 +1,15 @@
 import { useEffect, useState, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-
-const LAST_EMAIL_KEY = 'taskflow_last_email'
-const LAST_PASSWORD_KEY = 'taskflow_last_password'
-
-function getInitialEmail(locationEmail) {
-  return locationEmail || localStorage.getItem(LAST_EMAIL_KEY) || ''
-}
-
-function getInitialPassword() {
-  return localStorage.getItem(LAST_PASSWORD_KEY) || ''
-}
+import { Link } from 'react-router-dom'
 
 export default function AuthPage({ mode, onSubmit, onGoogleSignIn, loading, error }) {
   const isLogin = mode === 'login'
-  const location = useLocation()
   const googleButtonRef = useRef(null)
   const [form, setForm] = useState(() => ({
     name: '',
-    email: getInitialEmail(location.state?.email),
-    password: getInitialPassword(),
+    email: '',
+    password: '',
   }))
   const [showPassword, setShowPassword] = useState(false)
-
-  useEffect(() => {
-    const email = getInitialEmail(location.state?.email)
-    const password = getInitialPassword()
-    setForm((prev) => ({ ...prev, email, password }))
-  }, [location.state?.email, mode])
 
   useEffect(() => {
     // Initialize Google Sign-In

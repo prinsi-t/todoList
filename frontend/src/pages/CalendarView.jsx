@@ -42,14 +42,6 @@ export default function CalendarView({ token }) {
 
   useEffect(() => { fetchTodos() }, [fetchTodos])
 
-  // Refetch todos when calendar comes into view
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchTodos()
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [fetchTodos])
-
   const cells = buildCalendar(year, month)
 
   const prev = () => {
