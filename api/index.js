@@ -4,16 +4,10 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import axios from 'axios';
 
 const app = express();
 const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
-
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
@@ -329,21 +323,5 @@ app.delete('/api/stickies/:id', authRequired, async (req, res) => {
     res.status(500).json({ error: 'Failed to delete sticky' });
   }
 });
-
-// Serve React (Vite build)
-app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
-});
-
-// Start server locally only
-const PORT = process.env.PORT || 3000;
-
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () =>
-    console.log(`🚀 Server running on http://localhost:${PORT}`)
-  );
-}
 
 export default app;
