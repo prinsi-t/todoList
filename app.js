@@ -337,13 +337,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 });
 
-// Start server (skip on Vercel which uses serverless functions)
+// Start server
 const PORT = process.env.PORT || 3000;
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () =>
-    console.log(`🚀 Server running on port ${PORT}`)
-  );
-}
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
 
 export default app;
