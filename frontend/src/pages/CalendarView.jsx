@@ -55,7 +55,7 @@ export default function CalendarView({ token }) {
     fetchTodos()
   }
 
-  // Map todos by due_date day
+
   const todosByDay = todos.reduce((acc, t) => {
     if (!t.due_date) return acc
     // Handle both formats: "2026-04-16" and "2026-04-16T00:00:00Z"
