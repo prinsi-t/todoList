@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react' // Deployment fix
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { apiCall } from './api'
 import AuthPage from './pages/AuthPage'
