@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = 'https://todolist-1-tuxt.onrender.com';
 
 export async function apiCall(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
