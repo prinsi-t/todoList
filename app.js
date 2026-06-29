@@ -273,7 +273,7 @@ app.delete('/api/todos/:id', authRequired, async (req, res) => {
   }
 });
 
-// Stickies
+
 app.get('/api/stickies', authRequired, async (req, res) => {
   try {
     const stickies = await Sticky.find({ userId: req.user.id }).sort({ createdAt: -1 });
