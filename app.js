@@ -25,12 +25,13 @@ mongoose
 // Middleware
 app.use(
   cors({
-    origin: [
-      'https://taskflow-sooty-eight.vercel.app',
-      'https://taskflow-r0x33cpay-prinsis-projects.vercel.app',
-      /\.vercel\.app$/,
-      'http://localhost:5173',
-    ],
+    origin: (origin, callback) => {
+      if (!origin || origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('onrender.com')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
