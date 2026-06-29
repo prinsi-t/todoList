@@ -11,7 +11,7 @@
 # Build files
 /dist
 /build
-/frontend/dist
+# /frontend/dist is committed
 /frontend/build
 
 # Logs
