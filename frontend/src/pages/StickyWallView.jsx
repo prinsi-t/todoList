@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { apiCall } from '../api'
 
 const COLORS = [
   { bg: 'bg-yellow-950/60', border: 'border-yellow-800/60', text: 'text-yellow-200', label: 'Yellow' },
@@ -17,7 +18,7 @@ export default function StickyWallView({ token }) {
   const fetchStickies = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/stickies', { headers: { Authorization: `Bearer ${token}` } })
+      const res = await apiCall('/api/stickies', { headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) return
       setStickies(await res.json())
     } finally {
@@ -33,7 +34,7 @@ export default function StickyWallView({ token }) {
   }, [fetchStickies])
 
   const addSticky = async () => {
-    const res = await fetch('/api/stickies', {
+    const res = await apiCall('/api/stickies', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ text: '', colorIdx }),
@@ -49,7 +50,7 @@ export default function StickyWallView({ token }) {
 
     if (saveTimers.current[id]) clearTimeout(saveTimers.current[id])
     saveTimers.current[id] = setTimeout(async () => {
-      await fetch(`/api/stickies/${id}`, {
+      await apiCall(`/api/stickies/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ text }),
@@ -64,7 +65,7 @@ export default function StickyWallView({ token }) {
       delete saveTimers.current[id]
     }
 
-    const res = await fetch(`/api/stickies/${id}`, {
+    const res = await apiCall(`/api/stickies/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
