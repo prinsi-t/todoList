@@ -7,8 +7,13 @@ import LandingPage from './pages/LandingPage'
 
 function AuthLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-500 text-sm">
-      Checking session...
+    <div className="flex min-h-screen items-center justify-center bg-neutral-950">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm text-neutral-400">
+          Restoring session...
+        </p>
+      </div>
     </div>
   )
 }
@@ -19,42 +24,50 @@ export default function App() {
   const navigate = useNavigate()
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [user, setUser] = useState(null)
-  const [authChecked, setAuthChecked] = useState(false)
+  const [authChecked, setAuthChecked] = useState(
+  !localStorage.getItem('token')
+)
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
 
   const isAuthenticated = Boolean(token && user)
 
   useEffect(() => {
-    const fetchMe = async () => {
-      if (!token) {
-        setUser(null)
-        setAuthChecked(true)
-        return
-      }
+  const fetchMe = async () => {
+    if (!token) {
+      setUser(null)
+      setAuthChecked(true)
+      return
+    }
 
-      try {
-        const res = await apiCall('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-        if (!res.ok) {
-          localStorage.removeItem('token')
-          setToken('')
-          setUser(null)
-          return
+    try {
+      const res = await apiCall('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-        const data = await res.json()
-        setUser(data.user)
-      } catch {
+      })
+
+      if (!res.ok) {
         localStorage.removeItem('token')
         setToken('')
         setUser(null)
-      } finally {
-        setAuthChecked(true)
+      } else {
+        const data = await res.json()
+        setUser(data.user)
       }
-    }
+    } catch (err) {
+      console.error(err)
 
-    setAuthChecked(false)
-    fetchMe()
-  }, [token])
+      localStorage.removeItem('token')
+      setToken('')
+      setUser(null)
+    } finally {
+      setAuthChecked(true)
+    }
+  }
+
+  fetchMe()
+}, [token])
 
   const handleAuthSubmit = async (mode, form) => {
     setAuthError('')
