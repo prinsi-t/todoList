@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { apiCall } from '../api'
+
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -20,12 +22,12 @@ export default function CalendarView({ token }) {
   const [selected, setSelected] = useState(null)
 
   const fetchTodos = useCallback(async () => {
-    const res = await fetch('/api/todos', { headers: { Authorization: `Bearer ${token}` } })
+    const res = await apiCall('/api/todos', { headers: { Authorization: `Bearer ${token}` } })
     if (res.ok) setTodos(await res.json())
   }, [token])
 
   const toggleTodo = async (id) => {
-    const res = await fetch(`/api/todos/${id}/toggle`, {
+    const res = await apiCall(`/api/todos/${id}/toggle`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -33,7 +35,7 @@ export default function CalendarView({ token }) {
   }
 
   const deleteTodo = async (id) => {
-    const res = await fetch(`/api/todos/${id}`, {
+    const res = await apiCall(`/api/todos/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
