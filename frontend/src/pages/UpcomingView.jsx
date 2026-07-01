@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { apiCall } from '../api'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
@@ -36,21 +37,35 @@ export default function UpcomingView({ token }) {
   const [todos, setTodos] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const fetchTodos = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await fetch('/api/todos', { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) return
-      setTodos(await res.json())
-    } finally {
-      setLoading(false)
+const fetchTodos = useCallback(async () => {
+  try {
+    setLoading(true)
+
+    const res = await apiCall('/api/todos', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (!res.ok) {
+      console.log(await res.text())
+      return
     }
-  }, [token])
+
+    const data = await res.json()
+    setTodos(data)
+
+  } catch (err) {
+    console.error(err)
+  } finally {
+    setLoading(false)
+  }
+}, [token])
 
   useEffect(() => { fetchTodos() }, [fetchTodos])
 
   const toggleTodo = async (id) => {
-    const res = await fetch(`/api/todos/${id}/toggle`, {
+    const res = await apiCall(`/api/todos/${id}/toggle`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -58,7 +73,7 @@ export default function UpcomingView({ token }) {
   }
 
   const deleteTodo = async (id) => {
-    const res = await fetch(`/api/todos/${id}`, {
+    const res = await apiCall(`/api/todos/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
