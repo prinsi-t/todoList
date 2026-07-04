@@ -16,6 +16,7 @@ export default function AuthPage({ mode, onSubmit, onGoogleSignIn, loading, erro
     if (window.google && googleButtonRef.current) {
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+        ux_mode: 'popup',
         callback: (response) => {
           onGoogleSignIn(response.credential)
         },
@@ -25,7 +26,10 @@ export default function AuthPage({ mode, onSubmit, onGoogleSignIn, loading, erro
         size: 'large',
         width: '100%',
         text: isLogin ? 'signin_with' : 'signup_with',
+        prompt: 'select_account consent',
       })
+      // Prompt the account chooser every time
+      window.google.accounts.id.prompt()
     }
   }, [isLogin, onGoogleSignIn])
 
