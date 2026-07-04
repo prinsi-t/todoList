@@ -3,8 +3,8 @@
 A modern, full-stack task management app with React frontend and Express backend.
 
 **Live Demo:**
-- Frontend: [Vercel](https://taskflow-sooty-eight.vercel.app)
-- Backend: [Render](https://todolist-1-tuxt.onrender.com)
+ [Vercel](https://taskflow-sooty-eight.vercel.app)
+
 
 ## Features
 
