@@ -80,7 +80,7 @@ export default function LandingPage() {
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
           Now with Sticky Wall & Calendar — fully free
         </div>
-        <h1 className="text-6xl md:text-7xl font-bold leading-none tracking-tight mb-6">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-none tracking-tight mb-6">
           Less clutter.<br />
           <span className="text-neutral-500">More done.</span>
         </h1>
