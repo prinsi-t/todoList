@@ -50,7 +50,7 @@ const STATS = [
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-neutral-950 text-white">
+    <main className="min-h-screen w-full bg-neutral-950 text-white overflow-x-hidden">
       {/* Header */}
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 sticky top-0 z-10 bg-neutral-950/90 backdrop-blur border-b border-neutral-900">
         <div className="flex items-center gap-2.5">

@@ -20,7 +20,7 @@ export default function Dashboard({ token, user, onLogout }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-950 text-white">
+    <div className="flex min-h-screen w-full bg-neutral-950 text-white overflow-x-hidden">
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div 
